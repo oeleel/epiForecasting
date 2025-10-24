@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Flu Hospitalization Forecasting Pipeline
 
 An XGBoost-based time series forecasting pipeline for predicting influenza hospitalizations at the state level using CDC FluSight data.
@@ -229,3 +230,9 @@ For questions or issues:
 - State-level forecasting
 - Confidence intervals
 - Complete pipeline orchestration
+=======
+# epiForecasting
+research at biocomplexity institute primer with Aniruddha
+
+\https://raw.githubusercontent.com/cdcepi/FluSight-forecast-hub/refs/heads/main/target-data/target-hospital-admissions.csv
+>>>>>>> 08a5cdabb5051f61907bf91c0d52c150d4246f1b
