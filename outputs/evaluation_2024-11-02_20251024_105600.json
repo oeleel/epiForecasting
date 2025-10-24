@@ -1,7 +1,7 @@
 {
   "cutoff_date": "2024-11-02",
   "training_results": {
-    "training_date": "2025-10-24T10:32:23.557925",
+    "training_date": "2025-10-24T10:56:00.429851",
     "cutoff_date": "2024-11-02",
     "n_samples": 576,
     "n_features": 36,
@@ -173,25 +173,25 @@
   },
   "metrics_by_location": {
     "06": {
-      "mae": 0.21,
-      "rmse": 0.38,
-      "mape": 14.5,
-      "smape": 12.2,
-      "r2": 0.88
-    },
-    "12": {
-      "mae": 0.17,
-      "rmse": 0.3,
-      "mape": 12.5,
-      "smape": 11.0,
-      "r2": 0.8
-    },
-    "48": {
       "mae": 0.13,
       "rmse": 0.22,
       "mape": 10.5,
       "smape": 9.8,
       "r2": 0.72
+    },
+    "12": {
+      "mae": 0.13,
+      "rmse": 0.22,
+      "mape": 10.5,
+      "smape": 9.8,
+      "r2": 0.72
+    },
+    "48": {
+      "mae": 0.21,
+      "rmse": 0.38,
+      "mape": 14.5,
+      "smape": 12.2,
+      "r2": 0.88
     }
   },
   "metrics_by_horizon": {
