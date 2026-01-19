@@ -324,6 +324,11 @@ class FluForecastingPipeline:
         
         forecasts = pd.read_csv(forecast_file)
         
+        # Determine column names (handle both old and new formats)
+        date_col = 'forecast_date' if 'forecast_date' in forecasts.columns else 'date'
+        week_col = 'forecast_week' if 'forecast_week' in forecasts.columns else 'prediction_horizon'
+        forecast_col = 'forecast' if 'forecast' in forecasts.columns else 'predicted_value'
+        
         # Generate report
         report_lines = [
             "# Flu Hospitalization Forecast Report",
@@ -333,8 +338,8 @@ class FluForecastingPipeline:
             "## Summary Statistics",
             f"Total predictions: {len(forecasts)}",
             f"Locations: {forecasts['location'].nunique()}",
-            f"Date range: {forecasts['date'].min()} to {forecasts['date'].max()}",
-            f"Prediction horizons: {sorted(forecasts['prediction_horizon'].unique())}",
+            f"Date range: {forecasts[date_col].min()} to {forecasts[date_col].max()}",
+            f"Prediction horizons: {sorted(forecasts[week_col].unique())}",
             "",
             "## Forecasts by Location and Horizon",
             ""
@@ -347,18 +352,22 @@ class FluForecastingPipeline:
             
             report_lines.append(f"### {location} - {location_name}")
             
-            for horizon in sorted(loc_data['prediction_horizon'].unique()):
-                horizon_data = loc_data[loc_data['prediction_horizon'] == horizon]
+            for horizon in sorted(loc_data[week_col].unique()):
+                horizon_data = loc_data[loc_data[week_col] == horizon]
                 
                 report_lines.append(f"**{horizon}-week ahead:**")
                 for _, row in horizon_data.iterrows():
-                    pred_val = row['predicted_value']
-                    if 'pred_lower_95' in row and 'pred_upper_95' in row:
+                    pred_val = row[forecast_col]
+                    if 'confidence_lower' in row and 'confidence_upper' in row:
+                        ci_lower = row['confidence_lower']
+                        ci_upper = row['confidence_upper']
+                        report_lines.append(f"  - {row[date_col]}: {pred_val:.1f} (95% CI: {ci_lower:.1f} - {ci_upper:.1f})")
+                    elif 'pred_lower_95' in row and 'pred_upper_95' in row:
                         ci_lower = row['pred_lower_95']
                         ci_upper = row['pred_upper_95']
-                        report_lines.append(f"  - {row['date']}: {pred_val:.1f} (95% CI: {ci_lower:.1f} - {ci_upper:.1f})")
+                        report_lines.append(f"  - {row[date_col]}: {pred_val:.1f} (95% CI: {ci_lower:.1f} - {ci_upper:.1f})")
                     else:
-                        report_lines.append(f"  - {row['date']}: {pred_val:.1f}")
+                        report_lines.append(f"  - {row[date_col]}: {pred_val:.1f}")
                 report_lines.append("")
         
         # Save report

@@ -17,18 +17,21 @@ import config
 class FluForecastingModel:
     """XGBoost-based flu forecasting model"""
     
-    def __init__(self, model_params: Optional[Dict] = None):
+    def __init__(self, model_params: Optional[Dict] = None, use_monotonic: bool = True):
         """
         Initialize the flu forecasting model
         
         Args:
             model_params: XGBoost parameters (uses config defaults if None)
+            use_monotonic: Whether to apply monotonic constraints from config
         """
         self.model_params = model_params or config.XGBOOST_PARAMS.copy()
         self.model = None
         self.feature_columns = None
         self.label_encoders = {}
         self.training_info = {}
+        self.use_monotonic = use_monotonic
+        self.monotonic_constraints = getattr(config, 'MONOTONIC_FEATURES', {})
         
     def prepare_features(self, data: pd.DataFrame, target_col: str = 'value') -> Tuple[pd.DataFrame, pd.Series]:
         """
@@ -72,6 +75,23 @@ class FluForecastingModel:
         
         return X, y
     
+    def _build_monotonic_constraints(self, feature_cols: List[str]) -> str:
+        """
+        Build monotonic constraints string for XGBoost based on feature columns.
+        
+        Args:
+            feature_cols: List of feature column names
+            
+        Returns:
+            Tuple of monotonic constraints (e.g., "(1,0,-1,0,...)")
+        """
+        constraints = []
+        for col in feature_cols:
+            # Get constraint from config (default 0 = no constraint)
+            constraint = self.monotonic_constraints.get(col, 0)
+            constraints.append(str(constraint))
+        return "(" + ",".join(constraints) + ")"
+    
     def train(self, X: pd.DataFrame, y: pd.Series, 
               validation_data: Optional[Tuple[pd.DataFrame, pd.Series]] = None) -> Dict:
         """
@@ -85,8 +105,14 @@ class FluForecastingModel:
         Returns:
             Dictionary with training results
         """
+        # Build monotonic constraints if enabled
+        train_params = self.model_params.copy()
+        if self.use_monotonic and self.monotonic_constraints:
+            constraints_str = self._build_monotonic_constraints(list(X.columns))
+            train_params['monotone_constraints'] = constraints_str
+        
         # Initialize model
-        self.model = xgb.XGBRegressor(**self.model_params)
+        self.model = xgb.XGBRegressor(**train_params)
         
         # Prepare validation data if provided
         eval_set = None
@@ -280,3 +306,192 @@ class FluForecastingModel:
         }
         
         return info
+
+
+class ResidualCorrectionModel:
+    """
+    Two-stage model that trains a primary model and a secondary model on residuals.
+    The secondary model learns to correct systematic errors from the primary model.
+    """
+    
+    def __init__(self, primary_params: Optional[Dict] = None, 
+                 residual_params: Optional[Dict] = None):
+        """
+        Initialize residual correction model.
+        
+        Args:
+            primary_params: XGBoost parameters for primary model
+            residual_params: XGBoost parameters for residual model (typically simpler)
+        """
+        self.primary_params = primary_params or config.XGBOOST_PARAMS.copy()
+        
+        # Residual model should be simpler to avoid overfitting to noise
+        self.residual_params = residual_params or {
+            'objective': 'reg:squarederror',
+            'max_depth': 3,
+            'learning_rate': 0.05,
+            'n_estimators': 500,
+            'subsample': 0.8,
+            'colsample_bytree': 0.8,
+            'random_state': 42
+        }
+        
+        self.primary_model = FluForecastingModel(self.primary_params, use_monotonic=True)
+        self.residual_model = FluForecastingModel(self.residual_params, use_monotonic=False)
+        self.is_trained = False
+        self.training_info = {}
+    
+    def train(self, X: pd.DataFrame, y: pd.Series,
+              validation_data: Optional[Tuple[pd.DataFrame, pd.Series]] = None) -> Dict:
+        """
+        Train both primary and residual models.
+        
+        Args:
+            X: Training features
+            y: Training targets
+            validation_data: Optional validation data tuple (X_val, y_val)
+            
+        Returns:
+            Dictionary with training results
+        """
+        print("Training primary model...")
+        primary_results = self.primary_model.train(X, y, validation_data)
+        
+        # Get residuals from primary model
+        print("Computing residuals...")
+        train_predictions = self.primary_model.predict(X)
+        residuals = y - train_predictions
+        
+        # Train residual model
+        print("Training residual correction model...")
+        
+        # For residual model, we don't use validation early stopping
+        # since we want it to learn the systematic errors
+        residual_results = self.residual_model.train(X, residuals, None)
+        
+        # Compute combined model metrics
+        combined_predictions = train_predictions + self.residual_model.predict(X)
+        combined_mae = np.mean(np.abs(y - combined_predictions))
+        combined_rmse = np.sqrt(np.mean((y - combined_predictions) ** 2))
+        
+        self.training_info = {
+            'training_date': datetime.now().isoformat(),
+            'primary_train_mae': primary_results.get('train_mae'),
+            'primary_train_rmse': primary_results.get('train_rmse'),
+            'residual_train_mae': residual_results.get('train_mae'),
+            'combined_train_mae': combined_mae,
+            'combined_train_rmse': combined_rmse,
+            'improvement': primary_results.get('train_mae', 0) - combined_mae
+        }
+        
+        # Evaluate on validation if provided
+        if validation_data is not None:
+            X_val, y_val = validation_data
+            val_pred_primary = self.primary_model.predict(X_val)
+            val_pred_residual = self.residual_model.predict(X_val)
+            val_pred_combined = val_pred_primary + val_pred_residual
+            
+            val_mae_primary = np.mean(np.abs(y_val - val_pred_primary))
+            val_mae_combined = np.mean(np.abs(y_val - val_pred_combined))
+            
+            self.training_info['val_mae_primary'] = val_mae_primary
+            self.training_info['val_mae_combined'] = val_mae_combined
+            self.training_info['val_improvement'] = val_mae_primary - val_mae_combined
+            
+            print(f"Validation MAE - Primary: {val_mae_primary:.2f}, Combined: {val_mae_combined:.2f}")
+        
+        self.is_trained = True
+        print(f"Training complete. Improvement: {self.training_info['improvement']:.2f}")
+        
+        return self.training_info
+    
+    def predict(self, X: pd.DataFrame) -> np.ndarray:
+        """
+        Make predictions using combined primary + residual correction.
+        
+        Args:
+            X: Features for prediction
+            
+        Returns:
+            Combined predictions array
+        """
+        if not self.is_trained:
+            raise ValueError("Model must be trained before making predictions")
+        
+        primary_pred = self.primary_model.predict(X)
+        residual_correction = self.residual_model.predict(X)
+        
+        # Clip residual correction to avoid extreme adjustments
+        max_correction = np.abs(primary_pred) * 0.5  # Max 50% correction
+        residual_correction = np.clip(residual_correction, -max_correction, max_correction)
+        
+        return primary_pred + residual_correction
+    
+    def get_feature_importance(self) -> Dict[str, pd.DataFrame]:
+        """
+        Get feature importance from both models.
+        
+        Returns:
+            Dictionary with 'primary' and 'residual' importance DataFrames
+        """
+        return {
+            'primary': self.primary_model.get_feature_importance(),
+            'residual': self.residual_model.get_feature_importance()
+        }
+    
+    def save_model(self, filepath: str) -> str:
+        """
+        Save both models and metadata.
+        
+        Args:
+            filepath: Base path for saving
+            
+        Returns:
+            Path to saved model directory
+        """
+        if not self.is_trained:
+            raise ValueError("Model must be trained before saving")
+        
+        # Create directory
+        model_dir = filepath if not filepath.endswith('.json') else filepath.replace('.json', '')
+        os.makedirs(model_dir, exist_ok=True)
+        
+        # Save primary and residual models
+        self.primary_model.save_model(os.path.join(model_dir, 'primary_model'))
+        self.residual_model.save_model(os.path.join(model_dir, 'residual_model'))
+        
+        # Save combined metadata
+        metadata = {
+            'training_info': self.training_info,
+            'primary_params': self.primary_params,
+            'residual_params': self.residual_params
+        }
+        
+        with open(os.path.join(model_dir, 'combined_metadata.json'), 'w') as f:
+            json.dump(metadata, f, indent=2)
+        
+        return model_dir
+    
+    def load_model(self, filepath: str) -> None:
+        """
+        Load both models and metadata.
+        
+        Args:
+            filepath: Path to saved model directory
+        """
+        model_dir = filepath if not filepath.endswith('.json') else filepath.replace('.json', '')
+        
+        # Load primary and residual models
+        self.primary_model.load_model(os.path.join(model_dir, 'primary_model'))
+        self.residual_model.load_model(os.path.join(model_dir, 'residual_model'))
+        
+        # Load combined metadata
+        metadata_path = os.path.join(model_dir, 'combined_metadata.json')
+        if os.path.exists(metadata_path):
+            with open(metadata_path, 'r') as f:
+                metadata = json.load(f)
+            self.training_info = metadata.get('training_info', {})
+            self.primary_params = metadata.get('primary_params', {})
+            self.residual_params = metadata.get('residual_params', {})
+        
+        self.is_trained = True

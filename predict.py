@@ -27,7 +27,7 @@ class FluForecastGenerator:
         
     def generate_forecasts(self, data: pd.DataFrame, 
                         cutoff_date: str,
-                        locations: List[str],
+                        locations: Optional[List[str]] = None,
                         with_confidence: bool = False,
                         n_bootstrap: int = 100) -> pd.DataFrame:
         """
@@ -36,7 +36,7 @@ class FluForecastGenerator:
         Args:
             data: Historical data
             cutoff_date: Date to use as cutoff
-            locations: List of locations to forecast
+            locations: List of locations to forecast (if None, forecast all locations)
             with_confidence: Whether to include confidence intervals
             n_bootstrap: Number of bootstrap samples for confidence intervals
             
@@ -49,6 +49,10 @@ class FluForecastGenerator:
         # Filter data up to cutoff date
         cutoff_dt = pd.to_datetime(cutoff_date)
         historical_data = data[data['date'] <= cutoff_dt].copy()
+        
+        # If locations not specified, use all unique locations in data
+        if locations is None:
+            locations = historical_data['location'].unique().tolist()
         
         forecasts = []
         
@@ -134,16 +138,30 @@ class FluForecastGenerator:
             forecasts.append(forecast)
             
             # Update data for next iteration (recursive forecasting)
-            # Add the prediction as the next data point
-            next_row = current_data.iloc[-1].copy()
-            next_row['date'] = forecast_date
-            next_row['value'] = prediction
-            
-            # Add to current data for next iteration
-            current_data = pd.concat([current_data, next_row.to_frame().T], ignore_index=True)
-            
-            # Update features for next prediction
             if week < self.forecast_horizon:
+                # Create new row with prediction - preserve dtypes!
+                # Using dict to DataFrame avoids the dtype conversion issue
+                new_row_data = {col: [current_data.iloc[-1][col]] for col in current_data.columns}
+                new_row_data['date'] = [forecast_date]
+                new_row_data['value'] = [prediction]
+                new_row_df = pd.DataFrame(new_row_data)
+                
+                # Ensure dtypes match before concat
+                for col in current_data.columns:
+                    if col in new_row_df.columns:
+                        try:
+                            new_row_df[col] = new_row_df[col].astype(current_data[col].dtype)
+                        except (ValueError, TypeError):
+                            pass  # Keep as-is if conversion fails
+                
+                # Add to current data
+                current_data = pd.concat([current_data, new_row_df], ignore_index=True)
+                
+                # CRITICAL: Recompute features for the new row
+                # This updates lag features, rolling statistics, and temporal features
+                current_data = self._update_features_for_prediction(current_data, forecast_date)
+                
+                # Now extract features from the updated last row
                 X_last = self.model.prepare_features(current_data.tail(1))[0]
         
         return forecasts
@@ -190,6 +208,166 @@ class FluForecastGenerator:
         upper_bound = np.percentile(predictions_array, 97.5)
         
         return base_prediction, lower_bound, upper_bound
+    
+    def _update_features_for_prediction(self, data: pd.DataFrame, forecast_date: pd.Timestamp) -> pd.DataFrame:
+        """
+        Update features for the last row after appending a new prediction.
+        This recomputes lag features, rolling statistics, and temporal features.
+        
+        Args:
+            data: DataFrame with the new prediction appended
+            forecast_date: The date of the forecast
+            
+        Returns:
+            DataFrame with updated features for the last row
+        """
+        df = data.copy()
+        n = len(df)
+        last_idx = n - 1
+        
+        # Get values as array for efficient computation
+        values = df['value'].values
+        
+        # Update temporal features for the new date
+        df.loc[last_idx, 'year'] = forecast_date.year
+        df.loc[last_idx, 'month'] = forecast_date.month
+        df.loc[last_idx, 'week_of_year'] = forecast_date.isocalendar()[1]
+        df.loc[last_idx, 'day_of_year'] = forecast_date.timetuple().tm_yday
+        
+        # Cyclical encoding
+        week_of_year = df.loc[last_idx, 'week_of_year']
+        month = df.loc[last_idx, 'month']
+        day_of_year = df.loc[last_idx, 'day_of_year']
+        
+        df.loc[last_idx, 'week_sin'] = np.sin(2 * np.pi * week_of_year / 52)
+        df.loc[last_idx, 'week_cos'] = np.cos(2 * np.pi * week_of_year / 52)
+        df.loc[last_idx, 'month_sin'] = np.sin(2 * np.pi * month / 12)
+        df.loc[last_idx, 'month_cos'] = np.cos(2 * np.pi * month / 12)
+        df.loc[last_idx, 'day_sin'] = np.sin(2 * np.pi * day_of_year / 365)
+        df.loc[last_idx, 'day_cos'] = np.cos(2 * np.pi * day_of_year / 365)
+        
+        # Update lag features
+        # value_lag_1: value from 1 step ago
+        lag_features = config.LAG_FEATURES  # [1, 2, 3, 4, 8, 12]
+        for lag in lag_features:
+            col_name = f'value_lag_{lag}'
+            if col_name in df.columns:
+                if n > lag:
+                    df.loc[last_idx, col_name] = values[n - 1 - lag]
+                else:
+                    # Not enough history, use the earliest available or 0
+                    df.loc[last_idx, col_name] = values[0] if n > 0 else 0
+        
+        # Update rolling features
+        rolling_windows = config.ROLLING_WINDOWS  # [4, 8]
+        for window in rolling_windows:
+            # Get the window of values (last 'window' values, or all if less)
+            start_idx = max(0, n - window)
+            window_values = values[start_idx:n]
+            
+            # Rolling mean
+            col_mean = f'value_rolling_mean_{window}'
+            if col_mean in df.columns:
+                df.loc[last_idx, col_mean] = np.mean(window_values)
+            
+            # Rolling std
+            col_std = f'value_rolling_std_{window}'
+            if col_std in df.columns:
+                df.loc[last_idx, col_std] = np.std(window_values) if len(window_values) > 1 else 0
+            
+            # Rolling min
+            col_min = f'value_rolling_min_{window}'
+            if col_min in df.columns:
+                df.loc[last_idx, col_min] = np.min(window_values)
+            
+            # Rolling max
+            col_max = f'value_rolling_max_{window}'
+            if col_max in df.columns:
+                df.loc[last_idx, col_max] = np.max(window_values)
+        
+        # Update derived features
+        # value_trend_4w: current value - rolling_mean_4
+        if 'value_trend_4w' in df.columns and 'value_rolling_mean_4' in df.columns:
+            df.loc[last_idx, 'value_trend_4w'] = values[last_idx] - df.loc[last_idx, 'value_rolling_mean_4']
+        
+        # recent_vs_historical: rolling_mean_4 / rolling_mean_8
+        if 'recent_vs_historical' in df.columns:
+            if 'value_rolling_mean_4' in df.columns and 'value_rolling_mean_8' in df.columns:
+                mean_4 = df.loc[last_idx, 'value_rolling_mean_4']
+                mean_8 = df.loc[last_idx, 'value_rolling_mean_8']
+                df.loc[last_idx, 'recent_vs_historical'] = mean_4 / (mean_8 + 1e-8)
+        
+        # Update YoY features
+        if 'value_lag_52' in df.columns and 'yoy_ratio' in df.columns:
+            lag_52 = df.loc[last_idx, 'value_lag_52']
+            df.loc[last_idx, 'yoy_ratio'] = values[last_idx] / (lag_52 + 1)
+            if 'yoy_pct_change' in df.columns:
+                df.loc[last_idx, 'yoy_pct_change'] = (values[last_idx] - lag_52) / (lag_52 + 1)
+            if 'yoy_diff' in df.columns:
+                df.loc[last_idx, 'yoy_diff'] = values[last_idx] - lag_52
+        
+        # Update rate-of-change features
+        if 'wow_change' in df.columns and n > 1:
+            df.loc[last_idx, 'wow_change'] = values[last_idx] - values[last_idx - 1]
+        if 'wow_pct_change' in df.columns and n > 1:
+            prev_val = values[last_idx - 1]
+            pct_change = (values[last_idx] - prev_val) / (prev_val + 1e-8) if prev_val != 0 else 0
+            df.loc[last_idx, 'wow_pct_change'] = np.clip(pct_change, -10, 10)
+        if 'acceleration' in df.columns and n > 2:
+            wow_curr = values[last_idx] - values[last_idx - 1]
+            wow_prev = values[last_idx - 1] - values[last_idx - 2]
+            df.loc[last_idx, 'acceleration'] = wow_curr - wow_prev
+        if 'momentum_4w' in df.columns and n > 4:
+            df.loc[last_idx, 'momentum_4w'] = values[last_idx] - values[last_idx - 4]
+        if 'momentum_4w_pct' in df.columns and n > 4:
+            val_4_ago = values[last_idx - 4]
+            pct = (values[last_idx] - val_4_ago) / (val_4_ago + 1) if val_4_ago != 0 else 0
+            df.loc[last_idx, 'momentum_4w_pct'] = np.clip(pct, -10, 10)
+        
+        # Update season phase features
+        if 'is_flu_season' in df.columns:
+            df.loc[last_idx, 'is_flu_season'] = 1 if month in [10, 11, 12, 1, 2, 3, 4] else 0
+        if 'season_phase' in df.columns:
+            week = int(week_of_year)
+            if week >= 40 and week <= 48:
+                phase = 1  # onset
+            elif week >= 49 or week <= 4:
+                phase = 2  # peak
+            elif week >= 5 and week <= 16:
+                phase = 3  # decline
+            else:
+                phase = 0  # off-season
+            df.loc[last_idx, 'season_phase'] = phase
+            if 'season_phase_sin' in df.columns:
+                df.loc[last_idx, 'season_phase_sin'] = np.sin(2 * np.pi * phase / 4)
+            if 'season_phase_cos' in df.columns:
+                df.loc[last_idx, 'season_phase_cos'] = np.cos(2 * np.pi * phase / 4)
+        
+        # Update seasonal_deviation
+        if 'seasonal_deviation' in df.columns and 'value_lag_52' in df.columns and 'value_lag_1' in df.columns:
+            lag_1 = df.loc[last_idx, 'value_lag_1']
+            lag_52 = df.loc[last_idx, 'value_lag_52']
+            deviation = (lag_1 - lag_52) / (lag_52 + 1)
+            df.loc[last_idx, 'seasonal_deviation'] = np.clip(deviation, -10, 10)
+        
+        # Update rate-based features (if weekly_rate is available)
+        if 'weekly_rate' in df.columns:
+            rates = df['weekly_rate'].values
+            if 'rate_lag_1' in df.columns and n > 1:
+                df.loc[last_idx, 'rate_lag_1'] = rates[last_idx - 1]
+            if 'rate_lag_4' in df.columns and n > 4:
+                df.loc[last_idx, 'rate_lag_4'] = rates[last_idx - 4]
+            if 'rate_rolling_mean_4' in df.columns:
+                start_idx = max(0, n - 4)
+                df.loc[last_idx, 'rate_rolling_mean_4'] = np.mean(rates[start_idx:n])
+            if 'rate_trend_4w' in df.columns and 'rate_rolling_mean_4' in df.columns:
+                df.loc[last_idx, 'rate_trend_4w'] = rates[last_idx] - df.loc[last_idx, 'rate_rolling_mean_4']
+        
+        # Note: US lag and rolling features are based on national data and should
+        # ideally be updated if we're forecasting US. For state forecasts, we keep
+        # the historical US features as context
+        
+        return df
     
     def save_forecasts(self, forecasts: pd.DataFrame, output_dir: str) -> str:
         """
