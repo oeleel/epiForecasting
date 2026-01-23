@@ -1,0 +1,55 @@
+feature_name,category,description,type,unit
+acceleration,Rate of Change,Change in week-over-week change (second derivative),numeric,hospitalizations
+day_cos,Temporal Features,Cosine encoding of day of year (seasonal cycle),numeric,dimensionless
+day_of_year,Temporal Features,Day of year (1-365/366),numeric,day
+day_sin,Temporal Features,Sine encoding of day of year (seasonal cycle),numeric,dimensionless
+is_flu_season,Season Phase,"Binary indicator: 1 if October-April, 0 otherwise",binary,boolean
+momentum_4w,Rate of Change,4-week momentum (absolute change over 4 weeks),numeric,hospitalizations
+momentum_4w_pct,Rate of Change,4-week momentum (percentage change over 4 weeks),numeric,percentage
+month,Temporal Features,Month (1-12),numeric,month
+month_cos,Temporal Features,Cosine encoding of month (seasonal cycle),numeric,dimensionless
+month_sin,Temporal Features,Sine encoding of month (seasonal cycle),numeric,dimensionless
+rate_lag_1,Rate Features,Per-capita hospitalization rate 1 week ago,numeric,rate_per_100k
+rate_lag_4,Rate Features,Per-capita hospitalization rate 4 weeks ago,numeric,rate_per_100k
+rate_rolling_mean_4,Rate Features,4-week rolling mean of per-capita rate,numeric,rate_per_100k
+rate_trend_4w,Rate Features,Deviation from 4-week rolling mean rate,numeric,rate_per_100k
+recent_severity_ratio,Season Severity,Recent 4-week severity vs same period last year,numeric,ratio
+recent_vs_historical,Interaction Features,Ratio of 4-week mean to 8-week mean,numeric,ratio
+season_phase,Season Phase,"Season phase: 0=off-season, 1=onset, 2=peak, 3=decline",categorical,phase_code
+season_phase_cos,Season Phase,Cosine encoding of season phase,numeric,dimensionless
+season_phase_sin,Season Phase,Sine encoding of season phase,numeric,dimensionless
+season_severity_ratio,Season Severity,Cumulative season hospitalizations vs same point last season,numeric,ratio
+seasonal_deviation,Interaction Features,Normalized comparison to same week last year,numeric,ratio
+us_total_lag_1,US National Context,US national total hospitalizations 1 weeks ago,numeric,hospitalizations
+us_total_lag_2,US National Context,US national total hospitalizations 2 weeks ago,numeric,hospitalizations
+us_total_lag_3,US National Context,US national total hospitalizations 3 weeks ago,numeric,hospitalizations
+us_total_lag_4,US National Context,US national total hospitalizations 4 weeks ago,numeric,hospitalizations
+us_total_rolling_mean_4,US National Context,4-week rolling mean of US national hospitalizations,numeric,hospitalizations
+us_total_rolling_mean_8,US National Context,8-week rolling mean of US national hospitalizations,numeric,hospitalizations
+us_total_rolling_std_4,US National Context,4-week rolling std of US national hospitalizations,numeric,hospitalizations
+us_total_rolling_std_8,US National Context,8-week rolling std of US national hospitalizations,numeric,hospitalizations
+value_lag_1,Lag Features,Hospitalization count 1 weeks ago,numeric,hospitalizations
+value_lag_12,Lag Features,Hospitalization count 12 weeks ago,numeric,hospitalizations
+value_lag_2,Lag Features,Hospitalization count 2 weeks ago,numeric,hospitalizations
+value_lag_3,Lag Features,Hospitalization count 3 weeks ago,numeric,hospitalizations
+value_lag_4,Lag Features,Hospitalization count 4 weeks ago,numeric,hospitalizations
+value_lag_52,Lag Features,Hospitalization count 52 weeks ago,numeric,hospitalizations
+value_lag_8,Lag Features,Hospitalization count 8 weeks ago,numeric,hospitalizations
+value_rolling_max_4,Rolling Statistics,4-week rolling maximum hospitalizations,numeric,hospitalizations
+value_rolling_max_8,Rolling Statistics,8-week rolling maximum hospitalizations,numeric,hospitalizations
+value_rolling_mean_4,Rolling Statistics,4-week rolling mean of hospitalizations,numeric,hospitalizations
+value_rolling_mean_8,Rolling Statistics,8-week rolling mean of hospitalizations,numeric,hospitalizations
+value_rolling_min_4,Rolling Statistics,4-week rolling minimum hospitalizations,numeric,hospitalizations
+value_rolling_min_8,Rolling Statistics,8-week rolling minimum hospitalizations,numeric,hospitalizations
+value_rolling_std_4,Rolling Statistics,4-week rolling standard deviation of hospitalizations,numeric,hospitalizations
+value_rolling_std_8,Rolling Statistics,8-week rolling standard deviation of hospitalizations,numeric,hospitalizations
+value_trend_4w,Rolling Statistics,Deviation from 4-week rolling average (current - mean),numeric,hospitalizations
+week_cos,Temporal Features,Cosine encoding of week of year (seasonal cycle),numeric,dimensionless
+week_of_year,Temporal Features,ISO week number (1-52/53),numeric,week
+week_sin,Temporal Features,Sine encoding of week of year (seasonal cycle),numeric,dimensionless
+wow_change,Rate of Change,Week-over-week absolute change in hospitalizations,numeric,hospitalizations
+wow_pct_change,Rate of Change,Week-over-week percentage change,numeric,percentage
+year,Temporal Features,Year,numeric,year
+yoy_diff,Year-over-Year,Absolute difference vs same week last year,numeric,hospitalizations
+yoy_pct_change,Year-over-Year,Percentage change vs same week last year,numeric,percentage
+yoy_ratio,Year-over-Year,Current hospitalizations / same week last year,numeric,ratio

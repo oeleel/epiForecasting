@@ -9,4 +9,5 @@ seaborn>=0.11.0
 jupyter>=1.0.0
 pyyaml>=6.0
 optuna>=3.0.0
+plotly>=6.5.0
 

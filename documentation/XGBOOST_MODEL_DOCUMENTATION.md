@@ -1,8 +1,30 @@
 # XGBoost Model Documentation
+
+note: add shap dependency plots for marginal improvement quantified per parameter
+
+1/23:
+
+* [ ] create visualizations using matplotlib, or something similar, not plotly because too complicated. A function that you give a location and date (optional) and it takes those and returns a visualization of the forecast for all points in the date range for 1-4 weeks forecast
+
+- [X] create a way to store the input data in the repository, to review with aniruddha
+- [ ] Visual inspection of forecast (e.g. week by week during the increases, make sure it is not flat a substantial way into the increase)
+- [ ] for data split, retrain for the recent weeks data, organize the data splitting (may not be beneficial to have 80/20 split, play with ratio and training vs. testing data)
+- [ ] find way to finetune/retune model based on most recent data
+  - [ ] could also retrain model, look into this
+- [ ] in the future, probabilistic forecasts, if time look into
+- [ ] there is also a vector-to-vector mapping for xgboost, outputs all 4 weeks forecasts at once
+  - [ ] three different model types
+    - [ ] recursive
+    - [ ] vector-to-vector
+    - [ ] direct forecasting (independent models per week)
+  - [ ] agentic idea for parameter choosing and optimization with neurosymbolic ai, making an ai system for forecasting with foundation models
+    - [ ] TimeGPT is an example of a foundation model
+    - [ ] agentic ai will find the rules that the neurosymbolic ai will need to follow, will be useful for finding different rules between fields (finance, influenza, etc)
+
 ## Flu Hospitalization Forecasting Model
 
-**Last Updated:** January 2025  
-**Model Version:** 2.0 (Direct Forecast Ensemble)  
+**Last Updated:** January 2025
+**Model Version:** 2.0 (Direct Forecast Ensemble)
 **Training Cutoff:** 2024-11-02
 
 ---
@@ -25,9 +47,11 @@
 ## Model Overview
 
 ### Purpose
+
 The XGBoost model is designed to forecast influenza hospitalization counts at the state and national level for 1-4 weeks ahead. The model uses historical hospitalization data, temporal patterns, and spatial context to generate accurate short-term forecasts.
 
 ### Model Type
+
 - **Algorithm:** XGBoost (eXtreme Gradient Boosting)
 - **Architecture:** Direct Forecast Ensemble (4 separate models)
 - **Task:** Regression (predicting continuous hospitalization counts)
@@ -35,6 +59,7 @@ The XGBoost model is designed to forecast influenza hospitalization counts at th
 - **Ensemble Method:** Gradient Boosting with Decision Trees
 
 ### Key Characteristics
+
 - **Multi-location:** Unified models for all US states and territories
 - **Multi-horizon:** Separate model trained for each forecast horizon (1-4 weeks)
 - **Direct Forecasting:** Avoids error accumulation from recursive methods
@@ -62,11 +87,13 @@ Unlike traditional recursive forecasting (which accumulates errors), this model 
 ```
 
 **Advantages:**
+
 - No error accumulation between horizons
 - Each model optimized for its specific forecast horizon
 - Longer horizon models can learn different patterns than short-term models
 
 **XGBoost Configuration (per model):**
+
 - **Base Learners:** Decision trees (regression trees)
 - **Ensemble Size:** Up to 1,275 trees (with early stopping)
 - **Tree Depth:** Maximum depth of 5 levels
@@ -75,16 +102,17 @@ Unlike traditional recursive forecasting (which accumulates errors), this model 
 ### Model Components
 
 1. **Feature Preprocessing**
+
    - Categorical encoding: Location names encoded using LabelEncoder
    - Missing value handling: Forward fill for lag features, zero fill for others
    - Feature scaling: Not required (tree-based models are scale-invariant)
-
 2. **Training Process**
+
    - Each horizon model trained with shifted targets
    - Validation-based early stopping (50 rounds patience)
    - 80/20 train-validation split on historical data
-
 3. **Prediction Process**
+
    - Direct prediction using horizon-specific model
    - Floor constraint applied post-prediction
    - Location-specific predictions using categorical features
@@ -127,14 +155,14 @@ MONOTONIC_FEATURES = {
 
 ### Hyperparameter Details
 
-| Parameter | Value | Purpose |
-|-----------|-------|---------|
-| `max_depth` | 5 | Controls tree complexity; balances fit vs generalization |
-| `learning_rate` | 0.049 | Small steps = more stable training, requires more trees |
-| `n_estimators` | 1275 | Max trees; early stopping typically stops before |
-| `subsample` | 0.969 | 96.9% of rows per tree; reduces overfitting |
-| `colsample_bytree` | 0.884 | 88.4% of features per tree; adds diversity |
-| `early_stopping_rounds` | 50 | Stops if no improvement for 50 rounds |
+| Parameter                 | Value | Purpose                                                  |
+| ------------------------- | ----- | -------------------------------------------------------- |
+| `max_depth`             | 5     | Controls tree complexity; balances fit vs generalization |
+| `learning_rate`         | 0.049 | Small steps = more stable training, requires more trees  |
+| `n_estimators`          | 1275  | Max trees; early stopping typically stops before         |
+| `subsample`             | 0.969 | 96.9% of rows per tree; reduces overfitting              |
+| `colsample_bytree`      | 0.884 | 88.4% of features per tree; adds diversity               |
+| `early_stopping_rounds` | 50    | Stops if no improvement for 50 rounds                    |
 
 ---
 
@@ -144,35 +172,40 @@ MONOTONIC_FEATURES = {
 
 The model uses **59 features** across 9 categories:
 
-| Category | Features | Purpose |
-|----------|----------|---------|
-| Temporal | 11 | Seasonal patterns (week/month/day cyclical encoding) |
-| Lag | 7 | Recent historical values (1-52 week lags) |
-| Rolling Statistics | 9 | Trends and variability over 4/8 week windows |
-| US National Context | 8 | National-level patterns for state predictions |
-| Year-over-Year | 3 | Comparison to same period last year |
-| Rate of Change | 5 | Momentum and acceleration metrics |
-| Season Phase | 4 | Flu season stage indicators |
-| Rate-based | 4 | Per-capita rate features |
-| Interaction | 2 | Cross-feature relationships |
+| Category            | Features | Purpose                                              |
+| ------------------- | -------- | ---------------------------------------------------- |
+| Temporal            | 11       | Seasonal patterns (week/month/day cyclical encoding) |
+| Lag                 | 7        | Recent historical values (1-52 week lags)            |
+| Rolling Statistics  | 9        | Trends and variability over 4/8 week windows         |
+| US National Context | 8        | National-level patterns for state predictions        |
+| Year-over-Year      | 3        | Comparison to same period last year                  |
+| Rate of Change      | 5        | Momentum and acceleration metrics                    |
+| Season Phase        | 4        | Flu season stage indicators                          |
+| Rate-based          | 4        | Per-capita rate features                             |
+| Interaction         | 2        | Cross-feature relationships                          |
 
 ### Feature Categories Detail
 
 #### 1. Temporal Features (11 features)
+
 ```
 year, month, week_of_year, day_of_year
 week_sin, week_cos, month_sin, month_cos, day_sin, day_cos
 ```
+
 **Purpose:** Capture seasonal flu patterns; cyclical encoding ensures December and January are "close" in the feature space.
 
 #### 2. Lag Features (7 features)
+
 ```
 value_lag_1, value_lag_2, value_lag_3, value_lag_4
 value_lag_8, value_lag_12, value_lag_52
 ```
+
 **Purpose:** Recent activity is most predictive; 52-week lag enables year-over-year comparisons.
 
 #### 3. Rolling Statistics (9 features)
+
 ```
 value_rolling_mean_4, value_rolling_mean_8
 value_rolling_std_4, value_rolling_std_8
@@ -180,47 +213,60 @@ value_rolling_min_4, value_rolling_min_8
 value_rolling_max_4, value_rolling_max_8
 value_trend_4w
 ```
+
 **Purpose:** Capture trends, volatility, and recent range of activity.
 
 #### 4. US National Context (8 features)
+
 ```
 us_total_lag_1, us_total_lag_2, us_total_lag_3, us_total_lag_4
 us_total_rolling_mean_4, us_total_rolling_mean_8
 us_total_rolling_std_4, us_total_rolling_std_8
 ```
+
 **Purpose:** States often follow national trends; provides context when state data is sparse.
 
 #### 5. Year-over-Year Features (3 features)
+
 ```
 yoy_ratio, yoy_pct_change, yoy_diff
 ```
+
 **Purpose:** Compare current values to same week last year; helps identify unusual season severity.
 
 #### 6. Rate of Change Features (5 features)
+
 ```
 wow_change, wow_pct_change, acceleration
 momentum_4w, momentum_4w_pct
 ```
+
 **Purpose:** Capture velocity and acceleration of hospitalization trends.
 
 #### 7. Season Phase Features (4 features)
+
 ```
 is_flu_season, season_phase
 season_phase_sin, season_phase_cos
 ```
+
 **Purpose:** Encode flu season stage (onset/peak/decline/off-season).
 
 #### 8. Season Severity Features (2 features)
+
 ```
 season_severity_ratio, recent_severity_ratio
 ```
+
 **Purpose:** Compare current season cumulative activity to previous year; helps adjust for unprecedented seasons.
 
 #### 9. Interaction & Other Features (4 features)
+
 ```
 location_name (encoded), weekly_rate
 recent_vs_historical, seasonal_deviation
 ```
+
 **Purpose:** Location-specific learning and normalized population metrics.
 
 ---
@@ -238,14 +284,15 @@ recent_vs_historical, seasonal_deviation
 For each horizon (1-4 weeks):
 
 1. **Prepare Data**
+
    - Shift target column by horizon weeks
    - Remove rows where shifted target is NaN
-   
 2. **Split Data**
+
    - Training: First 80% of data (by time)
    - Validation: Last 20% of data
-   
 3. **Train Model**
+
    - Fit XGBoost with early stopping
    - Monitor validation MAE
    - Stop if no improvement for 50 rounds
@@ -253,11 +300,11 @@ For each horizon (1-4 weeks):
 ### Training Results (Current Model)
 
 | Horizon | Train MAE | Val MAE |
-|---------|-----------|---------|
-| Week 1 | 6.84 | 272.80 |
-| Week 2 | 8.76 | 294.77 |
-| Week 3 | 12.48 | 323.01 |
-| Week 4 | 13.99 | 338.67 |
+| ------- | --------- | ------- |
+| Week 1  | 6.84      | 272.80  |
+| Week 2  | 8.76      | 294.77  |
+| Week 3  | 12.48     | 323.01  |
+| Week 4  | 13.99     | 338.67  |
 
 ---
 
@@ -271,25 +318,25 @@ Input: Historical data up to cutoff_date
 For each location:
     1. Get last available data row
     2. Prepare features from last row
-    
+  
     For each horizon (1, 2, 3, 4):
         3. Use horizon-specific model to predict
         4. Apply floor constraint (if enabled)
         5. Ensure prediction ≥ 0
         6. Store forecast
-        
+    
 Output: DataFrame with forecasts for all locations and horizons
 ```
 
 ### Key Differences from Recursive Forecasting
 
-| Aspect | Recursive | Direct (Current) |
-|--------|-----------|------------------|
-| Models | 1 model, iterated | 4 separate models |
-| Error propagation | Errors compound | Independent per horizon |
-| Feature updates | Predictions feed back | No feedback needed |
-| Computational cost | Lower | Higher (4x training) |
-| Long-horizon accuracy | Degrades rapidly | More stable |
+| Aspect                | Recursive             | Direct (Current)        |
+| --------------------- | --------------------- | ----------------------- |
+| Models                | 1 model, iterated     | 4 separate models       |
+| Error propagation     | Errors compound       | Independent per horizon |
+| Feature updates       | Predictions feed back | No feedback needed      |
+| Computational cost    | Lower                 | Higher (4x training)    |
+| Long-horizon accuracy | Degrades rapidly      | More stable             |
 
 ---
 
@@ -297,21 +344,21 @@ Output: DataFrame with forecasts for all locations and horizons
 
 ### Overall Metrics (Nov 2024 - Apr 2025 Evaluation)
 
-| Metric | Value |
-|--------|-------|
-| **MAPE** | 59.03% |
-| **MAE** | 515.04 hospitalizations |
-| **MSE** | 11,664,738 |
-| **RMSE** | 3,415.66 |
+| Metric         | Value                   |
+| -------------- | ----------------------- |
+| **MAPE** | 59.03%                  |
+| **MAE**  | 515.04 hospitalizations |
+| **MSE**  | 11,664,738              |
+| **RMSE** | 3,415.66                |
 
 ### Performance by Horizon
 
-| Horizon | MAE | MAPE |
-|---------|-----|------|
-| Week 1 | 399.66 | 51.37% |
-| Week 2 | 504.08 | 51.06% |
-| Week 3 | 557.81 | 63.79% |
-| Week 4 | 598.58 | 70.90% |
+| Horizon | MAE    | MAPE   |
+| ------- | ------ | ------ |
+| Week 1  | 399.66 | 51.37% |
+| Week 2  | 504.08 | 51.06% |
+| Week 3  | 557.81 | 63.79% |
+| Week 4  | 598.58 | 70.90% |
 
 ### Performance Context
 
@@ -348,23 +395,28 @@ prediction = max(prediction, floor_value)
 ## Model Limitations
 
 ### 1. Unprecedented Seasons
+
 - Model trained on historical patterns
 - Cannot predict "black swan" events that exceed all training data
 - 2024-2025 season was ~2-3x more severe than any in training data
 
 ### 2. No External Data
+
 - Relies solely on hospitalization history
 - Does not include: weather, vaccination rates, mobility data, viral surveillance
 
 ### 3. Location Generalization
+
 - Single set of models for all locations
 - May not capture location-specific nuances perfectly
 
 ### 4. Forecast Horizon
+
 - Limited to 4 weeks ahead
 - Longer horizons would require different approach
 
 ### 5. Real-time Constraints
+
 - Requires recent data to be available
 - Data reporting lags may affect real-world performance
 
@@ -445,17 +497,17 @@ models/
 
 ## Summary
 
-| Aspect | Details |
-|--------|---------|
-| **Architecture** | Direct Forecast Ensemble (4 XGBoost models) |
-| **Features** | 59 features across 9 categories |
-| **Training Data** | Historical flu hospitalizations through Nov 2024 |
-| **Forecast Horizon** | 1-4 weeks ahead |
-| **Key Innovation** | Direct forecasting avoids recursive error accumulation |
-| **Performance** | MAPE ~59%, MAE ~515 (on severe 2024-2025 season) |
+| Aspect                     | Details                                                |
+| -------------------------- | ------------------------------------------------------ |
+| **Architecture**     | Direct Forecast Ensemble (4 XGBoost models)            |
+| **Features**         | 59 features across 9 categories                        |
+| **Training Data**    | Historical flu hospitalizations through Nov 2024       |
+| **Forecast Horizon** | 1-4 weeks ahead                                        |
+| **Key Innovation**   | Direct forecasting avoids recursive error accumulation |
+| **Performance**      | MAPE ~59%, MAE ~515 (on severe 2024-2025 season)       |
 
 ---
 
-**Document Version:** 2.0  
-**Last Updated:** January 2025  
+**Document Version:** 2.0
+**Last Updated:** January 2025
 **Maintained By:** Flu Forecasting Team
