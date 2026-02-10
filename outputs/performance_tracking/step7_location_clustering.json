@@ -1,0 +1,174 @@
+{
+  "step": "7_location_clustering",
+  "timestamp": "2026-02-10T06:22:03.615612",
+  "configuration": {
+    "n_clusters": 5,
+    "min_cluster_size": 3,
+    "clustering_method": "kmeans",
+    "enable_quantiles": true,
+    "quantiles": [
+      0.05,
+      0.25,
+      0.5,
+      0.75,
+      0.95
+    ],
+    "n_total_models": 100
+  },
+  "cluster_info": {
+    "3": {
+      "description": "Very high volume (17 locations, avg peak: 2451)",
+      "n_locations": 17,
+      "locations": [
+        "01",
+        "02",
+        "06",
+        "08",
+        "13",
+        "17",
+        "24",
+        "27",
+        "28",
+        "32",
+        "41",
+        "47",
+        "48",
+        "49",
+        "51",
+        "53",
+        "US"
+      ]
+    },
+    "4": {
+      "description": "High volume (15 locations, avg peak: 758)",
+      "n_locations": 15,
+      "locations": [
+        "04",
+        "05",
+        "10",
+        "11",
+        "16",
+        "18",
+        "22",
+        "33",
+        "34",
+        "35",
+        "36",
+        "37",
+        "42",
+        "45",
+        "55"
+      ]
+    },
+    "1": {
+      "description": "Medium volume (18 locations, avg peak: 418)",
+      "n_locations": 18,
+      "locations": [
+        "09",
+        "19",
+        "20",
+        "21",
+        "23",
+        "25",
+        "26",
+        "29",
+        "30",
+        "31",
+        "38",
+        "39",
+        "40",
+        "44",
+        "46",
+        "50",
+        "54",
+        "56"
+      ]
+    },
+    "0": {
+      "description": "High volume (3 locations, avg peak: 807)",
+      "n_locations": 3,
+      "locations": [
+        "12",
+        "15",
+        "72"
+      ]
+    }
+  },
+  "unified_model_metrics": {
+    "mape": 35.10441776606857,
+    "mae": 449.7607923683455,
+    "rmse": 2456.6835157732876,
+    "n_forecasts": 424
+  },
+  "clustered_model_metrics": {
+    "overall": {
+      "mape": 37.42698463273197,
+      "mae": 461.094199559631,
+      "rmse": 2457.7812764001383,
+      "n_forecasts": 424
+    },
+    "by_horizon": {
+      "1": {
+        "mape": 26.33854817133431,
+        "mae": 526.9119373321533,
+        "coverage_90pct": 0.8113207547169812
+      },
+      "2": {
+        "mape": 35.053271176061,
+        "mae": 546.7708180870201,
+        "coverage_90pct": 0.8301886792452831
+      },
+      "3": {
+        "mape": 39.5504073708817,
+        "mae": 432.25001154930544,
+        "coverage_90pct": 0.8584905660377359
+      },
+      "4": {
+        "mape": 48.765711812650885,
+        "mae": 338.4440312700452,
+        "coverage_90pct": 0.8867924528301887
+      }
+    },
+    "by_cluster": {
+      "0": {
+        "mape": 42.0782590268703,
+        "mae": 261.6450063705444,
+        "n_locations": 3,
+        "coverage_90pct": 0.75
+      },
+      "1": {
+        "mape": 37.09012759380263,
+        "mae": 158.86781987282967,
+        "n_locations": 18,
+        "coverage_90pct": 0.8541666666666666
+      },
+      "3": {
+        "mape": 29.815181807010386,
+        "mae": 1014.5904008740144,
+        "n_locations": 17,
+        "coverage_90pct": 0.8676470588235294
+      },
+      "4": {
+        "mape": 45.52766806977067,
+        "mae": 236.35999899864194,
+        "n_locations": 15,
+        "coverage_90pct": 0.8333333333333334
+      }
+    }
+  },
+  "model_comparison": {
+    "mape_reduction_pct": -6.616166894265827,
+    "mae_reduction_pct": -2.519874427383095,
+    "clustered_better": false
+  },
+  "comparison_to_baseline": {
+    "baseline_mape": 59.0,
+    "clustered_mape": 37.42698463273197,
+    "improvement_pct": 36.56
+  },
+  "comparison_to_previous_step": {
+    "step6_mape": 35.10441776606857,
+    "clustered_mape": 37.42698463273197,
+    "incremental_improvement_pct": -6.62
+  }
+}

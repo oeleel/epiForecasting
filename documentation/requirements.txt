@@ -10,4 +10,5 @@ jupyter>=1.0.0
 pyyaml>=6.0
 optuna>=3.0.0
 plotly>=6.5.0
+shap>=0.50.0
 

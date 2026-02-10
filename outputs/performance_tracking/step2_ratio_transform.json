@@ -1,0 +1,89 @@
+{
+  "step": "2_ratio_target_transformation",
+  "target_mode": "log",
+  "timestamp": "2026-02-09T03:14:55.258826",
+  "overall_metrics": {
+    "mape": 55.0,
+    "mae": 635.61,
+    "rmse": 3601.06
+  },
+  "by_horizon": {
+    "1": {
+      "mape": 37.41,
+      "mae": 336.72,
+      "rmse": 2203.05
+    },
+    "2": {
+      "mape": 51.31,
+      "mae": 533.38,
+      "rmse": 3175.66
+    },
+    "3": {
+      "mape": 61.77,
+      "mae": 740.36,
+      "rmse": 3967.68
+    },
+    "4": {
+      "mape": 69.23,
+      "mae": 932.0,
+      "rmse": 4603.23
+    }
+  },
+  "train_val_gap": {
+    "1": {
+      "train_mae": 0.229,
+      "val_mae": 297.66
+    },
+    "2": {
+      "train_mae": 0.224,
+      "val_mae": 323.9
+    },
+    "3": {
+      "train_mae": 0.263,
+      "val_mae": 342.49
+    },
+    "4": {
+      "train_mae": 0.292,
+      "val_mae": 356.73
+    }
+  },
+  "comparison_to_baseline": {
+    "baseline_overall_mape": 59.0,
+    "new_overall_mape": 55.0,
+    "mape_improvement_pct": 6.78
+  },
+  "all_modes_comparison": {
+    "raw": {
+      "overall_mape": 65.16,
+      "by_horizon_mape": {
+        "1": 43.16,
+        "2": 60.5,
+        "3": 68.7,
+        "4": 87.93
+      },
+      "notes": "Baseline approach, direct hospitalization counts"
+    },
+    "ratio": {
+      "overall_mape": 86.73,
+      "by_horizon_mape": {
+        "1": 69.81,
+        "2": 81.7,
+        "3": 101.86,
+        "4": 93.31
+      },
+      "notes": "Unstable with small denominators, very high validation MAPE"
+    },
+    "log": {
+      "overall_mape": 55.0,
+      "by_horizon_mape": {
+        "1": 37.41,
+        "2": 51.31,
+        "3": 61.77,
+        "4": 69.23
+      },
+      "notes": "BEST PERFORMER - compresses extreme values, stable training"
+    }
+  },
+  "recommendation": "Use log mode - achieves 6.78% MAPE improvement over baseline",
+  "notes": "Ratio mode showed instability with small denominators causing very high validation MAPE (1000%+). Log mode provides smooth transformation that handles the ceiling effect better."
+}

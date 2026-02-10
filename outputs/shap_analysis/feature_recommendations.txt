@@ -1,0 +1,104 @@
+================================================================================
+FEATURE RECOMMENDATIONS REPORT
+Generated: 2026-02-10 06:30:31
+================================================================================
+
+--------------------------------------------------------------------------------
+SECTION 1: LOW IMPORTANCE FEATURES (Candidates for Removal)
+--------------------------------------------------------------------------------
+Threshold: mean |SHAP| < 1% of top feature (0.0035)
+
+No features found with consistently low importance.
+
+--------------------------------------------------------------------------------
+SECTION 2: INCONSISTENT FEATURES (Candidates for Per-Horizon Feature Sets)
+--------------------------------------------------------------------------------
+Features that are top-10 in some horizons but bottom-50% in others:
+
+Found 3 features with inconsistent importance:
+
+  - us_total_rolling_mean_4
+      Ranks: [H1: 8, H2: 11, H3: 43, H4: 39]
+      Rank range: 35
+  - value_rolling_mean_8
+      Ranks: [H1: 5, H2: 20, H3: 27, H4: 19]
+      Rank range: 22
+  - weekly_rate
+      Ranks: [H1: 11, H2: 9, H3: 11, H4: 25]
+      Rank range: 16
+
+--------------------------------------------------------------------------------
+SECTION 3: TOP 5 FEATURES PER HORIZON (Inspect Dependence Plots)
+--------------------------------------------------------------------------------
+These features should be visually inspected for plateauing at high values:
+
+Horizon 1:
+  1. value_rolling_mean_4 (mean |SHAP|: 0.2884)
+      -> Check: outputs/shap_analysis/horizon_1/dependence_plots/value_rolling_mean_4.png
+  2. value_rolling_min_4 (mean |SHAP|: 0.2567)
+      -> Check: outputs/shap_analysis/horizon_1/dependence_plots/value_rolling_min_4.png
+  3. value_lag_1 (mean |SHAP|: 0.2315)
+      -> Check: outputs/shap_analysis/horizon_1/dependence_plots/value_lag_1.png
+  4. value_rolling_max_4 (mean |SHAP|: 0.1646)
+      -> Check: outputs/shap_analysis/horizon_1/dependence_plots/value_rolling_max_4.png
+  5. value_rolling_mean_8 (mean |SHAP|: 0.1061)
+      -> Check: outputs/shap_analysis/horizon_1/dependence_plots/value_rolling_mean_8.png
+
+Horizon 2:
+  1. value_rolling_mean_4 (mean |SHAP|: 0.2860)
+      -> Check: outputs/shap_analysis/horizon_2/dependence_plots/value_rolling_mean_4.png
+  2. value_rolling_min_4 (mean |SHAP|: 0.2712)
+      -> Check: outputs/shap_analysis/horizon_2/dependence_plots/value_rolling_min_4.png
+  3. value_lag_1 (mean |SHAP|: 0.2397)
+      -> Check: outputs/shap_analysis/horizon_2/dependence_plots/value_lag_1.png
+  4. value_rolling_max_4 (mean |SHAP|: 0.1578)
+      -> Check: outputs/shap_analysis/horizon_2/dependence_plots/value_rolling_max_4.png
+  5. week_cos (mean |SHAP|: 0.1188)
+      -> Check: outputs/shap_analysis/horizon_2/dependence_plots/week_cos.png
+
+Horizon 3:
+  1. value_rolling_min_4 (mean |SHAP|: 0.3512)
+      -> Check: outputs/shap_analysis/horizon_3/dependence_plots/value_rolling_min_4.png
+  2. value_lag_1 (mean |SHAP|: 0.2392)
+      -> Check: outputs/shap_analysis/horizon_3/dependence_plots/value_lag_1.png
+  3. week_cos (mean |SHAP|: 0.1739)
+      -> Check: outputs/shap_analysis/horizon_3/dependence_plots/week_cos.png
+  4. value_rolling_mean_4 (mean |SHAP|: 0.1664)
+      -> Check: outputs/shap_analysis/horizon_3/dependence_plots/value_rolling_mean_4.png
+  5. value_rolling_max_4 (mean |SHAP|: 0.1411)
+      -> Check: outputs/shap_analysis/horizon_3/dependence_plots/value_rolling_max_4.png
+
+Horizon 4:
+  1. value_rolling_min_4 (mean |SHAP|: 0.3449)
+      -> Check: outputs/shap_analysis/horizon_4/dependence_plots/value_rolling_min_4.png
+  2. month_cos (mean |SHAP|: 0.2584)
+      -> Check: outputs/shap_analysis/horizon_4/dependence_plots/month_cos.png
+  3. value_rolling_mean_4 (mean |SHAP|: 0.1897)
+      -> Check: outputs/shap_analysis/horizon_4/dependence_plots/value_rolling_mean_4.png
+  4. value_lag_1 (mean |SHAP|: 0.1596)
+      -> Check: outputs/shap_analysis/horizon_4/dependence_plots/value_lag_1.png
+  5. momentum_4w (mean |SHAP|: 0.1184)
+      -> Check: outputs/shap_analysis/horizon_4/dependence_plots/momentum_4w.png
+
+--------------------------------------------------------------------------------
+SECTION 4: SUMMARY STATISTICS
+--------------------------------------------------------------------------------
+Total features analyzed: 49
+Low importance features (< 1% threshold): 0
+Inconsistent features: 3
+
+Top 10 most stable features (consistent importance across horizons):
+  - value_rolling_min_4 (rank std: 0.58, avg rank: 1.5)
+  - value_lag_1 (rank std: 0.82, avg rank: 3.0)
+  - momentum_4w (rank std: 0.82, avg rank: 6.0)
+  - value_rolling_max_4 (rank std: 0.96, avg rank: 4.8)
+  - value_rolling_std_4 (rank std: 1.26, avg rank: 8.8)
+  - value_trend_4w (rank std: 1.29, avg rank: 7.5)
+  - day_of_year (rank std: 1.29, avg rank: 17.5)
+  - value_lag_8 (rank std: 1.29, avg rank: 47.5)
+  - value_rolling_mean_4 (rank std: 1.50, avg rank: 2.2)
+  - value_rolling_min_8 (rank std: 1.50, avg rank: 9.2)
+
+================================================================================
+END OF REPORT
+================================================================================

@@ -1,0 +1,89 @@
+{
+  "step": "4_feature_engineering",
+  "feature_version": "v2",
+  "features_removed": [
+    "is_flu_season",
+    "season_phase_cos",
+    "month_sin",
+    "season_phase",
+    "yoy_pct_change",
+    "seasonal_deviation",
+    "yoy_ratio"
+  ],
+  "features_added": [
+    "linear_trend_slope_4w",
+    "linear_trend_slope_3w",
+    "value_to_rolling_mean_ratio",
+    "consecutive_increase_weeks",
+    "consecutive_decrease_weeks",
+    "historical_percentile",
+    "ratio_to_historical_max",
+    "surge_indicator"
+  ],
+  "total_feature_count": 55,
+  "timestamp": "2026-02-10T05:03:51.281812",
+  "overall_metrics": {
+    "mape": 53.29924591542387,
+    "mae": 627.9194183487431,
+    "rmse": 3581.5337288696173,
+    "n_forecasts": 2332
+  },
+  "by_horizon": {
+    "1": {
+      "mape": 36.217908784273725,
+      "mae": 346.82750070125735,
+      "rmse": 2210.4949039303274
+    },
+    "2": {
+      "mape": 48.601542641871795,
+      "mae": 532.3527808428449,
+      "rmse": 3179.7486142222574
+    },
+    "3": {
+      "mape": 62.38497989251671,
+      "mae": 728.2895565659057,
+      "rmse": 3939.0590677247374
+    },
+    "4": {
+      "mape": 65.72681170404636,
+      "mae": 904.2078352849643,
+      "rmse": 4560.291667771706
+    }
+  },
+  "train_val_gap": {
+    "1": {
+      "train_mae": 0.31806149171633846,
+      "val_mae": 0.420582817786257,
+      "val_mae_counts": 311.21400994755817,
+      "gap_ratio": 1.3223317777851324
+    },
+    "2": {
+      "train_mae": 0.34394852710515134,
+      "val_mae": 0.4815438606626563,
+      "val_mae_counts": 319.7264441386704,
+      "gap_ratio": 1.4000462938904796
+    },
+    "3": {
+      "train_mae": 0.35943036921007215,
+      "val_mae": 0.5220863767471018,
+      "val_mae_counts": 331.94700270839365,
+      "gap_ratio": 1.452538298014445
+    },
+    "4": {
+      "train_mae": 0.37520818734441447,
+      "val_mae": 0.5473137369715779,
+      "val_mae_counts": 334.0072860393636,
+      "gap_ratio": 1.4586934811984333
+    }
+  },
+  "comparison_to_baseline": {
+    "baseline_overall_mape": 59.0,
+    "new_overall_mape": 53.29924591542387,
+    "mape_improvement_pct": 9.66
+  },
+  "comparison_to_previous_step": {
+    "step3_overall_mape": 54.549801375315944,
+    "new_overall_mape": 53.29924591542387,
+    "incremental_improvement_pct": 2.29
+  }
+}

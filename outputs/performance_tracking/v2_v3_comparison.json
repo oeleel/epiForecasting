@@ -1,0 +1,22 @@
+{
+  "timestamp": "2026-02-10T06:29:09.624729",
+  "v2_results": {
+    "version": "v2",
+    "mape": 35.84092749831081,
+    "mae": 446.29646285804193,
+    "rmse": 2456.813603332574,
+    "n_features": 60,
+    "n_forecasts": 424
+  },
+  "v3_results": {
+    "version": "v3",
+    "mape": 34.308814899096504,
+    "mae": 457.73165129657446,
+    "rmse": 2459.476731052484,
+    "n_features": 52,
+    "n_forecasts": 424
+  },
+  "mape_difference": -1.532112599214308,
+  "mae_difference": 11.43518843853252,
+  "recommendation": "keep_v3"
+}

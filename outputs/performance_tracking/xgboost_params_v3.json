@@ -1,0 +1,18 @@
+{
+  "objective": "reg:squarederror",
+  "max_depth": 3,
+  "learning_rate": 0.08960785365368121,
+  "n_estimators": 1436,
+  "subsample": 0.7095304694689628,
+  "colsample_bytree": 0.46240745617697465,
+  "colsample_bylevel": 0.46239780813448106,
+  "min_child_weight": 10,
+  "gamma": 4.330880728874676,
+  "reg_alpha": 0.6358358856676253,
+  "reg_lambda": 4.258888210290081,
+  "max_delta_step": 0,
+  "random_state": 42,
+  "early_stopping_rounds": 50,
+  "grow_policy": "depthwise",
+  "tree_method": "hist"
+}

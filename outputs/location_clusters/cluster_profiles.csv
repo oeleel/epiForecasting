@@ -1,0 +1,5 @@
+cluster,n_locations,locations,description,mean_peak_value,mean_season_total
+3,17,"01, 02, 06, 08, 13, 17, 24, 27, 28, 32...","Very high volume (17 locations, avg peak: 2451)",2450.8352941176468,21185.16470588235
+4,15,"04, 05, 10, 11, 16, 18, 22, 33, 34, 35...","High volume (15 locations, avg peak: 758)",758.28,5781.8
+1,18,"09, 19, 20, 21, 23, 25, 26, 29, 30, 31...","Medium volume (18 locations, avg peak: 418)",418.3555555555556,3141.4111111111115
+0,3,"12, 15, 72","High volume (3 locations, avg peak: 807)",807.4666666666667,8512.666666666666

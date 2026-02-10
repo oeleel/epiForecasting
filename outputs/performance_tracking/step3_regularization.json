@@ -1,0 +1,80 @@
+{
+  "step": "3_regularization",
+  "params_used": {
+    "objective": "reg:squarederror",
+    "max_depth": 3,
+    "learning_rate": 0.05,
+    "n_estimators": 800,
+    "subsample": 0.7,
+    "colsample_bytree": 0.6,
+    "min_child_weight": 30,
+    "reg_alpha": 1.0,
+    "reg_lambda": 5.0,
+    "gamma": 1.0,
+    "random_state": 42,
+    "early_stopping_rounds": 50
+  },
+  "timestamp": "2026-02-10T04:58:27.043716",
+  "overall_metrics": {
+    "mape": 54.549801375315944,
+    "mae": 628.4864334918832,
+    "rmse": 3583.303906492042,
+    "n_forecasts": 2332
+  },
+  "by_horizon": {
+    "1": {
+      "mape": 37.43207467321994,
+      "mae": 346.7573540692264,
+      "rmse": 2208.320626619499
+    },
+    "2": {
+      "mape": 50.19150336868449,
+      "mae": 537.1658222069896,
+      "rmse": 3181.6126813455376
+    },
+    "3": {
+      "mape": 63.38438795658302,
+      "mae": 720.7897767530292,
+      "rmse": 3933.90971168188
+    },
+    "4": {
+      "mape": 66.92714058763055,
+      "mae": 909.2327809382875,
+      "rmse": 4570.041868671186
+    }
+  },
+  "train_val_gap": {
+    "1": {
+      "train_mae": 0.3220303390410043,
+      "val_mae": 0.4192980767687496,
+      "val_mae_counts": 308.3779862492264,
+      "gap_ratio": 1.3020452607583664
+    },
+    "2": {
+      "train_mae": 0.346881617637326,
+      "val_mae": 0.48135917928460153,
+      "val_mae_counts": 320.71052019296343,
+      "gap_ratio": 1.38767566457752
+    },
+    "3": {
+      "train_mae": 0.3604694312904232,
+      "val_mae": 0.515368295100257,
+      "val_mae_counts": 328.29698012914685,
+      "gap_ratio": 1.4297142846629753
+    },
+    "4": {
+      "train_mae": 0.38096771006944025,
+      "val_mae": 0.5638406591649417,
+      "val_mae_counts": 340.28642277859234,
+      "gap_ratio": 1.4800221757958665
+    }
+  },
+  "comparison_to_baseline": {
+    "baseline_overall_mape": 59.0,
+    "baseline_train_val_gap_ratio_h1": 39.9,
+    "new_overall_mape": 54.549801375315944,
+    "new_train_val_gap_ratio_h1": 1.3020452607583664,
+    "mape_improvement_pct": 7.54,
+    "gap_ratio_improvement_pct": 96.74
+  }
+}

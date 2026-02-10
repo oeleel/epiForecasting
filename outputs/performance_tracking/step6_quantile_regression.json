@@ -1,0 +1,75 @@
+{
+  "step": "6_quantile_regression",
+  "timestamp": "2026-02-10T06:03:20.902180",
+  "n_quantiles": 5,
+  "quantiles": [
+    0.05,
+    0.25,
+    0.5,
+    0.75,
+    0.95
+  ],
+  "n_total_models": 20,
+  "point_prediction_metrics": {
+    "overall": {
+      "mape": 35.10441776606857,
+      "mae": 449.7607923683455,
+      "rmse": 2456.6835157732876,
+      "n_forecasts": 424
+    },
+    "by_horizon": {
+      "1": {
+        "mape": 25.406783421707345,
+        "mae": 513.8640756319154,
+        "coverage_90pct": 0.8584905660377359,
+        "mean_interval_width_90pct": 388.3770267828456,
+        "winkler_score_90pct": 8279.604294066157
+      },
+      "2": {
+        "mape": 30.32566609412929,
+        "mae": 523.3315001678467,
+        "coverage_90pct": 0.8490566037735849,
+        "mean_interval_width_90pct": 502.63373564423256,
+        "winkler_score_90pct": 8465.378590035081
+      },
+      "3": {
+        "mape": 36.56530007216533,
+        "mae": 435.8855435775757,
+        "coverage_90pct": 0.9056603773584906,
+        "mean_interval_width_90pct": 495.3997176002921,
+        "winkler_score_90pct": 6821.302669398642
+      },
+      "4": {
+        "mape": 48.11992147627232,
+        "mae": 325.962050096044,
+        "coverage_90pct": 0.8962264150943396,
+        "mean_interval_width_90pct": 472.8275190841511,
+        "winkler_score_90pct": 5079.104902132731
+      }
+    }
+  },
+  "quantile_metrics": {
+    "coverage_90pct": 0.8773584905660378,
+    "coverage_50pct": 0.5636792452830188,
+    "mean_interval_width_90pct": 464.8094997778803,
+    "mean_interval_width_50pct": 153.43403399276127,
+    "calibration": {
+      "q05": 0.0023584905660377358,
+      "q25": 0.10141509433962265,
+      "q50": 0.2665094339622642,
+      "q75": 0.6650943396226415,
+      "q95": 0.8797169811320755
+    },
+    "mean_winkler_score_90pct": 7161.347613908153
+  },
+  "comparison_to_baseline": {
+    "baseline_overall_mape": 59.0,
+    "new_overall_mape": 35.10441776606857,
+    "mape_improvement_pct": 40.5
+  },
+  "comparison_to_previous_step": {
+    "step5_overall_mape": 36.07437285710871,
+    "new_overall_mape": 35.10441776606857,
+    "incremental_improvement_pct": 2.69
+  }
+}
