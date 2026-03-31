@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Flu Hospitalization Forecasting Pipeline
 
 An XGBoost-based time series forecasting pipeline for predicting influenza hospitalizations at the state level using CDC FluSight data.
@@ -10,7 +9,7 @@ This pipeline provides a complete solution for forecasting flu hospitalizations 
 - **Data Management**: Automated data fetching from CDC FluSight repository with temporal cutoffs
 - **Feature Engineering**: Comprehensive feature creation including lag features, rolling statistics, and temporal patterns
 - **Model Training**: XGBoost-based models with walk-forward validation
-- **Forecasting**: 4-week ahead predictions using recursive forecasting
+- **Forecasting**: 4-week ahead predictions using direct forecasting (separate model per horizon)
 - **Evaluation**: Multiple metrics and visualization tools
 - **Pipeline Orchestration**: End-to-end workflow management
 
@@ -31,13 +30,13 @@ This pipeline provides a complete solution for forecasting flu hospitalizations 
 
 ### Model Architecture
 - **XGBoost Regression**: Tree-based model for non-linear pattern capture
-- **Recursive Forecasting**: Multi-step ahead predictions using previous predictions
+- **Direct Forecasting**: Independent models for each forecast horizon (1-4 weeks), avoiding error accumulation
 - **State-Specific Learning**: Unified model with location as categorical feature
 - **Walk-Forward Validation**: Multiple temporal splits for robust evaluation
 
 ### Forecasting Capabilities
 - **4-Week Ahead Predictions**: Short to medium-term forecasting
-- **Confidence Intervals**: Bootstrap-based uncertainty quantification
+- **Confidence Intervals**: Quantile regression-based uncertainty quantification
 - **Multiple Locations**: State-level and national predictions
 - **Weekly Updates**: Model retraining with new data
 
@@ -51,7 +50,7 @@ cd epiForecasting
 
 2. Install dependencies:
 ```bash
-pip install -r requirements.txt
+pip install -r documentation/requirements.txt
 ```
 
 ## Quick Start
@@ -59,7 +58,7 @@ pip install -r requirements.txt
 ### Basic Usage
 
 ```python
-from pipeline import FluForecastingPipeline
+from scripts.pipeline import FluForecastingPipeline
 
 # Initialize pipeline
 pipeline = FluForecastingPipeline()
@@ -77,16 +76,13 @@ results = pipeline.run_full_pipeline(
 
 ```bash
 # Run full pipeline
-python pipeline.py --cutoff-date 2024-11-02 --locations US 06 12 48
+python scripts/pipeline.py --cutoff-date 2024-11-02 --locations US 06 12 48
 
 # Generate forecasts only (using existing model)
-python pipeline.py --cutoff-date 2024-11-02 --no-retrain
-
-# Generate forecasts with confidence intervals
-python pipeline.py --cutoff-date 2024-11-02 --confidence
+python scripts/pipeline.py --cutoff-date 2024-11-02 --no-retrain
 
 # Run evaluation only
-python pipeline.py --cutoff-date 2024-11-02 --evaluate-only
+python scripts/pipeline.py --cutoff-date 2024-11-02 --evaluate-only
 ```
 
 ### Jupyter Notebook Demo
@@ -97,37 +93,31 @@ jupyter notebook flu_forecasting_demo.ipynb
 
 ## Pipeline Components
 
-### 1. Data Loading (`data_loader.py`)
+### 1. Data Loading (`src/data_loader.py`)
 - Fetches data from CDC FluSight repository
 - Applies temporal cutoffs
 - Validates data quality
 - Provides data summaries
 
-### 2. Feature Engineering (`feature_engineering.py`)
+### 2. Feature Engineering (`src/feature_engineering.py`)
 - Creates lag and rolling features
 - Implements cyclical encoding for seasonality
 - Handles missing values
 - Generates interaction features
 
-### 3. Model Training (`train.py`)
-- Walk-forward validation
-- Hyperparameter management
-- Model selection
-- Performance tracking
+### 3. Direct Forecasting (`src/direct_forecast.py`)
+- Separate XGBoost model per forecast horizon (1-4 weeks)
+- Avoids error accumulation from recursive forecasting
+- Supports multiple target transformation modes (raw, log, ratio)
+- Floor constraints to prevent unrealistic drops
 
-### 4. Forecasting (`predict.py`)
-- Recursive prediction generation
-- Confidence interval calculation
-- Multiple location support
-- Output formatting
-
-### 5. Evaluation (`evaluate.py`)
+### 4. Evaluation (`src/evaluate.py`)
 - Multiple metrics (MAE, RMSE, MAPE, SMAPE)
 - Horizon-specific analysis
 - Location-specific analysis
 - Visualization tools
 
-### 6. Pipeline Orchestration (`pipeline.py`)
+### 5. Pipeline Orchestration (`scripts/pipeline.py`)
 - End-to-end workflow management
 - Command-line interface
 - Result aggregation
@@ -135,7 +125,7 @@ jupyter notebook flu_forecasting_demo.ipynb
 
 ## Configuration
 
-Edit `config.py` to customize:
+Edit `src/config.py` to customize:
 
 - **Data settings**: URL, cutoff dates, minimum training weeks
 - **Feature engineering**: Lag periods, rolling windows
@@ -148,7 +138,7 @@ Edit `config.py` to customize:
 The pipeline generates several output files:
 
 - **Forecasts**: `forecasts_YYYY-MM-DD_YYYYMMDD_HHMMSS.csv`
-- **Models**: `flu_model_YYYY-MM-DD.json` and metadata
+- **Models**: `direct_forecast_models/` directory with per-horizon models
 - **Feature Importance**: `feature_importance_YYYY-MM-DD.csv`
 - **Evaluation Results**: `evaluation_YYYY-MM-DD_YYYYMMDD_HHMMSS.json`
 - **Pipeline Results**: `pipeline_results_YYYY-MM-DD_YYYYMMDD_HHMMSS.json`
@@ -175,7 +165,7 @@ pipeline.update_with_new_data("2024-11-09")
 Or via command line:
 
 ```bash
-python pipeline.py --cutoff-date 2024-11-09
+python scripts/pipeline.py --cutoff-date 2024-11-09
 ```
 
 ## Data Requirements
@@ -222,6 +212,12 @@ For questions or issues:
 
 ## Changelog
 
+### Version 2.0.0
+- Switched to DirectForecastEnsemble (direct forecasting) for all pipeline paths
+- Removed legacy recursive forecasting from pipeline
+- Added trend features for v3 feature version
+- Removed unused ResidualCorrectionModel
+
 ### Version 1.0.0
 - Initial release
 - XGBoost-based forecasting
@@ -230,9 +226,3 @@ For questions or issues:
 - State-level forecasting
 - Confidence intervals
 - Complete pipeline orchestration
-=======
-# epiForecasting
-research at biocomplexity institute primer with Aniruddha
-
-\https://raw.githubusercontent.com/cdcepi/FluSight-forecast-hub/refs/heads/main/target-data/target-hospital-admissions.csv
->>>>>>> 08a5cdabb5051f61907bf91c0d52c150d4246f1b
