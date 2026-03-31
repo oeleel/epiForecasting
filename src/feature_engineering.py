@@ -649,8 +649,8 @@ class FeatureEngineer:
         df = self.create_interaction_features(df)
 
         # NEW in v2: Add trend-capturing features
-        if self.feature_version == 'v2':
-            print("Creating trend features (v2)...")
+        if self.feature_version in ('v2', 'v3'):
+            print("Creating trend features...")
             df = self.create_trend_features(df)
 
         print("Handling missing values...")
@@ -665,9 +665,9 @@ class FeatureEngineer:
         print(f"Total features: {len(feature_cols)}")
         if self.features_removed:
             print(f"Features removed (v2): {self.features_removed}")
-        if self.feature_version == 'v2':
+        if self.feature_version in ('v2', 'v3'):
             added_in_df = [f for f in self.features_added if f in df.columns]
-            print(f"Features added (v2): {added_in_df}")
+            print(f"Features added: {added_in_df}")
 
         return df
     

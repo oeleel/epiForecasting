@@ -467,6 +467,62 @@ class QuantileEvaluator:
         below = actuals < predictions
         return float(np.mean(below))
 
+    def calculate_pinball_loss(self, actuals: np.ndarray, predictions: np.ndarray,
+                              quantile: float) -> float:
+        """
+        Calculate pinball (quantile) loss for a single quantile.
+
+        Pinball loss measures how well a predicted quantile calibrates:
+        - If actual > prediction: loss = q * (actual - prediction)
+        - If actual <= prediction: loss = (1-q) * (prediction - actual)
+
+        Lower is better.
+
+        Args:
+            actuals: Actual values
+            predictions: Predicted quantile values
+            quantile: Quantile level (0-1)
+
+        Returns:
+            Mean pinball loss
+        """
+        diff = actuals - predictions
+        loss = np.where(diff >= 0, quantile * diff, (quantile - 1) * diff)
+        return float(np.mean(loss))
+
+    def calculate_crps_quantile(self, actuals: np.ndarray,
+                                quantile_predictions: Dict[float, np.ndarray]) -> float:
+        """
+        Approximate CRPS using quantile predictions.
+
+        CRPS (Continuous Ranked Probability Score) measures overall probabilistic
+        forecast quality. Approximated as:
+            CRPS ≈ (2/K) * Σ pinball_loss(τ_k)
+        where K is the number of quantiles.
+
+        Lower is better.
+
+        Args:
+            actuals: Actual values
+            quantile_predictions: Dict mapping quantile level -> predicted values
+                e.g., {0.05: array, 0.25: array, 0.50: array, 0.75: array, 0.95: array}
+
+        Returns:
+            Mean CRPS approximation
+        """
+        quantiles = sorted(quantile_predictions.keys())
+        n_quantiles = len(quantiles)
+
+        if n_quantiles == 0:
+            return float('inf')
+
+        total_pinball = sum(
+            self.calculate_pinball_loss(actuals, quantile_predictions[q], q)
+            for q in quantiles
+        )
+
+        return (2.0 / n_quantiles) * total_pinball
+
     def calculate_winkler_score(self, actuals: np.ndarray, lower: np.ndarray,
                                upper: np.ndarray, alpha: float = 0.1) -> float:
         """
@@ -501,6 +557,55 @@ class QuantileEvaluator:
         scores[above_mask] += (2 / alpha) * (actuals[above_mask] - upper[above_mask])
 
         return float(np.mean(scores))
+
+    def _interval_score(self, actuals: np.ndarray, lower: np.ndarray,
+                        upper: np.ndarray, alpha: float) -> np.ndarray:
+        """
+        Per-observation interval score (not averaged).
+
+        Args:
+            actuals: Actual values
+            lower: Lower bound predictions
+            upper: Upper bound predictions
+            alpha: Significance level
+
+        Returns:
+            Array of per-observation interval scores
+        """
+        width = upper - lower
+        scores = width.copy()
+        below = actuals < lower
+        above = actuals > upper
+        scores[below] += (2 / alpha) * (lower[below] - actuals[below])
+        scores[above] += (2 / alpha) * (actuals[above] - upper[above])
+        return scores
+
+    def calculate_wis(self, actuals: np.ndarray, q05: np.ndarray,
+                      q25: np.ndarray, q50: np.ndarray,
+                      q75: np.ndarray, q95: np.ndarray) -> float:
+        """
+        Weighted Interval Score over 2 symmetric intervals + median.
+
+        WIS = (1 / (K + 0.5)) * [0.5 * |y - q50| + sum_k (alpha_k/2) * IS_alpha_k]
+
+        With K=2 intervals: (q05,q95) at alpha=0.1 and (q25,q75) at alpha=0.5.
+
+        Args:
+            actuals: Actual values
+            q05, q25, q50, q75, q95: Quantile predictions
+
+        Returns:
+            Mean WIS across all observations
+        """
+        K = 2
+        # Absolute error component
+        ae = 0.5 * np.abs(actuals - q50)
+        # 90% interval (alpha=0.1, weight = alpha/2 = 0.05)
+        is_90 = self._interval_score(actuals, q05, q95, alpha=0.1)
+        # 50% interval (alpha=0.5, weight = alpha/2 = 0.25)
+        is_50 = self._interval_score(actuals, q25, q75, alpha=0.5)
+        wis = (1 / (K + 0.5)) * (ae + 0.05 * is_90 + 0.25 * is_50)
+        return float(np.mean(wis))
 
     def evaluate_quantile_forecasts(self, forecasts: pd.DataFrame,
                                    actual_data: pd.DataFrame) -> Dict:
@@ -551,8 +656,9 @@ class QuantileEvaluator:
         coverage_50 = self.calculate_coverage(actuals, q25, q75)
         width_50 = self.calculate_interval_width(q25, q75)
 
-        # Calibration for each quantile
+        # Calibration and pinball loss for each quantile
         calibration = {}
+        pinball_losses = {}
         quantile_cols = {
             0.05: 'predicted_q05',
             0.25: 'predicted_q25',
@@ -561,11 +667,24 @@ class QuantileEvaluator:
             0.95: 'predicted_q95'
         }
 
+        quantile_preds_for_crps = {}
         for q, col in quantile_cols.items():
             if col in merged.columns:
+                preds = merged[col].values
                 calibration[f'q{int(q*100):02d}'] = self.calculate_calibration(
-                    actuals, merged[col].values, q
+                    actuals, preds, q
                 )
+                pinball_losses[f'q{int(q*100):02d}'] = self.calculate_pinball_loss(
+                    actuals, preds, q
+                )
+                quantile_preds_for_crps[q] = preds
+
+        # Overall CRPS
+        mean_pinball = float(np.mean(list(pinball_losses.values()))) if pinball_losses else None
+        crps = self.calculate_crps_quantile(actuals, quantile_preds_for_crps) if quantile_preds_for_crps else None
+
+        # Overall WIS
+        wis = self.calculate_wis(actuals, q05, q25, merged['predicted_q50'].values, q75, q95)
 
         # Metrics by horizon
         metrics_by_horizon = {}
@@ -579,10 +698,24 @@ class QuantileEvaluator:
             # Point metrics
             h_point_metrics = ModelEvaluator().calculate_metrics(h_actuals, h_q50)
 
+            # Per-horizon CRPS
+            h_qpreds = {}
+            for q, col in quantile_cols.items():
+                if col in h_data.columns:
+                    h_qpreds[q] = h_data[col].values
+            h_crps = self.calculate_crps_quantile(h_actuals, h_qpreds) if h_qpreds else None
+
+            # Per-horizon WIS
+            h_q25 = h_data['predicted_q25'].values
+            h_q75 = h_data['predicted_q75'].values
+            h_wis = self.calculate_wis(h_actuals, h_q05, h_q25, h_q50, h_q75, h_q95)
+
             metrics_by_horizon[int(horizon)] = {
                 'coverage_90pct': self.calculate_coverage(h_actuals, h_q05, h_q95),
                 'mean_interval_width_90pct': self.calculate_interval_width(h_q05, h_q95),
                 'winkler_score_90pct': self.calculate_winkler_score(h_actuals, h_q05, h_q95, 0.1),
+                'crps': h_crps,
+                'wis': h_wis,
                 'mape': h_point_metrics.get('mape'),
                 'mae': h_point_metrics.get('mae'),
                 'n_samples': len(h_data)
@@ -598,6 +731,10 @@ class QuantileEvaluator:
                 'mean_interval_width_90pct': width_90,
                 'mean_interval_width_50pct': width_50,
                 'calibration': calibration,
+                'pinball_losses': pinball_losses,
+                'mean_pinball_loss': mean_pinball,
+                'crps': crps,
+                'wis': wis,
                 'mean_winkler_score_90pct': winkler_90
             },
             'metrics_by_horizon': metrics_by_horizon
@@ -631,13 +768,41 @@ class QuantileEvaluator:
         # Quantile metrics
         qm = results['quantile_metrics']
         print(f"\n90% Prediction Interval (q05-q95):")
-        print(f"  Coverage: {qm['coverage_90pct']*100:.1f}% (target: 90%)")
+        cov90 = qm['coverage_90pct'] * 100
+        cov90_dev = cov90 - 90
+        cov90_warn = ""
+        if abs(cov90_dev) > 5:
+            direction = "overcoverage" if cov90_dev > 0 else "undercoverage"
+            cov90_warn = f" — WARNING: {direction} by {abs(cov90_dev):.1f}pp"
+        print(f"  Coverage: {cov90:.1f}% (target: 90%){cov90_warn}")
         print(f"  Mean Width: {qm['mean_interval_width_90pct']:.1f}")
         print(f"  Winkler Score: {qm['mean_winkler_score_90pct']:.1f}")
 
         print(f"\n50% Prediction Interval (q25-q75):")
-        print(f"  Coverage: {qm['coverage_50pct']*100:.1f}% (target: 50%)")
+        cov50 = qm['coverage_50pct'] * 100
+        cov50_dev = cov50 - 50
+        cov50_warn = ""
+        if abs(cov50_dev) > 5:
+            direction = "overcoverage" if cov50_dev > 0 else "undercoverage"
+            cov50_warn = f" — WARNING: {direction} by {abs(cov50_dev):.1f}pp"
+        print(f"  Coverage: {cov50:.1f}% (target: 50%){cov50_warn}")
         print(f"  Mean Width: {qm['mean_interval_width_50pct']:.1f}")
+
+        # Pinball losses
+        if 'pinball_losses' in qm and qm['pinball_losses']:
+            print(f"\nPinball Losses (per quantile, lower is better):")
+            for q, val in qm['pinball_losses'].items():
+                print(f"  {q}: {val:.2f}")
+            if qm.get('mean_pinball_loss') is not None:
+                print(f"  Mean: {qm['mean_pinball_loss']:.2f}")
+
+        # CRPS
+        if qm.get('crps') is not None:
+            print(f"\nCRPS (overall, lower is better): {qm['crps']:.2f}")
+
+        # WIS
+        if qm.get('wis') is not None:
+            print(f"WIS  (overall, lower is better): {qm['wis']:.2f}")
 
         print(f"\nCalibration (fraction of actuals below quantile):")
         for q, val in qm['calibration'].items():
@@ -648,9 +813,11 @@ class QuantileEvaluator:
         # By horizon
         print(f"\nMetrics by Horizon:")
         for h, m in sorted(results['metrics_by_horizon'].items()):
+            crps_str = f", CRPS={m['crps']:.2f}" if m.get('crps') is not None else ""
+            wis_str = f", WIS={m['wis']:.2f}" if m.get('wis') is not None else ""
             print(f"  Horizon {h}: Coverage={m['coverage_90pct']*100:.1f}%, "
                   f"Width={m['mean_interval_width_90pct']:.1f}, "
-                  f"MAPE={m['mape']:.1f}%")
+                  f"MAPE={m['mape']:.1f}%{crps_str}{wis_str}")
 
         print("=" * 70)
 

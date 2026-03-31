@@ -22,7 +22,8 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error
 from src.data_loader import FluDataLoader
 from src.feature_engineering import FeatureEngineer
 from src.model import FluForecastingModel
-from src.direct_forecast import DirectForecastEnsemble
+from src.direct_forecast import DirectForecastEnsemble, QuantileDirectForecastEnsemble
+from src.evaluate import QuantileEvaluator
 from src.train import FluModelTrainer
 from src import config
 
@@ -183,7 +184,93 @@ class HyperparameterOptimizer:
             return 1e6
 
         return np.mean(mae_scores)
-    
+
+    def objective_wis(self, trial, data: pd.DataFrame, cutoff_dates: List[str],
+                      locations: Optional[List[str]] = None) -> float:
+        """
+        Objective function for WIS-based optimization.
+        Trains quantile models and minimizes Weighted Interval Score.
+
+        Args:
+            trial: Optuna trial object
+            data: Full dataset with features
+            cutoff_dates: List of cutoff dates for walk-forward validation
+            locations: List of locations to include
+
+        Returns:
+            Mean WIS across validation splits (to minimize)
+        """
+        # Same search space but with reduced n_estimators for speed (20 models per trial)
+        params = {
+            'objective': 'reg:squarederror',
+            'max_depth': trial.suggest_int('max_depth', 2, 5),
+            'n_estimators': trial.suggest_int('n_estimators', 200, 800),
+            'learning_rate': trial.suggest_float('learning_rate', 0.01, 0.2, log=True),
+            'subsample': trial.suggest_float('subsample', 0.5, 0.85),
+            'colsample_bytree': trial.suggest_float('colsample_bytree', 0.4, 0.8),
+            'colsample_bylevel': trial.suggest_float('colsample_bylevel', 0.4, 0.8),
+            'min_child_weight': trial.suggest_int('min_child_weight', 5, 100),
+            'gamma': trial.suggest_float('gamma', 0.0, 5.0),
+            'reg_alpha': trial.suggest_float('reg_alpha', 0.01, 10.0, log=True),
+            'reg_lambda': trial.suggest_float('reg_lambda', 0.1, 20.0, log=True),
+            'max_delta_step': trial.suggest_int('max_delta_step', 0, 10),
+            'tree_method': 'hist',
+            'grow_policy': trial.suggest_categorical('grow_policy', ['depthwise', 'lossguide']),
+            'random_state': 42,
+            'early_stopping_rounds': 50
+        }
+
+        if params['grow_policy'] == 'lossguide':
+            params['max_leaves'] = trial.suggest_int('max_leaves', 8, 64)
+
+        if locations is not None:
+            data_filtered = data[data['location'].isin(locations)].copy()
+        else:
+            data_filtered = data.copy()
+
+        wis_scores = []
+        evaluator = QuantileEvaluator()
+
+        for i, cutoff_date in enumerate(cutoff_dates):
+            cutoff_dt = pd.to_datetime(cutoff_date)
+
+            # Load full data up to end of validation window for evaluation
+            cutoff_data = data_filtered[data_filtered['date'] <= cutoff_dt].copy()
+            if len(cutoff_data) < 100:
+                continue
+
+            try:
+                # Train quantile ensemble with trial params
+                q_ensemble = QuantileDirectForecastEnsemble(
+                    forecast_horizon=4, xgb_params_override=params
+                )
+                q_ensemble.train(cutoff_data)
+
+                # Generate forecasts
+                cutoff_str = cutoff_dt.strftime('%Y-%m-%d')
+                forecasts = q_ensemble.generate_forecasts(
+                    cutoff_data, cutoff_str,
+                    locations=locations if locations else None
+                )
+
+                # Evaluate WIS against actual data
+                results = evaluator.evaluate_quantile_forecasts(forecasts, data_filtered)
+                if 'error' not in results and results['quantile_metrics'].get('wis') is not None:
+                    wis_scores.append(results['quantile_metrics']['wis'])
+
+                # Pruning support
+                if self.use_pruning and wis_scores:
+                    trial.report(np.mean(wis_scores), i)
+                    if trial.should_prune():
+                        raise optuna.TrialPruned()
+
+            except optuna.TrialPruned:
+                raise
+            except Exception as e:
+                continue
+
+        return np.mean(wis_scores) if wis_scores else 1e6
+
     def optimize(self, data: pd.DataFrame, cutoff_dates: List[str],
                  locations: Optional[List[str]] = None,
                  direction: str = 'minimize',
@@ -225,9 +312,10 @@ class HyperparameterOptimizer:
         # Create pruner if enabled
         pruner = None
         if self.use_pruning:
+            n_startup = 5 if metric == 'wis' else 10
             pruner = optuna.pruners.MedianPruner(
-                n_startup_trials=10,  # Don't prune first 10 trials
-                n_warmup_steps=3,     # Don't prune until 3 cutoffs evaluated
+                n_startup_trials=n_startup,
+                n_warmup_steps=2 if metric == 'wis' else 3,
                 interval_steps=1
             )
 
@@ -242,9 +330,15 @@ class HyperparameterOptimizer:
         # Track optimization time
         start_time = time.time()
 
+        # Select objective function based on metric
+        if metric == 'wis':
+            obj_func = lambda trial: self.objective_wis(trial, data, cutoff_dates, locations)
+        else:
+            obj_func = lambda trial: self.objective(trial, data, cutoff_dates, locations)
+
         # Optimize
         self.study.optimize(
-            lambda trial: self.objective(trial, data, cutoff_dates, locations),
+            obj_func,
             n_trials=self.n_trials,
             show_progress_bar=True,
             n_jobs=1  # Single-threaded for reproducibility
@@ -408,7 +502,9 @@ def main():
                        help='Name for the Optuna study')
     parser.add_argument('--output-dir', type=str, default='outputs',
                        help='Output directory for results')
-    
+    parser.add_argument('--metric', type=str, default='mae', choices=['mae', 'wis'],
+                       help='Metric to optimize: mae (default) or wis (Weighted Interval Score)')
+
     args = parser.parse_args()
     
     # Determine validation cutoff dates
@@ -446,7 +542,8 @@ def main():
     results = optimizer.optimize(
         data=features_df,
         cutoff_dates=cutoff_dates,
-        locations=args.locations
+        locations=args.locations,
+        metric=args.metric
     )
     
     # Save results
@@ -465,7 +562,7 @@ def main():
     print("\n" + "="*60)
     print("OPTIMIZATION SUMMARY")
     print("="*60)
-    print(f"Best MAE: {results['best_value']:.6f}")
+    print(f"Best {args.metric.upper()}: {results['best_value']:.6f}")
     print(f"Total trials: {results['n_trials']}")
     print(f"\nTo use these parameters, load them from: {best_params_file}")
     print("="*60)

@@ -32,7 +32,8 @@ class DirectForecastEnsemble:
     """
 
     def __init__(self, forecast_horizon: int = 4, model_params: Optional[Dict] = None,
-                 target_mode: Optional[str] = None):
+                 target_mode: Optional[str] = None,
+                 xgb_params_override: Optional[Dict] = None):
         """
         Initialize the direct forecast ensemble.
 
@@ -41,9 +42,10 @@ class DirectForecastEnsemble:
             model_params: XGBoost parameters (uses config defaults if None)
             target_mode: Target transformation mode ("raw", "ratio", or "log")
                         Uses config.TARGET_MODE if None
+            xgb_params_override: Override XGBoost params for optimization trials
         """
         self.forecast_horizon = forecast_horizon
-        self.model_params = model_params or config.XGBOOST_PARAMS.copy()
+        self.model_params = xgb_params_override or model_params or config.XGBOOST_PARAMS.copy()
         self.models = {h: FluForecastingModel(self.model_params.copy())
                       for h in range(1, forecast_horizon + 1)}
         self.is_trained = False
@@ -318,7 +320,10 @@ class DirectForecastEnsemble:
                     'forecast_week': horizon,
                     'forecast': prediction,
                     'raw_model_output': raw_prediction,  # Store for debugging
-                    'target_mode': self.target_mode
+                    'target_mode': self.target_mode,
+                    'reference_date': cutoff_date,
+                    'target_end_date': forecast_date.strftime('%Y-%m-%d'),
+                    'horizon': horizon
                 }
                 forecasts.append(forecast)
                 prev_prediction = prediction
@@ -421,7 +426,8 @@ class QuantileDirectForecastEnsemble:
     """
 
     def __init__(self, forecast_horizon: int = 4, model_params: Optional[Dict] = None,
-                 target_mode: Optional[str] = None, quantiles: Optional[List[float]] = None):
+                 target_mode: Optional[str] = None, quantiles: Optional[List[float]] = None,
+                 xgb_params_override: Optional[Dict] = None):
         """
         Initialize the quantile forecast ensemble.
 
@@ -430,9 +436,10 @@ class QuantileDirectForecastEnsemble:
             model_params: XGBoost parameters (uses config defaults if None)
             target_mode: Target transformation mode ("raw", "ratio", or "log")
             quantiles: List of quantiles to predict (default from config.QUANTILES)
+            xgb_params_override: Override XGBoost params for optimization trials
         """
         self.forecast_horizon = forecast_horizon
-        self.model_params = model_params or config.XGBOOST_PARAMS.copy()
+        self.model_params = xgb_params_override or model_params or config.XGBOOST_PARAMS.copy()
         self.target_mode = target_mode or getattr(config, 'TARGET_MODE', 'raw')
         self.quantiles = quantiles or getattr(config, 'QUANTILES', [0.05, 0.25, 0.5, 0.75, 0.95])
 
@@ -688,7 +695,10 @@ class QuantileDirectForecastEnsemble:
                     'predicted_q50': predictions[0.5],
                     'predicted_q75': predictions[0.75],
                     'predicted_q95': predictions[0.95],
-                    'target_mode': self.target_mode
+                    'target_mode': self.target_mode,
+                    'reference_date': cutoff_date,
+                    'target_end_date': forecast_date.strftime('%Y-%m-%d'),
+                    'horizon': horizon
                 }
                 forecasts.append(forecast)
                 prev_predictions = predictions.copy()
