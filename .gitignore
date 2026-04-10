@@ -2,3 +2,5 @@ __pycache__/
 *.pyc
 .DS_Store
 .claude/settings.local.json
+outputs/agent_runs/
+*.db

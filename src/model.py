@@ -103,39 +103,55 @@ class FluForecastingModel:
             constraints.append(str(constraint))
         return "(" + ",".join(constraints) + ")"
     
-    def train(self, X: pd.DataFrame, y: pd.Series, 
-              validation_data: Optional[Tuple[pd.DataFrame, pd.Series]] = None) -> Dict:
+    def train(self, X: pd.DataFrame, y: pd.Series,
+              validation_data: Optional[Tuple[pd.DataFrame, pd.Series]] = None,
+              sample_weight: Optional[np.ndarray] = None) -> Dict:
         """
         Train the XGBoost model
-        
+
         Args:
             X: Training features
             y: Training targets
             validation_data: Optional validation data tuple (X_val, y_val)
-            
+            sample_weight: Optional per-row weights for the training set.
+                Length must equal len(X). Used by the agent loop to upweight
+                samples from specific phases / horizons / locations
+                (see reweight_training_samples action). Pass None for uniform
+                weighting.
+
         Returns:
             Dictionary with training results
         """
+        # Validate sample_weight shape
+        if sample_weight is not None:
+            sample_weight = np.asarray(sample_weight, dtype=float)
+            if len(sample_weight) != len(X):
+                raise ValueError(
+                    f"sample_weight length ({len(sample_weight)}) does not match "
+                    f"X length ({len(X)})"
+                )
+
         # Build monotonic constraints if enabled
         train_params = self.model_params.copy()
         if self.use_monotonic and self.monotonic_constraints:
             constraints_str = self._build_monotonic_constraints(list(X.columns))
             train_params['monotone_constraints'] = constraints_str
-        
+
         # Initialize model
         self.model = xgb.XGBRegressor(**train_params)
-        
+
         # Prepare validation data if provided
         eval_set = None
         if validation_data is not None:
             X_val, y_val = validation_data
             eval_set = [(X_val, y_val)]
-        
+
         # Train model
         if eval_set is not None:
             # Use early stopping with validation data
             self.model.fit(
                 X, y,
+                sample_weight=sample_weight,
                 eval_set=eval_set,
                 verbose=False
             )
@@ -144,15 +160,18 @@ class FluForecastingModel:
             model_params_no_early_stop = self.model_params.copy()
             if 'early_stopping_rounds' in model_params_no_early_stop:
                 del model_params_no_early_stop['early_stopping_rounds']
-            
+
             # Reinitialize model without early stopping
             self.model = xgb.XGBRegressor(**model_params_no_early_stop)
-            self.model.fit(X, y, verbose=False)
-        
+            self.model.fit(X, y, sample_weight=sample_weight, verbose=False)
+
         # Store training info
         self.training_info = {
             'n_features': X.shape[1],
             'n_samples': X.shape[0],
+            'n_weighted_samples': (
+                int(np.sum(sample_weight != 1.0)) if sample_weight is not None else 0
+            ),
             'feature_names': list(X.columns),
             'training_date': datetime.now().isoformat(),
             'model_params': self.model_params.copy(),

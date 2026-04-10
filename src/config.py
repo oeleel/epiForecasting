@@ -173,3 +173,136 @@ ENABLE_LOCATION_CLUSTERING = True  # Toggle cluster-specific models on/off
 N_LOCATION_CLUSTERS = 5  # Number of clusters for location grouping
 MIN_CLUSTER_SIZE = 3  # Minimum locations per cluster (smaller clusters get merged)
 
+
+# ============================================================================
+# Dict-based config for the agent improvement loop (Milestone 2)
+# ============================================================================
+#
+# The constants above are kept as the source of truth for the existing
+# pipeline. The dict below is an *additive* view of the same settings,
+# organized into sections that map cleanly onto the actions Agent 2 can
+# take. The agent orchestrator works exclusively in dict form so that
+# every iteration's config can be JSON-serialized and stored in the
+# run tracker.
+#
+# Workflow:
+#   1. orchestrator calls get_default_config() to seed iteration 0
+#   2. agent.apply_action() returns a *new* dict (never mutates in place)
+#   3. agent.run_pipeline(config) reads the dict and runs training
+#
+# Sections:
+#   xgboost           XGBRegressor hyperparameters
+#   features          Feature engineering knobs + on/off flags for groups
+#   target            Target transform mode and clipping
+#   floor             Post-prediction floor constraint
+#   quantiles         Quantile regression settings
+#   clustering        Location clustering settings
+#   sample_weights    Optional reweighting (consumed by reweight_training_samples)
+#   data              Cutoff date / forecast horizon
+
+import copy as _copy
+from typing import Any, Dict
+
+
+# Feature groups Agent 2 can toggle on/off as a unit. Maps a group name
+# to the list of base feature *names or prefixes* it controls. Used by
+# the toggle_feature action and read by feature engineering at build time.
+FEATURE_GROUPS = {
+    "lag": ["value_lag_"],                 # value_lag_1, value_lag_2, ...
+    "rolling": ["value_rolling_"],          # value_rolling_mean_4, etc.
+    "yoy": ["value_lag_52", "yoy_"],        # year-over-year features
+    "national_context": ["us_total_", "us_lag_"],  # US-level features
+    "interactions": ["value_to_rolling_mean_ratio", "ratio_to_historical_max"],
+}
+
+
+def get_default_config() -> Dict[str, Any]:
+    """Return the default agent-loop pipeline config as a fresh dict.
+
+    Mirrors the module-level constants above. Always returns a deep copy
+    so callers can mutate freely without affecting other iterations.
+    """
+    return _copy.deepcopy({
+        "xgboost": dict(XGBOOST_PARAMS),    # active hyperparameter set (V2)
+        "features": {
+            "version": FEATURE_VERSION,
+            "lag_features": list(LAG_FEATURES),
+            "rolling_windows": list(ROLLING_WINDOWS),
+            "us_lag_features": list(US_LAG_FEATURES),
+            "removed": list(FEATURES_REMOVED),
+            "groups_enabled": {name: True for name in FEATURE_GROUPS},
+        },
+        "target": {
+            "mode": TARGET_MODE,            # "log" | "raw" | "ratio" | "sqrt"
+            "ratio_clip_min": RATIO_CLIP_MIN,
+            "ratio_clip_max": RATIO_CLIP_MAX,
+            "ratio_min_denominator": RATIO_MIN_DENOMINATOR,
+        },
+        "floor": {
+            "enabled": True,
+            "floor_pct": 0.30,              # = floor_ratio in direct_forecast.py
+            "decay_per_horizon": 0.05,
+        },
+        "quantiles": {
+            "enabled": ENABLE_QUANTILE_FORECASTS,
+            "levels": list(QUANTILES),
+        },
+        "clustering": {
+            "enabled": ENABLE_LOCATION_CLUSTERING,
+            "n_clusters": N_LOCATION_CLUSTERS,
+            "min_cluster_size": MIN_CLUSTER_SIZE,
+        },
+        "sample_weights": {
+            # Empty by default. The reweight_training_samples action
+            # populates these. Each section is {value: weight}.
+            "by_phase": {},                 # e.g. {"peak": 2.0}
+            "by_horizon": {},               # e.g. {"4": 1.5}
+            "by_location": {},              # e.g. {"06": 2.0}
+        },
+        "data": {
+            "cutoff_date": DEFAULT_CUTOFF_DATE,
+            "forecast_horizon": FORECAST_HORIZON,
+            "min_training_weeks": MIN_TRAINING_WEEKS,
+        },
+    })
+
+
+def get_config_value(config: Dict[str, Any], path: str) -> Any:
+    """Read a nested config value by dotted path.
+
+    Example:
+        get_config_value(cfg, "xgboost.max_depth") -> 3
+        get_config_value(cfg, "features.groups_enabled.lag") -> True
+
+    Raises KeyError if any segment is missing.
+    """
+    node: Any = config
+    for segment in path.split("."):
+        if not isinstance(node, dict) or segment not in node:
+            raise KeyError(f"Config path not found: {path!r} (failed at {segment!r})")
+        node = node[segment]
+    return node
+
+
+def set_config_value(config: Dict[str, Any], path: str, value: Any) -> Dict[str, Any]:
+    """Return a *new* config dict with `path` set to `value`.
+
+    Pure function — does not mutate the input. The orchestrator and
+    apply_action use this so iteration N can be reconstructed from
+    iteration N-1 plus a single action without aliasing.
+
+    Raises KeyError if any intermediate segment is missing or not a dict.
+    The leaf segment is allowed to be created.
+    """
+    new_cfg = _copy.deepcopy(config)
+    segments = path.split(".")
+    node: Any = new_cfg
+    for segment in segments[:-1]:
+        if not isinstance(node, dict) or segment not in node:
+            raise KeyError(f"Config path not found: {path!r} (failed at {segment!r})")
+        node = node[segment]
+    if not isinstance(node, dict):
+        raise KeyError(f"Cannot set {path!r}: parent is not a dict")
+    node[segments[-1]] = value
+    return new_cfg
+

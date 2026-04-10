@@ -9,7 +9,7 @@ import os
 import sys
 from glob import glob
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -215,6 +215,285 @@ class FluForecastAdapter(DomainAdapter):
             "date_range": date_range,
             "n_locations": merged["location"].nunique(),
         }
+
+    # ------------------------------------------------------------------ M2
+
+    # Action catalog (Agent 2's tool box). Each entry includes a JSON
+    # schema for the params plus guardrails enforced before any change
+    # touches the pipeline. The LLM may only emit actions whose `name`
+    # appears here.
+    ACTION_CATALOG: List[Dict[str, Any]] = [
+        {
+            "name": "adjust_hyperparameter",
+            "description": (
+                "Modify a single XGBoost hyperparameter on the active model. "
+                "Use this to tune capacity (max_depth, n_estimators, learning_rate) "
+                "or regularization (reg_alpha, reg_lambda, subsample, min_child_weight)."
+            ),
+            "params_schema": {
+                "name": {
+                    "type": "string",
+                    "enum": [
+                        "max_depth", "learning_rate", "n_estimators",
+                        "subsample", "colsample_bytree", "min_child_weight",
+                        "reg_alpha", "reg_lambda", "gamma",
+                    ],
+                },
+                "value": {"type": "number"},
+            },
+            "guardrails": {
+                "max_depth": (2, 10),
+                "learning_rate": (0.005, 0.5),
+                "n_estimators": (50, 3000),
+                "subsample": (0.3, 1.0),
+                "colsample_bytree": (0.3, 1.0),
+                "min_child_weight": (1, 100),
+                "reg_alpha": (0.0, 20.0),
+                "reg_lambda": (0.0, 20.0),
+                "gamma": (0.0, 10.0),
+            },
+        },
+        {
+            "name": "reweight_training_samples",
+            "description": (
+                "Upweight a slice of the training data by phase, horizon, or location. "
+                "Use this when one segment is consistently underperforming and you "
+                "want the next training run to pay more attention to it."
+            ),
+            "params_schema": {
+                "dimension": {
+                    "type": "string",
+                    "enum": ["phase", "horizon", "location"],
+                },
+                "value": {"type": "string"},
+                "weight": {"type": "number"},
+            },
+            "guardrails": {
+                "weight": (1.0, 5.0),
+                "phase_values": ["onset", "peak", "decline"],
+                "horizon_values": ["1", "2", "3", "4"],
+            },
+        },
+        {
+            "name": "toggle_feature",
+            "description": (
+                "Enable or disable an entire feature group at training time. "
+                "Useful when a group seems to add noise (disable) or when an "
+                "important signal is missing (enable a previously-disabled group)."
+            ),
+            "params_schema": {
+                "feature_group": {
+                    "type": "string",
+                    "enum": [
+                        "lag", "rolling", "yoy", "national_context", "interactions",
+                    ],
+                },
+                "enabled": {"type": "boolean"},
+            },
+            "guardrails": {},
+        },
+        {
+            "name": "adjust_floor_constraint",
+            "description": (
+                "Change the post-prediction floor percentage. Lowering it lets "
+                "the model predict steeper drops; raising it stabilizes during "
+                "noisy periods."
+            ),
+            "params_schema": {
+                "floor_pct": {"type": "number"},
+            },
+            "guardrails": {
+                "floor_pct": (0.0, 0.6),
+            },
+        },
+        {
+            "name": "change_target_transform",
+            "description": (
+                "Switch the target transform between log/raw/sqrt. log compresses "
+                "the upper tail (good for skewed counts but can under-predict peaks); "
+                "raw is uncompressed; sqrt is a middle ground."
+            ),
+            "params_schema": {
+                "transform": {"type": "string", "enum": ["log", "raw", "sqrt"]},
+            },
+            "guardrails": {},
+        },
+        {
+            "name": "stop",
+            "description": (
+                "Declare convergence. Use this when no further action is "
+                "expected to improve the target metric."
+            ),
+            "params_schema": {},
+            "guardrails": {},
+        },
+    ]
+
+    def get_available_actions(self) -> List[Dict[str, Any]]:
+        """Return the action catalog the LLM is allowed to choose from.
+
+        Each entry has: name, description, params_schema, guardrails.
+        Pure read — does not consult any external state.
+        """
+        return list(self.ACTION_CATALOG)
+
+    def apply_action(
+        self,
+        action: Dict[str, Any],
+        config: Optional[Dict[str, Any]] = None,
+    ) -> Tuple[Dict[str, Any], str]:
+        """Apply one validated action to a config dict.
+
+        Pure function: returns a *new* config dict (does not mutate input).
+        Validates the action's name + params against the catalog and the
+        guardrails. Raises ValueError on any violation so the orchestrator's
+        validate node can route to the repair path.
+
+        Args:
+            action: dict with shape {"name": str, "params": dict, ...}
+            config: starting config dict; uses get_default_config() if None
+
+        Returns:
+            (new_config, human_readable_change_description)
+        """
+        # Lazy import to avoid pulling src/* into module load time
+        from src.config import (
+            get_default_config,
+            set_config_value,
+            get_config_value,
+        )
+
+        if config is None:
+            config = get_default_config()
+
+        if not isinstance(action, dict) or "name" not in action:
+            raise ValueError(f"Invalid action shape: {action!r}")
+
+        name = action["name"]
+        params = action.get("params") or {}
+
+        catalog = {a["name"]: a for a in self.ACTION_CATALOG}
+        if name not in catalog:
+            raise ValueError(
+                f"Unknown action: {name!r}. Allowed: {sorted(catalog)}"
+            )
+        spec = catalog[name]
+
+        # ---- per-action handling ------------------------------------------------
+        if name == "stop":
+            return config, "stop (no change)"
+
+        if name == "adjust_hyperparameter":
+            self._require_keys(params, ["name", "value"])
+            hp_name = params["name"]
+            hp_value = params["value"]
+            allowed = spec["params_schema"]["name"]["enum"]
+            if hp_name not in allowed:
+                raise ValueError(
+                    f"adjust_hyperparameter: '{hp_name}' not in allowed set {allowed}"
+                )
+            lo, hi = spec["guardrails"][hp_name]
+            if not (lo <= hp_value <= hi):
+                raise ValueError(
+                    f"adjust_hyperparameter: {hp_name}={hp_value} outside guardrail [{lo}, {hi}]"
+                )
+            # n_estimators must be int
+            if hp_name == "n_estimators":
+                hp_value = int(hp_value)
+            old = get_config_value(config, f"xgboost.{hp_name}")
+            new_cfg = set_config_value(config, f"xgboost.{hp_name}", hp_value)
+            return new_cfg, f"xgboost.{hp_name}: {old} -> {hp_value}"
+
+        if name == "reweight_training_samples":
+            self._require_keys(params, ["dimension", "value", "weight"])
+            dim = params["dimension"]
+            val = str(params["value"])
+            weight = float(params["weight"])
+
+            if dim not in {"phase", "horizon", "location"}:
+                raise ValueError(f"reweight: dimension must be phase/horizon/location, got {dim!r}")
+            wlo, whi = spec["guardrails"]["weight"]
+            if not (wlo <= weight <= whi):
+                raise ValueError(f"reweight: weight={weight} outside [{wlo}, {whi}]")
+            if dim == "phase" and val not in spec["guardrails"]["phase_values"]:
+                raise ValueError(
+                    f"reweight: phase value must be one of {spec['guardrails']['phase_values']}"
+                )
+            if dim == "horizon" and val not in spec["guardrails"]["horizon_values"]:
+                raise ValueError(
+                    f"reweight: horizon value must be one of {spec['guardrails']['horizon_values']}"
+                )
+
+            section = f"sample_weights.by_{dim}"
+            existing = dict(get_config_value(config, section) or {})
+            existing[val] = weight
+            new_cfg = set_config_value(config, section, existing)
+            return new_cfg, f"{section}[{val}] = {weight}"
+
+        if name == "toggle_feature":
+            self._require_keys(params, ["feature_group", "enabled"])
+            group = params["feature_group"]
+            enabled = bool(params["enabled"])
+            allowed = spec["params_schema"]["feature_group"]["enum"]
+            if group not in allowed:
+                raise ValueError(f"toggle_feature: group must be in {allowed}")
+            old = get_config_value(config, f"features.groups_enabled.{group}")
+            new_cfg = set_config_value(
+                config, f"features.groups_enabled.{group}", enabled
+            )
+            return new_cfg, f"features.groups_enabled.{group}: {old} -> {enabled}"
+
+        if name == "adjust_floor_constraint":
+            self._require_keys(params, ["floor_pct"])
+            val = float(params["floor_pct"])
+            lo, hi = spec["guardrails"]["floor_pct"]
+            if not (lo <= val <= hi):
+                raise ValueError(f"floor_pct={val} outside [{lo}, {hi}]")
+            old = get_config_value(config, "floor.floor_pct")
+            new_cfg = set_config_value(config, "floor.floor_pct", val)
+            return new_cfg, f"floor.floor_pct: {old} -> {val}"
+
+        if name == "change_target_transform":
+            self._require_keys(params, ["transform"])
+            t = params["transform"]
+            allowed = spec["params_schema"]["transform"]["enum"]
+            if t not in allowed:
+                raise ValueError(f"change_target_transform: must be in {allowed}")
+            old = get_config_value(config, "target.mode")
+            new_cfg = set_config_value(config, "target.mode", t)
+            return new_cfg, f"target.mode: {old} -> {t}"
+
+        # Defensive — should be unreachable due to catalog check above
+        raise ValueError(f"Unhandled action: {name}")
+
+    @staticmethod
+    def _require_keys(params: Dict[str, Any], keys: List[str]) -> None:
+        missing = [k for k in keys if k not in params]
+        if missing:
+            raise ValueError(f"Action missing required params: {missing}")
+
+    def run_pipeline(
+        self,
+        config: Dict[str, Any],
+        output_path: Optional[str] = None,
+        verbose: bool = False,
+    ) -> str:
+        """Train + forecast using the agent loop's callable pipeline.
+
+        Args:
+            config: Pipeline config dict (shape from src.config.get_default_config())
+            output_path: Where to write the forecast CSV. None -> default location.
+            verbose: Pass-through to src.pipeline.run_pipeline.
+
+        Returns:
+            String path to the written forecast CSV.
+        """
+        from src.pipeline import run_pipeline as _run_pipeline
+
+        out = _run_pipeline(config=config, output_path=output_path, verbose=verbose)
+        return str(out)
+
+    # ------------------------------------------------------------------
 
     def get_domain_context(self) -> str:
         """Return flu forecasting domain context for the LLM prompt."""

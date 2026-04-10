@@ -2,12 +2,107 @@
 
 Assigns epidemic phases to time periods and computes per-phase metrics,
 enabling diagnosis of when/where the model performs poorly.
+
+Supports two forecast formats:
+    Point forecasts:    requires column 'forecast'
+    Quantile forecasts: requires columns 'predicted_q05', 'predicted_q25',
+                        'predicted_q50', 'predicted_q75', 'predicted_q95'
+                        (the FluSight standard 5-quantile output). When
+                        quantiles are present, WIS and 95% coverage are
+                        computed in addition to MAPE/MAE/RMSE/bias.
 """
 
 from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
+
+
+# FluSight standard quantile levels (also matches src.config.QUANTILES default)
+QUANTILE_LEVELS = [0.05, 0.25, 0.50, 0.75, 0.95]
+QUANTILE_COLS = [f"predicted_q{int(q * 100):02d}" for q in QUANTILE_LEVELS]
+
+
+def _has_quantiles(df: pd.DataFrame) -> bool:
+    """True if the DataFrame contains the full 5-quantile column set."""
+    return all(c in df.columns for c in QUANTILE_COLS)
+
+
+def _compute_wis_row(actual: float, q: Dict[float, float]) -> float:
+    """Weighted Interval Score for a single forecast row.
+
+    Uses the FluSight definition with the standard 5-quantile set
+    [0.05, 0.25, 0.50, 0.75, 0.95], which corresponds to two prediction
+    intervals (90% and 50%) plus a median:
+
+        WIS = (1/(K + 0.5)) * (
+            0.5 * |y - q50|
+            + sum over k of (alpha_k / 2) * IS_alpha_k
+        )
+
+    where alpha_k is the *miscoverage* level (0.10 for the 90% PI, 0.50
+    for the 50% PI) and IS_alpha is the interval score:
+
+        IS_alpha(l, u, y) = (u - l)
+            + (2/alpha) * (l - y) * I(y < l)
+            + (2/alpha) * (y - u) * I(y > u)
+
+    Args:
+        actual: ground truth value
+        q: dict mapping quantile level (0.05/0.25/0.5/0.75/0.95) -> predicted value
+
+    Returns:
+        WIS for this single observation. Lower is better.
+    """
+    median = q[0.50]
+    # 90% interval (alpha=0.10)
+    l90, u90 = q[0.05], q[0.95]
+    is90 = (u90 - l90)
+    if actual < l90:
+        is90 += (2.0 / 0.10) * (l90 - actual)
+    elif actual > u90:
+        is90 += (2.0 / 0.10) * (actual - u90)
+
+    # 50% interval (alpha=0.50)
+    l50, u50 = q[0.25], q[0.75]
+    is50 = (u50 - l50)
+    if actual < l50:
+        is50 += (2.0 / 0.50) * (l50 - actual)
+    elif actual > u50:
+        is50 += (2.0 / 0.50) * (actual - u50)
+
+    K = 2  # number of intervals
+    return (1.0 / (K + 0.5)) * (
+        0.5 * abs(actual - median)
+        + (0.10 / 2.0) * is90
+        + (0.50 / 2.0) * is50
+    )
+
+
+def _compute_wis_vector(actual: np.ndarray, q05, q25, q50, q75, q95) -> np.ndarray:
+    """Vectorized WIS for an array of rows. Same formula as _compute_wis_row."""
+    actual = np.asarray(actual, dtype=float)
+    q05 = np.asarray(q05, dtype=float)
+    q25 = np.asarray(q25, dtype=float)
+    q50 = np.asarray(q50, dtype=float)
+    q75 = np.asarray(q75, dtype=float)
+    q95 = np.asarray(q95, dtype=float)
+
+    # 90% interval
+    is90 = (q95 - q05) \
+        + (2.0 / 0.10) * np.maximum(q05 - actual, 0.0) \
+        + (2.0 / 0.10) * np.maximum(actual - q95, 0.0)
+    # 50% interval
+    is50 = (q75 - q25) \
+        + (2.0 / 0.50) * np.maximum(q25 - actual, 0.0) \
+        + (2.0 / 0.50) * np.maximum(actual - q75, 0.0)
+
+    K = 2
+    return (1.0 / (K + 0.5)) * (
+        0.5 * np.abs(actual - q50)
+        + (0.10 / 2.0) * is90
+        + (0.50 / 2.0) * is50
+    )
 
 
 class PhaseEvaluator:
@@ -52,15 +147,31 @@ class PhaseEvaluator:
         Joins on (location, forecast_date == date). Adds columns:
             actual, error (signed), abs_error, pct_error, abs_pct_error, phase
 
+        If the forecasts DataFrame includes the FluSight 5-quantile columns
+        (predicted_q05, predicted_q25, predicted_q50, predicted_q75,
+        predicted_q95), also adds:
+            wis            — Weighted Interval Score (lower is better)
+            in_pi95        — 1 if actual is in [q05, q95] else 0
+
+        The point-forecast 'forecast' column is required either way. For
+        quantile CSVs that name the point column 'predicted', it is
+        renamed to 'forecast' on entry.
+
         Args:
-            forecasts: DataFrame with columns: location, forecast_date, forecast, horizon
+            forecasts: DataFrame with columns: location, forecast_date, horizon,
+                       and either 'forecast' or 'predicted' (point), plus
+                       optional quantile columns.
             actuals: DataFrame with columns: date, location, value, location_name
 
         Returns:
-            Merged DataFrame with error columns and phase labels
+            Merged DataFrame with error columns and phase labels.
         """
         forecasts = forecasts.copy()
         actuals = actuals.copy()
+
+        # Allow CSVs that use 'predicted' (the quantile output's point column)
+        if "forecast" not in forecasts.columns and "predicted" in forecasts.columns:
+            forecasts = forecasts.rename(columns={"predicted": "forecast"})
 
         # Normalize date columns
         forecasts["forecast_date"] = pd.to_datetime(forecasts["forecast_date"])
@@ -100,7 +211,39 @@ class PhaseEvaluator:
             lambda d: cls.assign_phase(d.isoformat())
         )
 
+        # Quantile-derived metrics (WIS + 95% PI coverage) when available
+        if _has_quantiles(merged):
+            merged["wis"] = _compute_wis_vector(
+                merged["actual"].values,
+                merged["predicted_q05"].values,
+                merged["predicted_q25"].values,
+                merged["predicted_q50"].values,
+                merged["predicted_q75"].values,
+                merged["predicted_q95"].values,
+            )
+            in95 = (
+                (merged["actual"] >= merged["predicted_q05"]) &
+                (merged["actual"] <= merged["predicted_q95"])
+            )
+            merged["in_pi95"] = in95.astype(int)
+
         return merged
+
+    @staticmethod
+    def _row_metrics(group: pd.DataFrame) -> Dict[str, Any]:
+        """Compute the standard metric set for one slice. Includes WIS +
+        coverage_95 only when the slice has those columns."""
+        out = {
+            "mape": round(float(group["abs_pct_error"].mean()), 1),
+            "mae": round(float(group["abs_error"].mean()), 1),
+            "bias": round(float(group["error"].mean()), 1),
+            "n": int(len(group)),
+        }
+        if "wis" in group.columns:
+            out["wis"] = round(float(group["wis"].mean()), 2)
+        if "in_pi95" in group.columns:
+            out["coverage_95"] = round(float(group["in_pi95"].mean()), 3)
+        return out
 
     @classmethod
     def evaluate_by_phase(cls, merged_df: pd.DataFrame) -> Dict[str, Dict[str, Any]]:
@@ -110,18 +253,14 @@ class PhaseEvaluator:
             merged_df: Output of merge_forecasts_actuals()
 
         Returns:
-            Dict mapping phase name to {"mape", "mae", "bias", "n"}
+            Dict mapping phase name to {"mape", "mae", "bias", "n",
+            "wis"?, "coverage_95"?}
         """
         result = {}
         for phase, group in merged_df.groupby("phase"):
             if phase == "off_season":
                 continue  # Skip off-season — not meaningful for flu forecasting
-            result[phase] = {
-                "mape": round(group["abs_pct_error"].mean(), 1),
-                "mae": round(group["abs_error"].mean(), 1),
-                "bias": round(group["error"].mean(), 1),
-                "n": len(group),
-            }
+            result[phase] = cls._row_metrics(group)
         return result
 
     @classmethod
@@ -132,16 +271,12 @@ class PhaseEvaluator:
             merged_df: Output of merge_forecasts_actuals()
 
         Returns:
-            Dict mapping horizon (1-4) to {"mape", "mae", "bias", "n"}
+            Dict mapping horizon (1-4) to {"mape", "mae", "bias", "n",
+            "wis"?, "coverage_95"?}
         """
         result = {}
         for horizon, group in merged_df.groupby("horizon"):
-            result[int(horizon)] = {
-                "mape": round(group["abs_pct_error"].mean(), 1),
-                "mae": round(group["abs_error"].mean(), 1),
-                "bias": round(group["error"].mean(), 1),
-                "n": len(group),
-            }
+            result[int(horizon)] = cls._row_metrics(group)
         return result
 
     @classmethod
@@ -171,19 +306,26 @@ class PhaseEvaluator:
         """Compute metrics broken down by location.
 
         Returns:
-            DataFrame with one row per location, sorted by MAPE descending
+            DataFrame with one row per location, sorted by MAPE descending.
+            Also includes wis + coverage_95 columns when quantile data
+            is present in merged_df.
         """
         group_cols = ["location"]
         if "location_name" in merged_df.columns:
             group_cols.append("location_name")
 
-        result = merged_df.groupby(group_cols).agg(
-            mape=("abs_pct_error", "mean"),
-            mae=("abs_error", "mean"),
-            bias=("error", "mean"),
-            n=("error", "count"),
-        ).reset_index()
+        agg_kwargs = {
+            "mape": ("abs_pct_error", "mean"),
+            "mae": ("abs_error", "mean"),
+            "bias": ("error", "mean"),
+            "n": ("error", "count"),
+        }
+        if "wis" in merged_df.columns:
+            agg_kwargs["wis"] = ("wis", "mean")
+        if "in_pi95" in merged_df.columns:
+            agg_kwargs["coverage_95"] = ("in_pi95", "mean")
 
+        result = merged_df.groupby(group_cols).agg(**agg_kwargs).reset_index()
         return result.sort_values("mape", ascending=False)
 
     @classmethod
@@ -224,12 +366,18 @@ class PhaseEvaluator:
         """Compute aggregate metrics across all predictions.
 
         Returns:
-            Dict with mape, mae, rmse, bias, n_forecasts
+            Dict with mape, mae, rmse, bias, n_forecasts. When quantile
+            data is present, also includes wis and coverage_95.
         """
-        return {
+        out = {
             "mape": round(float(merged_df["abs_pct_error"].mean()), 1),
             "mae": round(float(merged_df["abs_error"].mean()), 1),
             "rmse": round(float(np.sqrt((merged_df["error"] ** 2).mean())), 1),
             "bias": round(float(merged_df["error"].mean()), 1),
             "n_forecasts": len(merged_df),
         }
+        if "wis" in merged_df.columns:
+            out["wis"] = round(float(merged_df["wis"].mean()), 2)
+        if "in_pi95" in merged_df.columns:
+            out["coverage_95"] = round(float(merged_df["in_pi95"].mean()), 3)
+        return out

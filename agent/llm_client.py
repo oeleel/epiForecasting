@@ -40,7 +40,7 @@ class LLMClient:
         self.base_url = base_url or os.environ.get(
             "LLM_BASE_URL", "http://localhost:11434/v1"
         )
-        self.model = model or os.environ.get("LLM_MODEL", "qwen2.5:7b")
+        self.model = model or os.environ.get("LLM_MODEL", "qwen3:8b")
         self.temperature = temperature
         self.max_tokens = max_tokens
         self._llm = None
@@ -93,10 +93,11 @@ class LLMClient:
             raise
 
     def is_available(self) -> bool:
-        """Check if the LLM server is reachable.
+        """Check if the LLM server is reachable AND the configured model is installed.
 
         Returns:
-            True if the server responds, False otherwise
+            True if the server responds AND the model can be invoked, False otherwise.
+            Use diagnose() for a more detailed error message.
         """
         try:
             llm = self._get_llm()
@@ -104,3 +105,32 @@ class LLMClient:
             return True
         except Exception:
             return False
+
+    def diagnose(self) -> Optional[str]:
+        """Return None if everything is OK, or a human-readable error string.
+
+        Distinguishes between three failure modes:
+            - server unreachable          (Ollama not running)
+            - model not found             (need to `ollama pull`)
+            - other (e.g. langchain-openai missing)
+        """
+        try:
+            llm = self._get_llm()
+            llm.invoke("Hi")
+            return None
+        except ImportError as e:
+            return f"Missing dependency: {e}"
+        except Exception as e:
+            msg = str(e)
+            if "Connection" in msg or "refused" in msg or "ConnectError" in msg:
+                return (
+                    f"LLM server not reachable at {self.base_url}.\n"
+                    f"  Start Ollama: brew services start ollama"
+                )
+            if "model" in msg.lower() and ("not found" in msg.lower() or "404" in msg):
+                return (
+                    f"Model {self.model!r} not installed on the server.\n"
+                    f"  Pull it: ollama pull {self.model}\n"
+                    f"  Or pass --model <name> with a model that is installed."
+                )
+            return f"LLM error: {msg}"

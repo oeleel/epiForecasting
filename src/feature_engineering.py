@@ -493,39 +493,39 @@ class FeatureEngineer:
             )
 
         # 6. Historical percentile
-        # Where current value sits in the historical distribution for this location
-        def calc_percentile(group):
-            values = group[target_col].values
+        # Where current value sits in the historical distribution for this location.
+        # Uses groupby.transform on a Series so the operation is well-defined for
+        # any number of groups (including single-location runs).
+        def _percentile_series(series: pd.Series) -> pd.Series:
+            values = series.values
             result = np.zeros(len(values))
             for i in range(len(values)):
-                # Only use data up to current point (no leakage)
-                historical = values[:i+1]
+                historical = values[:i + 1]
                 if len(historical) > 1:
                     result[i] = stats.percentileofscore(historical, values[i], kind='rank')
                 else:
-                    result[i] = 50.0  # Default to median for first observation
-            return pd.Series(result, index=group.index)
+                    result[i] = 50.0
+            return pd.Series(result, index=series.index)
 
-        df['historical_percentile'] = df.groupby('location', group_keys=False).apply(
-            calc_percentile
+        df['historical_percentile'] = df.groupby('location')[target_col].transform(
+            _percentile_series
         )
 
         # 7. Ratio to historical max
-        # When > 1.0, we're in unprecedented territory
-        def calc_ratio_to_max(group):
-            values = group[target_col].values
+        # When > 1.0, we're in unprecedented territory.
+        def _ratio_to_max_series(series: pd.Series) -> pd.Series:
+            values = series.values
             result = np.zeros(len(values))
             for i in range(len(values)):
-                # Only use data up to current point (no leakage)
-                historical_max = np.nanmax(values[:i+1])
+                historical_max = np.nanmax(values[:i + 1])
                 if historical_max > 0:
                     result[i] = values[i] / historical_max
                 else:
                     result[i] = 1.0
-            return pd.Series(result, index=group.index)
+            return pd.Series(result, index=series.index)
 
-        df['ratio_to_historical_max'] = df.groupby('location', group_keys=False).apply(
-            calc_ratio_to_max
+        df['ratio_to_historical_max'] = df.groupby('location')[target_col].transform(
+            _ratio_to_max_series
         )
 
         # 8. Surge indicator (REMOVED in v3 - zero importance)

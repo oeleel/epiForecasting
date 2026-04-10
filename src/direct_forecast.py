@@ -20,6 +20,83 @@ from src.model import FluForecastingModel
 from src import config
 
 
+# ----------------------------------------------------------------------------
+# Sample-weight helpers (used by the agent reweight_training_samples action)
+# ----------------------------------------------------------------------------
+
+def _compute_sample_weights(
+    meta_df: pd.DataFrame,
+    sample_weights_config: Optional[Dict],
+) -> Optional[np.ndarray]:
+    """Compute per-row training weights from a sample_weights config dict.
+
+    The config dict has the same shape as cfg["sample_weights"] from
+    src.config.get_default_config():
+
+        {
+            "by_phase":    {"peak": 2.0, ...},
+            "by_horizon":  {"4": 1.5, ...},
+            "by_location": {"06": 2.0, ...},
+        }
+
+    Weights from each dimension are multiplied together. Missing keys
+    default to 1.0 (no upweighting). Returns None if the result would be
+    uniform (all 1.0) so XGBoost can take the fast path.
+
+    Args:
+        meta_df: DataFrame with columns 'date', 'location', 'horizon'.
+                 Must be aligned 1:1 with the X DataFrame the weights
+                 will be applied to.
+        sample_weights_config: dict with by_phase / by_horizon / by_location
+                               sub-dicts. Pass None for uniform weights.
+
+    Returns:
+        np.ndarray of shape (len(meta_df),) or None.
+    """
+    if not sample_weights_config:
+        return None
+
+    by_phase = sample_weights_config.get("by_phase") or {}
+    by_horizon = sample_weights_config.get("by_horizon") or {}
+    by_location = sample_weights_config.get("by_location") or {}
+
+    if not (by_phase or by_horizon or by_location):
+        return None
+
+    n = len(meta_df)
+    weights = np.ones(n, dtype=float)
+
+    if by_horizon and "horizon" in meta_df.columns:
+        horizons = meta_df["horizon"].astype(str).values
+        for h_key, h_w in by_horizon.items():
+            mask = horizons == str(h_key)
+            if mask.any():
+                weights[mask] *= float(h_w)
+
+    if by_phase and "date" in meta_df.columns:
+        # Lazy import to avoid circular dep at module load
+        from agent.phase_evaluator import PhaseEvaluator
+        months = pd.to_datetime(meta_df["date"]).dt.month.values
+        phases = np.array(
+            [PhaseEvaluator.PHASE_MAP.get(int(m), "off_season") for m in months]
+        )
+        for ph_name, ph_w in by_phase.items():
+            mask = phases == ph_name
+            if mask.any():
+                weights[mask] *= float(ph_w)
+
+    if by_location and "location" in meta_df.columns:
+        locs = meta_df["location"].astype(str).str.zfill(2).values
+        for loc_key, loc_w in by_location.items():
+            mask = locs == str(loc_key).zfill(2)
+            if mask.any():
+                weights[mask] *= float(loc_w)
+
+    if np.allclose(weights, 1.0):
+        return None
+    return weights
+
+
 class DirectForecastEnsemble:
     """
     Separate XGBoost model for each forecast horizon (1, 2, 3, 4 weeks ahead).
@@ -58,7 +135,8 @@ class DirectForecastEnsemble:
         self.ratio_min_denominator = getattr(config, 'RATIO_MIN_DENOMINATOR', 5)
     
     def prepare_horizon_data(self, data: pd.DataFrame, horizon: int,
-                             return_raw_targets: bool = False) -> Tuple[pd.DataFrame, pd.Series, Optional[pd.Series]]:
+                             return_raw_targets: bool = False,
+                             return_metadata: bool = False) -> Tuple:
         """
         Prepare training data for a specific horizon by shifting the target.
 
@@ -66,9 +144,13 @@ class DirectForecastEnsemble:
             data: DataFrame with features and 'value' column
             horizon: Number of weeks ahead for this model
             return_raw_targets: If True, also return raw (untransformed) targets for evaluation
+            return_metadata: If True, also return a metadata DataFrame with
+                'date', 'location', 'horizon' columns aligned 1:1 with X.
+                Used by the agent loop to compute per-row sample weights.
 
         Returns:
-            Tuple of (features DataFrame, transformed target Series, raw target Series or None)
+            Tuple of (X, y, y_raw, [meta]). y_raw is None when return_raw_targets
+            is False. meta is appended only when return_metadata is True.
         """
         df = data.copy()
         df = df.sort_values(['location', 'date']).reset_index(drop=True)
@@ -79,10 +161,19 @@ class DirectForecastEnsemble:
         df[target_col] = df.groupby('location')['value'].shift(-horizon)
 
         # Drop rows where target is NaN (last 'horizon' rows per location)
-        df = df.dropna(subset=[target_col])
+        df = df.dropna(subset=[target_col]).reset_index(drop=True)
 
         # Store raw target values (for evaluation)
         y_raw = df[target_col].copy()
+
+        # Capture row metadata (date/location/horizon) for sample weights
+        meta = None
+        if return_metadata:
+            meta = pd.DataFrame({
+                'date': df['date'].values,
+                'location': df['location'].astype(str).values,
+                'horizon': horizon,
+            })
 
         # Apply target transformation based on mode
         if self.target_mode == "ratio":
@@ -108,17 +199,23 @@ class DirectForecastEnsemble:
         # Prepare features (will use 'value' as dummy target, we don't need it)
         X, _ = self.models[horizon].prepare_features(df)
 
-        if return_raw_targets:
-            return X, y, y_raw
-        return X, y, None
+        result_y_raw = y_raw if return_raw_targets else None
+        if return_metadata:
+            return X, y, result_y_raw, meta
+        return X, y, result_y_raw
     
-    def train(self, data: pd.DataFrame, validation_split: float = 0.2) -> Dict:
+    def train(self, data: pd.DataFrame, validation_split: float = 0.2,
+              sample_weights: Optional[Dict] = None) -> Dict:
         """
         Train all horizon models.
 
         Args:
             data: Full dataset with features
             validation_split: Fraction of data to use for validation
+            sample_weights: Optional config dict from the agent loop with shape
+                {"by_phase": {...}, "by_horizon": {...}, "by_location": {...}}.
+                When provided, training rows matching these dimensions are
+                upweighted via XGBoost's sample_weight. Pass None for uniform.
 
         Returns:
             Dictionary with training results for each horizon
@@ -126,7 +223,8 @@ class DirectForecastEnsemble:
         results = {
             'training_date': datetime.now().isoformat(),
             'target_mode': self.target_mode,
-            'horizons': {}
+            'horizons': {},
+            'sample_weights_applied': bool(sample_weights),
         }
 
         # Store the full data for later use in generating forecasts
@@ -135,8 +233,11 @@ class DirectForecastEnsemble:
         for horizon in range(1, self.forecast_horizon + 1):
             print(f"Training model for horizon {horizon} (target_mode={self.target_mode})...")
 
-            # Prepare data for this horizon (with raw targets for evaluation)
-            X, y, y_raw = self.prepare_horizon_data(data, horizon, return_raw_targets=True)
+            # Prepare data for this horizon (with raw targets for evaluation
+            # and metadata for sample-weight computation)
+            X, y, y_raw, meta = self.prepare_horizon_data(
+                data, horizon, return_raw_targets=True, return_metadata=True
+            )
 
             # Split into train/validation (temporal split)
             split_idx = int(len(X) * (1 - validation_split))
@@ -149,8 +250,14 @@ class DirectForecastEnsemble:
             else:
                 y_val_raw = y_val
 
+            # Compute aligned sample weights and slice to the training portion
+            full_weights = _compute_sample_weights(meta, sample_weights)
+            train_weights = full_weights[:split_idx] if full_weights is not None else None
+
             # Train model on transformed targets
-            train_results = self.models[horizon].train(X_train, y_train, (X_val, y_val))
+            train_results = self.models[horizon].train(
+                X_train, y_train, (X_val, y_val), sample_weight=train_weights
+            )
 
             # For evaluation, compute metrics on actual hospitalization counts
             # Apply inverse transformation to predictions
@@ -464,7 +571,8 @@ class QuantileDirectForecastEnsemble:
 
     def prepare_horizon_data(self, data: pd.DataFrame, horizon: int,
                              return_raw_targets: bool = False,
-                             quantile: Optional[float] = None) -> Tuple[pd.DataFrame, pd.Series, Optional[pd.Series]]:
+                             quantile: Optional[float] = None,
+                             return_metadata: bool = False) -> Tuple:
         """
         Prepare training data for a specific horizon by shifting the target.
         (Same as DirectForecastEnsemble)
@@ -474,14 +582,24 @@ class QuantileDirectForecastEnsemble:
             horizon: Forecast horizon
             return_raw_targets: Whether to return raw (untransformed) targets
             quantile: If specified, use this quantile's model for feature prep
+            return_metadata: If True, also return a metadata DataFrame with
+                'date', 'location', 'horizon' columns aligned 1:1 with X.
         """
         df = data.copy()
         df = df.sort_values(['location', 'date']).reset_index(drop=True)
 
         target_col = f'target_h{horizon}'
         df[target_col] = df.groupby('location')['value'].shift(-horizon)
-        df = df.dropna(subset=[target_col])
+        df = df.dropna(subset=[target_col]).reset_index(drop=True)
         y_raw = df[target_col].copy()
+
+        meta = None
+        if return_metadata:
+            meta = pd.DataFrame({
+                'date': df['date'].values,
+                'location': df['location'].astype(str).values,
+                'horizon': horizon,
+            })
 
         if self.target_mode == "ratio":
             current_value = df['value'].copy()
@@ -499,17 +617,23 @@ class QuantileDirectForecastEnsemble:
         q = quantile if quantile is not None else self.quantiles[0]
         X, _ = self.models[horizon][q].prepare_features(df)
 
-        if return_raw_targets:
-            return X, y, y_raw
-        return X, y, None
+        result_y_raw = y_raw if return_raw_targets else None
+        if return_metadata:
+            return X, y, result_y_raw, meta
+        return X, y, result_y_raw
 
-    def train(self, data: pd.DataFrame, validation_split: float = 0.2) -> Dict:
+    def train(self, data: pd.DataFrame, validation_split: float = 0.2,
+              sample_weights: Optional[Dict] = None) -> Dict:
         """
         Train all horizon-quantile models.
 
         Args:
             data: Full dataset with features
             validation_split: Fraction of data to use for validation
+            sample_weights: Optional config dict from the agent loop with shape
+                {"by_phase": {...}, "by_horizon": {...}, "by_location": {...}}.
+                When provided, training rows matching these dimensions are
+                upweighted via XGBoost's sample_weight. Pass None for uniform.
 
         Returns:
             Dictionary with training results for each horizon and quantile
@@ -520,7 +644,8 @@ class QuantileDirectForecastEnsemble:
             'n_quantiles': len(self.quantiles),
             'n_total_models': self.forecast_horizon * len(self.quantiles),
             'quantiles': self.quantiles,
-            'horizons': {}
+            'horizons': {},
+            'sample_weights_applied': bool(sample_weights),
         }
 
         self._training_data = data.copy()
@@ -536,14 +661,26 @@ class QuantileDirectForecastEnsemble:
                 print(f"  [{current_model}/{total_models}] Training horizon {horizon}, quantile {q}...")
 
                 # Prepare features specifically for this quantile model
-                X_q, y_q, y_raw_q = self.prepare_horizon_data(data, horizon, return_raw_targets=True, quantile=q)
+                X_q, y_q, y_raw_q, meta_q = self.prepare_horizon_data(
+                    data, horizon, return_raw_targets=True, quantile=q,
+                    return_metadata=True,
+                )
                 split_idx_q = int(len(X_q) * (1 - validation_split))
                 X_train_q, X_val_q = X_q.iloc[:split_idx_q], X_q.iloc[split_idx_q:]
                 y_train_q, y_val_q = y_q.iloc[:split_idx_q], y_q.iloc[split_idx_q:]
                 y_val_raw_q = y_raw_q.iloc[split_idx_q:] if y_raw_q is not None else y_val_q
 
+                # Compute aligned sample weights for the training portion
+                full_weights_q = _compute_sample_weights(meta_q, sample_weights)
+                train_weights_q = (
+                    full_weights_q[:split_idx_q] if full_weights_q is not None else None
+                )
+
                 # Train quantile model
-                train_results = self.models[horizon][q].train(X_train_q, y_train_q, (X_val_q, y_val_q))
+                train_results = self.models[horizon][q].train(
+                    X_train_q, y_train_q, (X_val_q, y_val_q),
+                    sample_weight=train_weights_q,
+                )
 
                 # Compute metrics on actual counts
                 val_predictions_transformed = self.models[horizon][q].predict(X_val_q)
@@ -835,7 +972,8 @@ class ClusteredDirectForecastEnsemble:
 
     def prepare_horizon_data(self, data: pd.DataFrame, horizon: int,
                              return_raw_targets: bool = False,
-                             model: Optional[FluForecastingModel] = None) -> Tuple[pd.DataFrame, pd.Series, Optional[pd.Series]]:
+                             model: Optional[FluForecastingModel] = None,
+                             return_metadata: bool = False) -> Tuple:
         """
         Prepare training data for a specific horizon.
 
@@ -844,14 +982,24 @@ class ClusteredDirectForecastEnsemble:
             horizon: Forecast horizon
             return_raw_targets: Whether to return raw (untransformed) targets
             model: Model to use for feature preparation (uses default if None)
+            return_metadata: If True, also return a metadata DataFrame with
+                'date', 'location', 'horizon' columns aligned 1:1 with X.
         """
         df = data.copy()
         df = df.sort_values(['location', 'date']).reset_index(drop=True)
 
         target_col = f'target_h{horizon}'
         df[target_col] = df.groupby('location')['value'].shift(-horizon)
-        df = df.dropna(subset=[target_col])
+        df = df.dropna(subset=[target_col]).reset_index(drop=True)
         y_raw = df[target_col].copy()
+
+        meta = None
+        if return_metadata:
+            meta = pd.DataFrame({
+                'date': df['date'].values,
+                'location': df['location'].astype(str).values,
+                'horizon': horizon,
+            })
 
         if self.target_mode == "ratio":
             current_value = df['value'].copy()
@@ -877,17 +1025,23 @@ class ClusteredDirectForecastEnsemble:
                 ref_model = self.models[first_cluster][horizon]
             X, _ = ref_model.prepare_features(df)
 
-        if return_raw_targets:
-            return X, y, y_raw
-        return X, y, None
+        result_y_raw = y_raw if return_raw_targets else None
+        if return_metadata:
+            return X, y, result_y_raw, meta
+        return X, y, result_y_raw
 
-    def train(self, data: pd.DataFrame, validation_split: float = 0.2) -> Dict:
+    def train(self, data: pd.DataFrame, validation_split: float = 0.2,
+              sample_weights: Optional[Dict] = None) -> Dict:
         """
         Train all cluster-specific models.
 
         Args:
             data: Full dataset with features
             validation_split: Fraction of data to use for validation
+            sample_weights: Optional config dict from the agent loop with shape
+                {"by_phase": {...}, "by_horizon": {...}, "by_location": {...}}.
+                When provided, training rows matching these dimensions are
+                upweighted via XGBoost's sample_weight. Pass None for uniform.
 
         Returns:
             Dictionary with training results
@@ -901,7 +1055,8 @@ class ClusteredDirectForecastEnsemble:
             'target_mode': self.target_mode,
             'n_clusters': len(set(self.location_to_cluster.values())),
             'enable_quantiles': self.enable_quantiles,
-            'clusters': {}
+            'clusters': {},
+            'sample_weights_applied': bool(sample_weights),
         }
 
         self._training_data = data.copy()
@@ -931,8 +1086,9 @@ class ClusteredDirectForecastEnsemble:
 
                     for q in self.quantiles:
                         model = self.models[cluster_id][horizon][q]
-                        X, y, y_raw = self.prepare_horizon_data(
-                            cluster_data, horizon, return_raw_targets=True, model=model
+                        X, y, y_raw, meta = self.prepare_horizon_data(
+                            cluster_data, horizon, return_raw_targets=True, model=model,
+                            return_metadata=True,
                         )
 
                         if len(X) < 20:
@@ -944,7 +1100,12 @@ class ClusteredDirectForecastEnsemble:
                         y_train, y_val = y.iloc[:split_idx], y.iloc[split_idx:]
                         y_val_raw = y_raw.iloc[split_idx:] if y_raw is not None else y_val
 
-                        train_results = model.train(X_train, y_train, (X_val, y_val))
+                        full_w = _compute_sample_weights(meta, sample_weights)
+                        train_w = full_w[:split_idx] if full_w is not None else None
+
+                        train_results = model.train(
+                            X_train, y_train, (X_val, y_val), sample_weight=train_w
+                        )
 
                         val_pred = model.predict(X_val)
                         if self.target_mode == "log":
@@ -958,8 +1119,9 @@ class ClusteredDirectForecastEnsemble:
                     print(f"  Horizon {horizon}: Trained {len(self.quantiles)} quantile models")
                 else:
                     model = self.models[cluster_id][horizon]
-                    X, y, y_raw = self.prepare_horizon_data(
-                        cluster_data, horizon, return_raw_targets=True, model=model
+                    X, y, y_raw, meta = self.prepare_horizon_data(
+                        cluster_data, horizon, return_raw_targets=True, model=model,
+                        return_metadata=True,
                     )
 
                     if len(X) < 20:
@@ -971,7 +1133,12 @@ class ClusteredDirectForecastEnsemble:
                     y_train, y_val = y.iloc[:split_idx], y.iloc[split_idx:]
                     y_val_raw = y_raw.iloc[split_idx:] if y_raw is not None else y_val
 
-                    train_results = model.train(X_train, y_train, (X_val, y_val))
+                    full_w = _compute_sample_weights(meta, sample_weights)
+                    train_w = full_w[:split_idx] if full_w is not None else None
+
+                    train_results = model.train(
+                        X_train, y_train, (X_val, y_val), sample_weight=train_w
+                    )
 
                     val_pred = model.predict(X_val)
                     if self.target_mode == "log":
