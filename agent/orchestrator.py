@@ -355,7 +355,7 @@ class Orchestrator:
                 self._print_diagnosis(diagnosis)
 
                 # ---- 2. propose --------------------------------------------
-                action = self._propose(diagnosis, iterations)
+                action = self._propose(diagnosis, iterations, config)
                 self._print_action(action)
 
                 # ---- 3. handle stop action --------------------------------
@@ -423,6 +423,24 @@ class Orchestrator:
                 # ---- 5. apply action --------------------------------------
                 new_config, change_desc = self.adapter.apply_action(action, config)
                 self._log(f"  applied: {change_desc}")
+
+                # Detect no-op (value didn't actually change)
+                if new_config == config:
+                    self._log("  no-op: config unchanged — skipping retrain")
+                    record = IterationRecord(
+                        iteration=it, config=config,
+                        forecast_path=iterations[-1].forecast_path,
+                        metrics=iterations[-1].metrics,
+                        diagnosis=diagnosis, action=action,
+                        action_status="no_op",
+                        target_value=iterations[-1].target_value,
+                    )
+                    iterations.append(record)
+                    self.tracker.log_iteration(
+                        run_id, it, metrics=record.metrics, diagnosis=diagnosis,
+                        action=action, config=config, forecast_path=record.forecast_path,
+                    )
+                    continue
 
                 # ---- 6. retrain --------------------------------------------
                 forecast_path = self._retrain(it, new_config)
@@ -574,7 +592,8 @@ class Orchestrator:
             return obj
 
     def _propose(
-        self, diagnosis: Dict[str, Any], iterations: List[IterationRecord]
+        self, diagnosis: Dict[str, Any], iterations: List[IterationRecord],
+        current_config: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Call Agent 2 and return a validated action dict."""
         catalog = self.adapter.get_available_actions()
@@ -597,6 +616,7 @@ class Orchestrator:
             action_catalog=catalog,
             domain_context=self.adapter.get_domain_context(),
             target_metric=self.target_metric,
+            current_config=current_config,
         )
         response = self.llm.invoke(prompt)
         try:

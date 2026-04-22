@@ -94,6 +94,16 @@ def test_extract_json_noisy_prose():
     assert obj["suggested_focus"] == "peak_underprediction"
 
 
+def test_extract_json_qwen3_think_tags():
+    """Qwen3 wraps output in <think>...</think> tags — extractor strips them."""
+    think_wrapped = (
+        "<think>\nLet me analyze the metrics...\n</think>\n\n"
+        + json.dumps(_valid_diagnosis())
+    )
+    obj = extract_json_from_response(think_wrapped)
+    assert obj["suggested_focus"] == "peak_underprediction"
+
+
 def test_extract_json_no_json_raises():
     try:
         extract_json_from_response("I cannot help.")

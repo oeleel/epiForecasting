@@ -1,12 +1,12 @@
 {
-  "last_fetched": "2026-03-16T20:50:50.954362Z",
-  "remote_last_updated": "2026-03-11T18:12:53Z",
+  "last_fetched": "2026-04-22T06:09:39.650113Z",
+  "remote_last_updated": "2026-04-15T17:17:35Z",
   "source_url": "https://raw.githubusercontent.com/cdcepi/FluSight-forecast-hub/main/target-data/target-hospital-admissions.csv",
   "repository": "cdcepi/FluSight-forecast-hub",
-  "records": 11342,
+  "records": 11607,
   "date_range": {
     "min": "2022-02-05T00:00:00",
-    "max": "2026-03-07T00:00:00"
+    "max": "2026-04-11T00:00:00"
   },
   "locations": 53
 }

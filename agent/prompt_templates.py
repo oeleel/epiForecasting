@@ -361,16 +361,21 @@ _JSON_BLOCK_RE = re.compile(r"\{.*\}", re.DOTALL)
 _FENCE_RE = re.compile(r"```(?:json)?\s*(\{.*?\})\s*```", re.DOTALL)
 
 
+_THINK_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
+
+
 def extract_json_from_response(text: str) -> Dict[str, Any]:
     """Extract a JSON object from a possibly noisy LLM response.
 
     Tries, in order:
+        0. Strip <think>...</think> blocks (Qwen3 reasoning tokens)
         1. Parse the entire response as JSON
         2. Extract a fenced ```json``` block
         3. Greedy match the first {...} substring
     Raises ValueError if no parseable JSON is found.
     """
-    text = text.strip()
+    # Strip Qwen3-style thinking blocks
+    text = _THINK_RE.sub("", text).strip()
 
     try:
         return json.loads(text)
@@ -423,6 +428,9 @@ def validate_diagnosis(obj: Any) -> None:
     for i, seg in enumerate(obj["weak_segments"]):
         if not isinstance(seg, dict):
             raise ValueError(f"weak_segments[{i}] must be an object")
+        # Patch defaults for commonly omitted numeric fields
+        if "delta_vs_overall" not in seg:
+            seg["delta_vs_overall"] = 0.0
         seg_missing = [k for k in weak_required if k not in seg]
         if seg_missing:
             raise ValueError(f"weak_segments[{i}] missing keys: {seg_missing}")
@@ -480,6 +488,13 @@ action's params are constrained by the listed schema and guardrails.
 
 {action_catalog_block}
 
+## Current Config Values
+
+These are the CURRENT settings. Do NOT propose a value that matches
+the current value — that would be a no-op.
+
+{current_config_block}
+
 ## Target Metric
 
 You are optimizing **{target_metric}** (lower is better, except
@@ -523,6 +538,7 @@ def format_action_proposal_prompt(
     action_catalog: List[Dict[str, Any]],
     domain_context: str,
     target_metric: str = "wis",
+    current_config: Dict[str, Any] = None,
 ) -> str:
     """Build Agent 2's action-proposal prompt.
 
@@ -534,6 +550,8 @@ def format_action_proposal_prompt(
         action_catalog: Output of adapter.get_available_actions().
         domain_context: Output of adapter.get_domain_context().
         target_metric: Name of the metric being optimized (for the prompt).
+        current_config: Optional pipeline config dict. If provided, key
+            values are shown so the LLM avoids no-op proposals.
 
     Returns:
         Fully formatted prompt string.
@@ -628,11 +646,40 @@ def format_action_proposal_prompt(
         cat_lines.append("")
     action_catalog_block = "\n".join(cat_lines).rstrip()
 
+    # ---- Current config block -------------------------------------------------
+    if current_config:
+        cfg_lines = []
+        xgb = current_config.get("xgboost", {})
+        if xgb:
+            cfg_lines.append("XGBoost hyperparameters:")
+            for k, v in sorted(xgb.items()):
+                cfg_lines.append(f"  - {k}: {v}")
+        target = current_config.get("target", {})
+        if target:
+            cfg_lines.append(f"Target transform: {target.get('mode', '?')}")
+        floor = current_config.get("floor", {})
+        if floor:
+            cfg_lines.append(f"Floor constraint: floor_pct={floor.get('floor_pct', '?')}")
+        sw = current_config.get("sample_weights", {})
+        active_weights = {k: v for k, v in sw.items() if v} if sw else {}
+        if active_weights:
+            cfg_lines.append(f"Sample weights: {active_weights}")
+        else:
+            cfg_lines.append("Sample weights: (none active)")
+        fg = current_config.get("features", {}).get("groups_enabled", {})
+        disabled = [g for g, v in fg.items() if not v] if fg else []
+        if disabled:
+            cfg_lines.append(f"Disabled feature groups: {disabled}")
+        current_config_block = "\n".join(cfg_lines)
+    else:
+        current_config_block = "(not available)"
+
     return ACTION_PROPOSAL_PROMPT.format(
         domain_context=domain_context,
         diagnosis_block=diagnosis_block,
         history_block=history_block,
         action_catalog_block=action_catalog_block,
+        current_config_block=current_config_block,
         target_metric=target_metric,
     )
 

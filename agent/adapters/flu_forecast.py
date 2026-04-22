@@ -32,9 +32,10 @@ class FluForecastAdapter(DomainAdapter):
         - agent.phase_evaluator.PhaseEvaluator (phase-aware metrics)
     """
 
-    def __init__(self, project_root: str = None):
+    def __init__(self, project_root: str = None, exclude_locations: List[str] = None):
         self.project_root = Path(project_root) if project_root else PROJECT_ROOT
         self._location_names = None  # lazy-loaded FIPS-to-name mapping
+        self.exclude_locations = set(exclude_locations) if exclude_locations else set()
 
     @property
     def location_names(self) -> Dict[str, str]:
@@ -89,6 +90,12 @@ class FluForecastAdapter(DomainAdapter):
 
         # Load actuals
         actuals = self._load_actuals()
+
+        # Filter out excluded locations
+        if self.exclude_locations:
+            forecasts = forecasts[
+                ~forecasts["location"].astype(str).isin(self.exclude_locations)
+            ]
 
         return forecasts, actuals
 

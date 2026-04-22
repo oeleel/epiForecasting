@@ -52,12 +52,21 @@ def _seed_baseline_csv(tmp_dir: Path) -> Path:
     return p
 
 
+_DISTINCT_ACTIONS = [
+    valid_action(name="adjust_hyperparameter", params={"name": "max_depth", "value": 5}),
+    valid_action(name="adjust_hyperparameter", params={"name": "max_depth", "value": 6}),
+    valid_action(name="adjust_hyperparameter", params={"name": "max_depth", "value": 7}),
+    valid_action(name="adjust_hyperparameter", params={"name": "max_depth", "value": 8}),
+    valid_action(name="adjust_hyperparameter", params={"name": "max_depth", "value": 9}),
+]
+
+
 def _build_llm(num_iterations: int, action_name: str = "adjust_hyperparameter") -> FakeLLM:
     """Build a FakeLLM that responds to N (diagnose, propose) pairs."""
     responses = []
-    for _ in range(num_iterations):
+    for i in range(num_iterations):
         responses.append(json.dumps(valid_diagnosis()))
-        responses.append(json.dumps(valid_action(name=action_name)))
+        responses.append(json.dumps(_DISTINCT_ACTIONS[i % len(_DISTINCT_ACTIONS)]))
     return FakeLLM(responses)
 
 
@@ -262,7 +271,7 @@ def test_tracker_persists_full_state():
         assert run["iterations"][0]["action"] is None
         assert run["iterations"][1]["action"]["name"] == "adjust_hyperparameter"
         assert run["iterations"][1]["config"]["xgboost"]["max_depth"] == 5
-        assert run["iterations"][2]["config"]["xgboost"]["max_depth"] == 5
+        assert run["iterations"][2]["config"]["xgboost"]["max_depth"] == 6
 
         # Best iteration query
         best = tracker2.get_best_iteration(result.run_id, metric="wis")

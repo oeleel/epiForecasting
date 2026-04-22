@@ -19,13 +19,15 @@ class FeatureEngineer:
     def __init__(self, lag_features: List[int] = config.LAG_FEATURES,
                  rolling_windows: List[int] = config.ROLLING_WINDOWS,
                  us_lag_features: List[int] = config.US_LAG_FEATURES,
-                 feature_version: str = None):
+                 feature_version: str = None,
+                 groups_enabled: Dict[str, bool] = None):
         self.lag_features = lag_features
         self.rolling_windows = rolling_windows
         self.us_lag_features = us_lag_features
         self.feature_version = feature_version or getattr(config, 'FEATURE_VERSION', 'v1')
         self.features_removed = getattr(config, 'FEATURES_REMOVED', [])
         self.features_added = getattr(config, 'FEATURES_ADDED', [])
+        self.groups_enabled = groups_enabled
     
     def create_temporal_features(self, data: pd.DataFrame) -> pd.DataFrame:
         """
@@ -658,6 +660,20 @@ class FeatureEngineer:
 
         # Remove rows where target is missing (needed for lag features)
         df = df.dropna(subset=['value']).reset_index(drop=True)
+
+        # Drop columns belonging to disabled feature groups
+        if self.groups_enabled is not None:
+            disabled_prefixes = []
+            for group_name, enabled in self.groups_enabled.items():
+                if not enabled and group_name in config.FEATURE_GROUPS:
+                    disabled_prefixes.extend(config.FEATURE_GROUPS[group_name])
+            if disabled_prefixes:
+                drop_cols = [
+                    c for c in df.columns
+                    if any(c.startswith(p) for p in disabled_prefixes)
+                ]
+                df = df.drop(columns=drop_cols)
+                print(f"Disabled groups dropped {len(drop_cols)} columns: {drop_cols[:5]}{'...' if len(drop_cols) > 5 else ''}")
 
         # Count and display feature information
         feature_cols = self.get_feature_columns(df)

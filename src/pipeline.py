@@ -132,7 +132,9 @@ def run_pipeline(
                 + (f", locations={locations}" if locations else "")
             )
 
-        engineer = FeatureEngineer()
+        features_cfg = config.get("features", {})
+        groups_enabled = features_cfg.get("groups_enabled")
+        engineer = FeatureEngineer(groups_enabled=groups_enabled)
         features_df = engineer.create_all_features(data)
 
         # ---- Build + train ensemble -----------------------------------------

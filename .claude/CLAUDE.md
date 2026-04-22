@@ -53,7 +53,10 @@ python -m src.data_loader update
 ```
 
 ### Testing
-No test suite exists yet. `tests/test.py` is a placeholder.
+```bash
+python -m pytest tests/agent/ -v
+```
+90 tests covering: adapter actions, config, data quality, feature toggle, orchestrator, prompts, run tracker, sample weights, WIS scoring.
 
 ### Key Config Details
 - Active XGBoost params: `XGBOOST_PARAMS_V2` (regularized) in `src/config.py`
@@ -71,10 +74,13 @@ agent/
 ├── __init__.py              # Package exports
 ├── __main__.py              # Entry point: python -m agent
 ├── domain_adapter.py        # Abstract base class (DomainAdapter ABC)
+├── data_quality.py          # Pre-training data quality checks + LLM prompt
+├── orchestrator.py          # Two-agent improvement loop (evaluate → diagnose → act → retrain)
+├── run_tracker.py           # SQLite-backed run history (outputs/agent_runs/runs.db)
 ├── phase_evaluator.py       # Phase-aware evaluation engine (stateless class methods)
-├── prompt_templates.py      # LLM prompt templates + formatter
+├── prompt_templates.py      # LLM prompt templates + formatter + validators
 ├── llm_client.py            # Provider-agnostic LLM wrapper (OpenAI-compatible API)
-├── cli.py                   # CLI: summarize command (improve command planned)
+├── cli.py                   # CLI: check-data, summarize, improve, history, status, compare
 └── adapters/
     ├── __init__.py
     └── flu_forecast.py      # Concrete adapter for flu forecasting
@@ -86,9 +92,9 @@ agent/
 | `load_data(config)` | Implemented | Load forecast outputs + ground truth |
 | `compute_metrics(forecasts, actuals)` | Implemented | Domain-specific evaluation metrics |
 | `get_domain_context()` | Implemented | Provide LLM with domain knowledge |
-| `get_available_actions()` | Stub (Milestone 2) | Define what the LLM can suggest |
-| `apply_action(action)` | Stub (Milestone 2) | Programmatically apply a suggestion |
-| `run_pipeline(config)` | Stub (Milestone 2) | Retrain and re-forecast |
+| `get_available_actions()` | Implemented | Define constrained action catalog for the LLM |
+| `apply_action(action)` | Implemented | Apply + validate an LLM-suggested action |
+| `run_pipeline(config)` | Implemented | Retrain and re-forecast from a config dict |
 
 **PhaseEvaluator** (`phase_evaluator.py`) — computes metrics by epidemic phase:
 - Phases: Onset (Oct-Nov), Peak (Dec-Jan), Decline (Feb-Apr), Off-season (May-Sep, skipped)
@@ -113,24 +119,23 @@ Both expose an OpenAI-compatible API (`/v1/chat/completions`). Swapping environm
 **Milestone 1: LLM Summarization** — COMPLETE
 - `python -m agent summarize` computes phase-aware metrics and generates natural language performance report
 
-**Milestone 2: Improvement Loop** — NEXT
-- Iterative loop: evaluate -> LLM diagnoses -> suggest action -> apply -> retrain -> re-evaluate
-- New components needed:
-  - `agent/orchestrator.py` — LangGraph state machine with evaluate/suggest/apply nodes
-  - `agent/run_tracker.py` — SQLite-backed iteration history
-  - Complete adapter stubs: `get_available_actions()`, `apply_action()`, `run_pipeline()`
-  - Add `sample_weight` support to `src/model.py` and `src/direct_forecast.py`
-  - New CLI command: `python -m agent improve --max-iterations 3`
-- Constrained action space (LLM can only suggest from predefined list):
-  - `adjust_hyperparameter` — change XGBoost params
-  - `resample_by_phase` — upweight training samples from specific phases
-  - `toggle_feature` — enable/disable features
-  - `adjust_floor_constraint` — change post-prediction floor %
-  - `change_target_transform` — switch between log/raw/ratio
+**Milestone 2: Improvement Loop** — COMPLETE
+- Two-agent loop: evaluate -> Agent 1 diagnoses -> Agent 2 proposes action -> validate -> apply -> retrain -> re-evaluate
+- `agent/orchestrator.py` — plain Python orchestrator (no LangGraph dependency)
+- `agent/run_tracker.py` — SQLite-backed iteration history
+- `src/pipeline.py` — callable pipeline (config dict in, forecast CSV out)
+- All adapter methods implemented: `get_available_actions()`, `apply_action()`, `run_pipeline()`
+- Sample weight support wired through all ensemble types
+- Feature group toggling wired through `FeatureEngineer`
+- 6 constrained actions: `adjust_hyperparameter`, `reweight_training_samples`, `toggle_feature`, `adjust_floor_constraint`, `change_target_transform`, `stop`
 
-**Milestone 3: Tracking & History** — PLANNED
-- CLI commands: `history`, `compare`, `status`
-- Boosting-style sample reweighting based on underperforming segments
+**Data Quality Agent** — COMPLETE
+- `python -m agent check-data` runs pre-training checks (missing weeks, nulls, spikes, zero-reporting, coverage)
+- LLM interprets findings in epidemiological context
+
+**Milestone 3: Tracking & History** — COMPLETE
+- CLI commands: `history`, `status`, `compare`
+- Sample reweighting by phase/horizon/location via `reweight_training_samples` action
 
 **Milestone 4: Generalization** — PLANNED
 - Template adapter for new domains (finance, sales, etc.)
