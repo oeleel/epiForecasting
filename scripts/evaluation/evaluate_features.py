@@ -84,7 +84,7 @@ def run_feature_evaluation(output_dir: str = "outputs/performance_tracking") -> 
     max_date = raw_data['date'].max()
     for cutoff in evaluation_cutoffs:
         cutoff_dt = pd.to_datetime(cutoff)
-        if cutoff_dt + pd.Timedelta(weeks=4) <= max_date:
+        if cutoff_dt + pd.Timedelta(7 * (4), unit="D") <= max_date:
             valid_cutoffs.append(cutoff)
 
     if not valid_cutoffs:

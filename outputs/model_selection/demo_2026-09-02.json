@@ -1,0 +1,526 @@
+{
+  "goal": {
+    "metric": "wis",
+    "phase": "all"
+  },
+  "cutoffs": [
+    "2025-10-04",
+    "2025-11-01",
+    "2025-11-29",
+    "2025-12-27",
+    "2026-01-24",
+    "2026-02-21",
+    "2026-03-21",
+    "2026-04-18",
+    "2026-05-16"
+  ],
+  "incumbent": "xgboost_direct",
+  "ranking": [
+    {
+      "family": "xgboost_direct",
+      "value": 50.59
+    },
+    {
+      "family": "nf_nhits",
+      "value": 65.57
+    },
+    {
+      "family": "sf_autoets",
+      "value": 82.15
+    },
+    {
+      "family": "persistence",
+      "value": 90.54
+    },
+    {
+      "family": "mlf_lightgbm",
+      "value": 138.74
+    },
+    {
+      "family": "seasonal_naive",
+      "value": 153.23
+    }
+  ],
+  "candidates": [
+    {
+      "family": "persistence",
+      "params": {},
+      "n_cutoffs": 9,
+      "n_forecast_rows": 1872,
+      "fit_seconds_total": 0.05511736805783585,
+      "metrics": {
+        "overall": {
+          "mape": 89.0,
+          "mae": 98.1,
+          "rmse": 266.5,
+          "bias": 11.4,
+          "n_forecasts": 1872,
+          "wis": 90.54,
+          "coverage_95": 0.725
+        },
+        "by_phase": {
+          "decline": {
+            "mape": 136.4,
+            "mae": 89.2,
+            "bias": 68.7,
+            "n": 624,
+            "wis": 70.87,
+            "coverage_95": 0.886
+          },
+          "onset": {
+            "mape": 59.3,
+            "mae": 22.8,
+            "bias": -21.9,
+            "n": 416,
+            "wis": 20.39,
+            "coverage_95": 0.678
+          },
+          "peak": {
+            "mape": 62.2,
+            "mae": 246.2,
+            "bias": -29.4,
+            "n": 468,
+            "wis": 235.85,
+            "coverage_95": 0.338
+          }
+        },
+        "by_horizon": {
+          "1": {
+            "mape": 49.7,
+            "mae": 41.4,
+            "bias": -0.3,
+            "n": 468,
+            "wis": 33.45,
+            "coverage_95": 0.823
+          },
+          "2": {
+            "mape": 72.6,
+            "mae": 66.4,
+            "bias": 21.4,
+            "n": 468,
+            "wis": 58.76,
+            "coverage_95": 0.763
+          },
+          "3": {
+            "mape": 100.6,
+            "mae": 118.8,
+            "bias": 24.5,
+            "n": 468,
+            "wis": 110.42,
+            "coverage_95": 0.686
+          },
+          "4": {
+            "mape": 133.4,
+            "mae": 166.0,
+            "bias": 0.2,
+            "n": 468,
+            "wis": 159.54,
+            "coverage_95": 0.628
+          }
+        },
+        "n_scored": 1872
+      },
+      "error": null
+    },
+    {
+      "family": "seasonal_naive",
+      "params": {},
+      "n_cutoffs": 9,
+      "n_forecast_rows": 1872,
+      "fit_seconds_total": 0.06351084698690102,
+      "metrics": {
+        "overall": {
+          "mape": 163.2,
+          "mae": 180.7,
+          "rmse": 450.2,
+          "bias": 121.0,
+          "n_forecasts": 1872,
+          "wis": 153.23,
+          "coverage_95": 0.764
+        },
+        "by_phase": {
+          "decline": {
+            "mape": 262.7,
+            "mae": 270.3,
+            "bias": 268.9,
+            "n": 624,
+            "wis": 209.2,
+            "coverage_95": 0.854
+          },
+          "onset": {
+            "mape": 144.5,
+            "mae": 27.4,
+            "bias": -0.3,
+            "n": 416,
+            "wis": 23.21,
+            "coverage_95": 0.841
+          },
+          "peak": {
+            "mape": 102.7,
+            "mae": 327.4,
+            "bias": 128.2,
+            "n": 468,
+            "wis": 304.56,
+            "coverage_95": 0.393
+          }
+        },
+        "by_horizon": {
+          "1": {
+            "mape": 162.5,
+            "mae": 196.2,
+            "bias": 132.2,
+            "n": 468,
+            "wis": 161.38,
+            "coverage_95": 0.784
+          },
+          "2": {
+            "mape": 182.4,
+            "mae": 171.2,
+            "bias": 128.3,
+            "n": 468,
+            "wis": 142.02,
+            "coverage_95": 0.784
+          },
+          "3": {
+            "mape": 152.1,
+            "mae": 169.5,
+            "bias": 116.8,
+            "n": 468,
+            "wis": 145.08,
+            "coverage_95": 0.754
+          },
+          "4": {
+            "mape": 155.7,
+            "mae": 185.7,
+            "bias": 106.7,
+            "n": 468,
+            "wis": 164.42,
+            "coverage_95": 0.735
+          }
+        },
+        "n_scored": 1872
+      },
+      "error": null
+    },
+    {
+      "family": "xgboost_direct",
+      "params": {},
+      "n_cutoffs": 9,
+      "n_forecast_rows": 1872,
+      "fit_seconds_total": 92.69693214798463,
+      "metrics": {
+        "overall": {
+          "mape": 67.5,
+          "mae": 73.2,
+          "rmse": 199.6,
+          "bias": -24.7,
+          "n_forecasts": 1872,
+          "wis": 50.59,
+          "coverage_95": 0.835
+        },
+        "by_phase": {
+          "decline": {
+            "mape": 75.7,
+            "mae": 70.7,
+            "bias": -26.7,
+            "n": 624,
+            "wis": 49.28,
+            "coverage_95": 0.732
+          },
+          "onset": {
+            "mape": 75.4,
+            "mae": 17.0,
+            "bias": -8.3,
+            "n": 416,
+            "wis": 10.98,
+            "coverage_95": 0.925
+          },
+          "peak": {
+            "mape": 48.4,
+            "mae": 175.9,
+            "bias": -52.4,
+            "n": 468,
+            "wis": 122.37,
+            "coverage_95": 0.857
+          }
+        },
+        "by_horizon": {
+          "1": {
+            "mape": 44.0,
+            "mae": 45.1,
+            "bias": -23.7,
+            "n": 468,
+            "wis": 29.52,
+            "coverage_95": 0.882
+          },
+          "2": {
+            "mape": 59.7,
+            "mae": 53.1,
+            "bias": -21.8,
+            "n": 468,
+            "wis": 37.29,
+            "coverage_95": 0.876
+          },
+          "3": {
+            "mape": 71.9,
+            "mae": 76.5,
+            "bias": -22.9,
+            "n": 468,
+            "wis": 54.41,
+            "coverage_95": 0.814
+          },
+          "4": {
+            "mape": 94.3,
+            "mae": 118.0,
+            "bias": -30.5,
+            "n": 468,
+            "wis": 81.15,
+            "coverage_95": 0.767
+          }
+        },
+        "n_scored": 1872
+      },
+      "error": null
+    },
+    {
+      "family": "sf_autoets",
+      "params": {},
+      "n_cutoffs": 9,
+      "n_forecast_rows": 1872,
+      "fit_seconds_total": 26.67558940098388,
+      "metrics": {
+        "overall": {
+          "mape": 88.6,
+          "mae": 106.8,
+          "rmse": 316.9,
+          "bias": 23.5,
+          "n_forecasts": 1872,
+          "wis": 82.15,
+          "coverage_95": 0.858
+        },
+        "by_phase": {
+          "decline": {
+            "mape": 113.8,
+            "mae": 81.2,
+            "bias": 53.8,
+            "n": 624,
+            "wis": 50.65,
+            "coverage_95": 0.941
+          },
+          "onset": {
+            "mape": 58.1,
+            "mae": 20.5,
+            "bias": -16.9,
+            "n": 416,
+            "wis": 16.02,
+            "coverage_95": 0.971
+          },
+          "peak": {
+            "mape": 73.8,
+            "mae": 290.9,
+            "bias": 32.2,
+            "n": 468,
+            "wis": 235.11,
+            "coverage_95": 0.538
+          }
+        },
+        "by_horizon": {
+          "1": {
+            "mape": 48.9,
+            "mae": 39.9,
+            "bias": 4.6,
+            "n": 468,
+            "wis": 27.9,
+            "coverage_95": 0.923
+          },
+          "2": {
+            "mape": 73.2,
+            "mae": 74.4,
+            "bias": 31.4,
+            "n": 468,
+            "wis": 56.05,
+            "coverage_95": 0.889
+          },
+          "3": {
+            "mape": 98.3,
+            "mae": 130.6,
+            "bias": 38.9,
+            "n": 468,
+            "wis": 99.97,
+            "coverage_95": 0.827
+          },
+          "4": {
+            "mape": 134.0,
+            "mae": 182.4,
+            "bias": 19.0,
+            "n": 468,
+            "wis": 144.67,
+            "coverage_95": 0.793
+          }
+        },
+        "n_scored": 1872
+      },
+      "error": null
+    },
+    {
+      "family": "mlf_lightgbm",
+      "params": {},
+      "n_cutoffs": 9,
+      "n_forecast_rows": 1872,
+      "fit_seconds_total": 1.5739310330536682,
+      "metrics": {
+        "overall": {
+          "mape": 108.0,
+          "mae": 153.4,
+          "rmse": 437.1,
+          "bias": 65.1,
+          "n_forecasts": 1872,
+          "wis": 138.74,
+          "coverage_95": 0.636
+        },
+        "by_phase": {
+          "decline": {
+            "mape": 143.6,
+            "mae": 112.1,
+            "bias": 39.7,
+            "n": 624,
+            "wis": 85.83,
+            "coverage_95": 0.905
+          },
+          "onset": {
+            "mape": 53.7,
+            "mae": 19.3,
+            "bias": -16.6,
+            "n": 416,
+            "wis": 15.81,
+            "coverage_95": 0.49
+          },
+          "peak": {
+            "mape": 126.1,
+            "mae": 440.1,
+            "bias": 222.4,
+            "n": 468,
+            "wis": 408.58,
+            "coverage_95": 0.124
+          }
+        },
+        "by_horizon": {
+          "1": {
+            "mape": 51.9,
+            "mae": 57.4,
+            "bias": 24.7,
+            "n": 468,
+            "wis": 49.89,
+            "coverage_95": 0.662
+          },
+          "2": {
+            "mape": 86.1,
+            "mae": 121.2,
+            "bias": 66.4,
+            "n": 468,
+            "wis": 110.41,
+            "coverage_95": 0.647
+          },
+          "3": {
+            "mape": 123.0,
+            "mae": 187.0,
+            "bias": 85.1,
+            "n": 468,
+            "wis": 169.26,
+            "coverage_95": 0.626
+          },
+          "4": {
+            "mape": 171.3,
+            "mae": 248.2,
+            "bias": 84.1,
+            "n": 468,
+            "wis": 225.38,
+            "coverage_95": 0.609
+          }
+        },
+        "n_scored": 1872
+      },
+      "error": null
+    },
+    {
+      "family": "nf_nhits",
+      "params": {},
+      "n_cutoffs": 9,
+      "n_forecast_rows": 1872,
+      "fit_seconds_total": 66.55829585593892,
+      "metrics": {
+        "overall": {
+          "mape": 83.6,
+          "mae": 95.7,
+          "rmse": 304.1,
+          "bias": 34.9,
+          "n_forecasts": 1872,
+          "wis": 65.57,
+          "coverage_95": 0.653
+        },
+        "by_phase": {
+          "decline": {
+            "mape": 77.4,
+            "mae": 59.8,
+            "bias": 23.8,
+            "n": 624,
+            "wis": 41.67,
+            "coverage_95": 0.58
+          },
+          "onset": {
+            "mape": 106.3,
+            "mae": 19.3,
+            "bias": -5.9,
+            "n": 416,
+            "wis": 12.92,
+            "coverage_95": 0.757
+          },
+          "peak": {
+            "mape": 68.2,
+            "mae": 277.7,
+            "bias": 115.4,
+            "n": 468,
+            "wis": 189.68,
+            "coverage_95": 0.645
+          }
+        },
+        "by_horizon": {
+          "1": {
+            "mape": 46.2,
+            "mae": 42.3,
+            "bias": 30.5,
+            "n": 468,
+            "wis": 27.23,
+            "coverage_95": 0.699
+          },
+          "2": {
+            "mape": 70.5,
+            "mae": 65.7,
+            "bias": 37.5,
+            "n": 468,
+            "wis": 42.63,
+            "coverage_95": 0.72
+          },
+          "3": {
+            "mape": 93.9,
+            "mae": 111.5,
+            "bias": 41.7,
+            "n": 468,
+            "wis": 77.0,
+            "coverage_95": 0.609
+          },
+          "4": {
+            "mape": 123.9,
+            "mae": 163.4,
+            "bias": 30.0,
+            "n": 468,
+            "wis": 115.4,
+            "coverage_95": 0.583
+          }
+        },
+        "n_scored": 1872
+      },
+      "error": null
+    }
+  ]
+}

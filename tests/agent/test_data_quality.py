@@ -86,7 +86,7 @@ class TestDataQualityChecker:
         # Remove location 02's recent data
         cutoff = "2023-05-20"
         cutoff_dt = pd.to_datetime(cutoff)
-        recent_start = cutoff_dt - pd.Timedelta(weeks=8)
+        recent_start = cutoff_dt - pd.Timedelta(7 * 8, unit="D")
         mask = (df["location"] == "02") & (df["date"] >= recent_start)
         df = df[~mask]
         checker = DataQualityChecker(cutoff)

@@ -224,11 +224,11 @@ class FakeAdapter(DomainAdapter):
             "n_locations": 1,
         }
 
-    def get_domain_context(self) -> str:
+    def get_domain_context(self, config=None) -> str:
         return "Fake domain for tests."
 
-    def get_available_actions(self):
-        return self._real.get_available_actions()
+    def get_available_actions(self, config=None):
+        return self._real.get_available_actions(config)
 
     def apply_action(self, action, config=None):
         return self._real.apply_action(action, config)

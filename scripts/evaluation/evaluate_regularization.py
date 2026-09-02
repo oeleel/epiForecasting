@@ -82,7 +82,7 @@ def evaluate_with_params(params: Dict, target_mode: str = "log",
     max_date = raw_data['date'].max()
     for cutoff in evaluation_cutoffs:
         cutoff_dt = pd.to_datetime(cutoff)
-        if cutoff_dt + pd.Timedelta(weeks=4) <= max_date:
+        if cutoff_dt + pd.Timedelta(7 * (4), unit="D") <= max_date:
             valid_cutoffs.append(cutoff)
 
     if not valid_cutoffs:

@@ -17,7 +17,10 @@ Design:
         floor.floor_pct
         sample_weights.*        -> XGBoost sample_weight via the helper
                                    in src.direct_forecast
+        model.family            -> "xgboost_direct" (this path) or any
+                                   model-bank family (src.model_bank.runner)
         data.cutoff_date        -> training/forecast cutoff
+        data.train_start_date   -> pinned training window start
         data.forecast_horizon   -> 1..H weeks ahead
         data.locations          -> optional location filter (None = all)
     - Returns the absolute path to a forecast CSV with the columns the
@@ -50,6 +53,9 @@ from src.feature_engineering import FeatureEngineer
 
 DEFAULT_OUTPUT_DIR = Path("outputs/agent_runs/_adhoc")
 
+# The one family that still runs through this module's own code path.
+LEGACY_XGBOOST_FAMILY = "xgboost_direct"
+
 
 def run_pipeline(
     config: Optional[Dict[str, Any]] = None,
@@ -79,6 +85,17 @@ def run_pipeline(
     """
     if config is None:
         config = default_config_module.get_default_config()
+
+    # ---- Model-bank dispatch --------------------------------------------------
+    # Any family other than the legacy XGBoost ensemble is trained through
+    # src.model_bank.runner, which speaks the ForecastModel contract. The
+    # legacy path below stays authoritative for "xgboost_direct" because it
+    # honors every Agent 2 action (feature toggles, reweighting, floor, ...).
+    family = (config.get("model") or {}).get("family", default_config_module.DEFAULT_MODEL_FAMILY)
+    if family != LEGACY_XGBOOST_FAMILY:
+        from src.model_bank.runner import run_bank_model
+
+        return run_bank_model(config, output_path=output_path, verbose=verbose)
 
     # ---- Extract config values with safe fallbacks --------------------------
     data_cfg = config.get("data", {})
@@ -122,6 +139,10 @@ def run_pipeline(
     with capture:
         loader = FluDataLoader()
         data = loader.load_and_preprocess(cutoff_date)
+
+        train_start = data_cfg.get("train_start_date")
+        if train_start is not None:
+            data = data[pd.to_datetime(data["date"]) >= pd.to_datetime(train_start)].copy()
 
         if locations is not None:
             data = data[data["location"].isin(locations)].copy()

@@ -7,6 +7,9 @@ Commands:
     history    — List past improve runs from the SQLite tracker.
     status     — Show detailed iteration-by-iteration view of a run.
     compare    — Diff two improve runs side-by-side.
+    list-models  — Show every model-bank family available in this environment.
+    select-model — Stage 1: warm-up every candidate family on the pinned
+                   eval window, score with phase-aware WIS, name the incumbent.
 
 Usage examples:
     python -m agent check-data --cutoff-date 2024-11-02 --dry-run
@@ -16,6 +19,10 @@ Usage examples:
     python -m agent history
     python -m agent status 20260410-153022-a3f2
     python -m agent compare 20260410-153022-a3f2 20260411-091844-7d10
+    python -m agent list-models
+    python -m agent select-model --stride-weeks 4
+    python -m agent select-model --families persistence sf_autoets mlf_lightgbm --metric wis --phase peak
+    python -m agent improve --cutoff-date 2025-12-06 --model-family mlf_lightgbm --auto-apply
 """
 
 import argparse
@@ -323,10 +330,21 @@ def cmd_improve(args) -> None:
         verbose=True,
     )
 
+    initial_config = None
+    if args.model_family:
+        from src.config import get_default_config
+        from src.model_bank.registry import resolve_family
+
+        resolve_family(args.model_family)  # fail fast on an unknown family
+        initial_config = get_default_config()
+        initial_config["model"]["family"] = args.model_family
+        print(f"[model family: {args.model_family}]")
+
     try:
         result = orch.run(
             initial_forecast=args.forecast_csv,
             cutoff_date=args.cutoff_date,
+            initial_config=initial_config,
             regenerate_baseline=not args.no_regenerate_baseline,
         )
     except FileNotFoundError as e:
@@ -358,6 +376,122 @@ def cmd_improve(args) -> None:
     print("To inspect this run later:")
     print(f"  python -m agent history")
     print(f"  python -m agent compare {summary['run_id']} <other-run-id>")
+
+
+def cmd_list_models(args) -> None:
+    """Print every model-bank family and whether it is importable here."""
+    from src.model_bank.registry import list_families
+
+    print(f"\n{'family':<22} {'ok':<4} {'warm':<5} description")
+    print("-" * 78)
+    for info in list_families():
+        ok = "yes" if info.available else "no"
+        warm = "yes" if info.supports_warm_start else "-"
+        desc = info.description if info.available else info.reason
+        print(f"{info.family:<22} {ok:<4} {warm:<5} {desc}")
+    print()
+    print("In-house models: pass a dotted path as the family, e.g. "
+          "--model-family my_lab.models:FluLSTM (see documentation/MODEL_BANK.md).")
+
+
+DEFAULT_SELECT_FAMILIES = ["persistence", "seasonal_naive", "xgboost_direct"]
+
+
+def cmd_select_model(args) -> None:
+    """Stage 1: warm-up + score every candidate on the pinned split; pick the incumbent."""
+    import json as _json
+    from pathlib import Path as _Path
+
+    from agent.model_selection import SelectionGoal, evaluate_candidates, select_incumbent
+    from src import config as repo_config
+    from src.model_bank.registry import resolve_family
+
+    families = args.families or DEFAULT_SELECT_FAMILIES
+    for fam in families:
+        resolve_family(fam)  # fail fast with the registry's message
+
+    if args.cutoffs:
+        cutoffs = list(args.cutoffs)
+    else:
+        cutoffs = repo_config.generate_eval_cutoffs(stride_weeks=args.stride_weeks)
+        if args.max_cutoffs:
+            cutoffs = cutoffs[: args.max_cutoffs]
+    goal = SelectionGoal(metric=args.metric, phase=args.phase)
+
+    print(f"\nselect-model: {len(families)} families x {len(cutoffs)} cutoffs "
+          f"({cutoffs[0]} .. {cutoffs[-1]}), goal = {goal.describe()}")
+    print(f"train window starts {repo_config.TRAIN_START_DATE}"
+          + (f"; locations {args.locations}" if args.locations else "")
+          + (f"; excluding {args.exclude_locations}" if args.exclude_locations else ""))
+    print()
+
+    adapter = FluForecastAdapter()
+    actuals = adapter._load_actuals()
+    candidates = evaluate_candidates(
+        families=families,
+        cutoffs=cutoffs,
+        actuals=actuals,
+        locations=args.locations,
+        exclude_locations=args.exclude_locations,
+        progress=print if not args.quiet else None,
+    )
+    result = select_incumbent(candidates, goal=goal, cutoffs=cutoffs)
+
+    print()
+    print("=" * 96)
+    print("MODEL SELECTION")
+    print("=" * 96)
+    header = (f"{'family':<18} {'wis':>9} {'mape':>7} {'cov95':>6} "
+              f"{'onset':>9} {'peak':>9} {'decline':>9} {'fit s':>7}  status")
+    print(header)
+    print("-" * 96)
+    for cand in result.candidates:
+        if not cand.ok:
+            print(f"{cand.family:<18} {'-':>9} {'-':>7} {'-':>6} {'-':>9} {'-':>9} {'-':>9} "
+                  f"{cand.fit_seconds_total:>7.1f}  FAILED: {cand.error}")
+            continue
+        o = cand.metrics.get("overall", {})
+        ph = cand.metrics.get("by_phase", {})
+
+        def _w(phase):
+            v = (ph.get(phase) or {}).get("wis")
+            return f"{v:>9.1f}" if isinstance(v, (int, float)) else f"{'-':>9}"
+
+        cov = o.get("coverage_95")
+        cov_s = f"{cov:>6.2f}" if isinstance(cov, (int, float)) else f"{'-':>6}"
+        wis = o.get("wis")
+        wis_s = f"{wis:>9.1f}" if isinstance(wis, (int, float)) else f"{'-':>9}"
+        mark = "  <- incumbent" if cand.family == result.incumbent else ""
+        print(f"{cand.family:<18} {wis_s} {o.get('mape', float('nan')):>7.1f} {cov_s} "
+              f"{_w('onset')} {_w('peak')} {_w('decline')} {cand.fit_seconds_total:>7.1f}  ok{mark}")
+    print()
+    if result.incumbent is None:
+        print("no candidate produced a scoreable forecast; nothing selected")
+    else:
+        print(f"incumbent by {goal.describe()}: {result.incumbent}")
+        print("next: refine it with the improvement loop, e.g.")
+        print(f"  python -m agent improve --cutoff-date {cutoffs[-1]} "
+              f"--model-family {result.incumbent} --auto-apply")
+
+    if args.json:
+        out = _Path(args.json)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(_json.dumps(result.to_json(), indent=2, default=str))
+        print(f"\nwrote {out}")
+    if args.report:
+        from agent.model_selection import render_markdown
+
+        out = _Path(args.report)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(render_markdown(result))
+        print(f"wrote {out}")
+    if args.save_forecasts:
+        out_dir = _Path(args.save_forecasts)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        for cand in result.candidates:
+            if cand.forecasts is not None:
+                cand.forecasts.to_csv(out_dir / f"{cand.family}.csv", index=False)
+        print(f"wrote per-family forecasts to {out_dir}/")
 
 
 def cmd_history(args) -> None:
@@ -651,6 +785,12 @@ def main():
         default=None,
         help="FIPS codes to exclude from evaluation (e.g., US for national aggregate)",
     )
+    improve_parser.add_argument(
+        "--model-family", default=None,
+        help="Model-bank family to refine (default: xgboost_direct, the legacy "
+             "pipeline). Registered names from `list-models` or a dotted path "
+             "'pkg.module:Class' for an in-house model.",
+    )
 
     # ---- history subcommand ------------------------------------------------
     history_parser = subparsers.add_parser(
@@ -682,6 +822,59 @@ def main():
         help="Metric to compare on (default: wis)",
     )
 
+    # ---- list-models subcommand --------------------------------------------
+    subparsers.add_parser(
+        "list-models", help="List model-bank families available in this environment",
+    )
+
+    # ---- select-model subcommand -------------------------------------------
+    select_parser = subparsers.add_parser(
+        "select-model",
+        help="Stage 1: warm-up every candidate family on the pinned eval window "
+             "and pick the incumbent by the goal metric",
+    )
+    select_parser.add_argument(
+        "--families", nargs="+", default=None,
+        help=f"Families to compare (default: {' '.join(DEFAULT_SELECT_FAMILIES)})",
+    )
+    select_parser.add_argument(
+        "--stride-weeks", type=int, default=4,
+        help="Use every Nth Saturday cutoff of the pinned eval window (default: 4; 1 = every week)",
+    )
+    select_parser.add_argument(
+        "--max-cutoffs", type=int, default=None,
+        help="Cap the number of cutoffs (after striding) for quick demos",
+    )
+    select_parser.add_argument(
+        "--cutoffs", nargs="+", default=None,
+        help="Explicit cutoff dates (YYYY-MM-DD); overrides the pinned window",
+    )
+    select_parser.add_argument(
+        "--metric", default="wis",
+        choices=["wis", "mape", "mae", "rmse", "coverage_95", "bias"],
+        help="Goal metric for ranking (default: wis)",
+    )
+    select_parser.add_argument(
+        "--phase", default="all", choices=["all", "onset", "peak", "decline"],
+        help="Read the goal metric from this phase (default: all = overall)",
+    )
+    select_parser.add_argument(
+        "--locations", nargs="+", default=None,
+        help="Restrict to these FIPS codes (default: all)",
+    )
+    select_parser.add_argument(
+        "--exclude-locations", nargs="+", default=None,
+        help="FIPS codes to drop from scoring (e.g. US)",
+    )
+    select_parser.add_argument("--json", default=None, help="Write the full result as JSON here")
+    select_parser.add_argument(
+        "--report", default=None, help="Write a human-readable markdown summary here",
+    )
+    select_parser.add_argument(
+        "--save-forecasts", default=None, help="Directory to write one forecast CSV per family",
+    )
+    select_parser.add_argument("--quiet", action="store_true", help="Hide per-cutoff progress")
+
     args = parser.parse_args()
 
     if args.command is None:
@@ -700,6 +893,10 @@ def main():
         cmd_status(args)
     elif args.command == "compare":
         cmd_compare(args)
+    elif args.command == "list-models":
+        cmd_list_models(args)
+    elif args.command == "select-model":
+        cmd_select_model(args)
     else:
         print(f"Unknown command: {args.command}", file=sys.stderr)
         sys.exit(1)

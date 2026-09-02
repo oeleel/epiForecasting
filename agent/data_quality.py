@@ -262,7 +262,7 @@ class DataQualityChecker:
 
     def check_recent_completeness(self, df: pd.DataFrame) -> None:
         """Check that the most recent weeks before cutoff have data for all locations."""
-        recent_start = self.cutoff_dt - pd.Timedelta(weeks=self.RECENT_WINDOW_WEEKS)
+        recent_start = self.cutoff_dt - pd.Timedelta(7 * (self.RECENT_WINDOW_WEEKS), unit="D")
         recent = df[df["date"] >= recent_start]
 
         if recent.empty:
@@ -329,7 +329,7 @@ class DataQualityChecker:
 
     def _compute_summary(self, df: pd.DataFrame) -> Dict[str, Any]:
         """Compute high-level summary statistics for the report."""
-        recent_start = self.cutoff_dt - pd.Timedelta(weeks=self.RECENT_WINDOW_WEEKS)
+        recent_start = self.cutoff_dt - pd.Timedelta(7 * (self.RECENT_WINDOW_WEEKS), unit="D")
         recent = df[df["date"] >= recent_start]
 
         return {

@@ -21,7 +21,7 @@ from src.config import (
 def test_default_config_has_all_sections():
     cfg = get_default_config()
     expected = {"xgboost", "features", "target", "floor",
-                "quantiles", "clustering", "sample_weights", "data"}
+                "quantiles", "clustering", "sample_weights", "model", "data"}
     assert set(cfg.keys()) == expected
 
 

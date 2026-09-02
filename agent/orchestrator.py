@@ -566,7 +566,7 @@ class Orchestrator:
     def _diagnose(self, current: IterationRecord) -> Dict[str, Any]:
         """Call Agent 1 and return a validated diagnosis dict."""
         prompt = format_structured_diagnosis_prompt(
-            current.metrics, self.adapter.get_domain_context()
+            current.metrics, self.adapter.get_domain_context(current.config)
         )
         response = self.llm.invoke(prompt)
         try:
@@ -596,7 +596,7 @@ class Orchestrator:
         current_config: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Call Agent 2 and return a validated action dict."""
-        catalog = self.adapter.get_available_actions()
+        catalog = self.adapter.get_available_actions(current_config)
         history = [
             {
                 "iteration": it.iteration,
@@ -614,7 +614,7 @@ class Orchestrator:
             diagnosis=diagnosis,
             history=history,
             action_catalog=catalog,
-            domain_context=self.adapter.get_domain_context(),
+            domain_context=self.adapter.get_domain_context(current_config),
             target_metric=self.target_metric,
             current_config=current_config,
         )

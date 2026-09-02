@@ -16,7 +16,9 @@ The key idea: replace the manual "run model → inspect CSVs → tweak parameter
 
 ### Setup
 ```bash
-pip install -r documentation/requirements.txt
+uv venv --python 3.12 .venv
+uv pip install --python .venv/bin/python -r documentation/requirements.txt pytest langchain-openai
+uv pip install --python .venv/bin/python -r documentation/requirements-nixtla.txt   # optional example families
 ```
 
 ### Agent Framework (primary focus)
@@ -32,6 +34,12 @@ python -m agent summarize --forecast-csv <path> --base-url http://localhost:8247
 
 # Debug: see the prompt sent to the LLM
 python -m agent summarize --forecast-csv <path> --verbose
+
+# Model bank (Stage 1): list families, compare them on the pinned split, refine the winner
+python -m agent list-models
+python -m agent select-model --stride-weeks 4 --exclude-locations US --json outputs/model_selection/run.json
+python -m agent select-model --families persistence my_lab.models:FluLSTM --metric wis --phase peak
+python -m agent improve --cutoff-date 2025-12-06 --model-family mlf_lightgbm --auto-apply
 ```
 
 ### Forecasting Pipeline (underlying model)
@@ -54,14 +62,17 @@ python -m src.data_loader update
 
 ### Testing
 ```bash
-python -m pytest tests/agent/ -v
+.venv/bin/python -m pytest tests/agent/ -q -W error::DeprecationWarning   # 136 tests
+PYTHONPATH=. .venv/bin/python tests/agent/run_all.py                        # no-pytest fallback
 ```
-90 tests covering: adapter actions, config, data quality, feature toggle, orchestrator, prompts, run tracker, sample weights, WIS scoring.
+Covers: adapter actions (legacy + bank families), config, data quality, feature toggle, orchestrator, prompts, run tracker, sample weights, WIS scoring, model bank (contract/registry/bridge/baselines/runner), model selection.
 
 ### Key Config Details
 - Active XGBoost params: `XGBOOST_PARAMS_V2` (regularized) in `src/config.py`
 - Feature version: `v3` — pruned via SHAP analysis; removed/added features listed in `src/config.py`
 - Quantile levels: `[0.05, 0.25, 0.5, 0.75, 0.95]`
+- Pinned split (2026-09-02): `TRAIN_START_DATE` 2022-02-05, eval `EVAL_START_DATE`..`EVAL_END_DATE` = 2025-10-01..2026-05-31; `generate_eval_cutoffs(stride_weeks)`
+- Model family: `config["model"]["family"]` (default `xgboost_direct` = legacy path); family params in `config["model"]["params"]`
 - Location clustering: 5 clusters, min 3 locations per cluster
 - Agent dependencies (langchain-openai) are not in `documentation/requirements.txt` — install separately for agent work
 
@@ -80,7 +91,8 @@ agent/
 ├── phase_evaluator.py       # Phase-aware evaluation engine (stateless class methods)
 ├── prompt_templates.py      # LLM prompt templates + formatter + validators
 ├── llm_client.py            # Provider-agnostic LLM wrapper (OpenAI-compatible API)
-├── cli.py                   # CLI: check-data, summarize, improve, history, status, compare
+├── model_selection.py       # Stage 1: rolling warm-up of bank families + incumbent selection
+├── cli.py                   # CLI: check-data, summarize, improve, history, status, compare, list-models, select-model
 └── adapters/
     ├── __init__.py
     └── flu_forecast.py      # Concrete adapter for flu forecasting
@@ -91,8 +103,8 @@ agent/
 |--------|--------|---------|
 | `load_data(config)` | Implemented | Load forecast outputs + ground truth |
 | `compute_metrics(forecasts, actuals)` | Implemented | Domain-specific evaluation metrics |
-| `get_domain_context()` | Implemented | Provide LLM with domain knowledge |
-| `get_available_actions()` | Implemented | Define constrained action catalog for the LLM |
+| `get_domain_context(config)` | Implemented | Provide LLM with domain knowledge (describes the active model family) |
+| `get_available_actions(config)` | Implemented | Constrained action catalog; generated from `param_space()` for bank families |
 | `apply_action(action)` | Implemented | Apply + validate an LLM-suggested action |
 | `run_pipeline(config)` | Implemented | Retrain and re-forecast from a config dict |
 
@@ -137,6 +149,13 @@ Both expose an OpenAI-compatible API (`/v1/chat/completions`). Swapping environm
 - CLI commands: `history`, `status`, `compare`
 - Sample reweighting by phase/horizon/location via `reweight_training_samples` action
 
+**Stage 1: Model bank + selection (TS-Agent Stage 1)** — COMPLETE (2026-09-02)
+- `src/model_bank/` — `ForecastModel` contract, registry (`@register` or dotted path `pkg.mod:Class`), CDC<->long data bridge, runner
+- 9 families: 2 baselines, the in-repo XGBoost + PyTorch ensembles, 5 Nixtla examples (optional deps)
+- `agent/model_selection.py` + `select-model` CLI: rolling-origin warm-up on the pinned split, phase-aware WIS, incumbent by `SelectionGoal(metric, phase)`
+- `improve --model-family X`: the loop refines any family; `adjust_hyperparameter` comes from the family's `param_space()`
+- **In-house lab models are the real bank; Nixtla is example scaffolding.** See `documentation/MODEL_BANK.md` for the 30-line plug-in recipe.
+
 **Milestone 4: Generalization** — PLANNED
 - Template adapter for new domains (finance, sales, etc.)
 
@@ -158,6 +177,7 @@ CDC GitHub CSV -> FluDataLoader -> FeatureEngineer (59+ features) -> DirectForec
 - **`src/train.py`** — Walk-forward validation and final model training
 - **`src/predict.py`** — `FluForecastGenerator`: prediction orchestration
 - **`src/nn_model.py`** — `NNQuantileDirectForecastEnsemble`: PyTorch-based quantile regression alternative
+- **`src/model_bank/`** — model contract + registry + runner; `src/pipeline.run_pipeline` dispatches here for every family except `xgboost_direct`
 - **`src/location_clustering.py`** — `LocationClusterer`: groups similar states for cluster-specific models
 - **`src/visualization.py`** — Plotting utilities (Plotly, Matplotlib)
 
@@ -170,7 +190,7 @@ Key details:
 
 - **`scripts/evaluation/`** — Feature importance and regularization evaluation scripts (`evaluate_features.py`, `evaluate_regularization.py`, `evaluate_target_transform.py`)
 - **`analysis/`** — SHAP feature importance analysis (`shap_analysis.py`) and Plotly performance dashboard (`performance_dashboard.py`)
-- **`tests/`** — Placeholder only; no real test suite exists
+- **`tests/agent/`** — the real test suite (pytest or `run_all.py`); `tests/test.py` is a legacy placeholder
 
 ## Data Source
 

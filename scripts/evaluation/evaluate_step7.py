@@ -135,8 +135,8 @@ def main():
 
     for cutoff in cutoff_dates:
         cutoff_dt = pd.to_datetime(cutoff)
-        if (cutoff_dt - pd.Timedelta(weeks=52) >= min_date and
-            cutoff_dt + pd.Timedelta(weeks=4) <= max_date):
+        if (cutoff_dt - pd.Timedelta(7 * (52), unit="D") >= min_date and
+            cutoff_dt + pd.Timedelta(7 * (4), unit="D") <= max_date):
             valid_cutoffs.append(cutoff)
 
     eval_cutoffs = [c for c in valid_cutoffs if pd.to_datetime(c) >= pd.to_datetime("2024-01-01")]

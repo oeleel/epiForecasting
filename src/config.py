@@ -9,6 +9,37 @@ Configuration file for XGBoost flu forecasting pipeline
 DEFAULT_CUTOFF_DATE = "2024-11-02"
 MIN_TRAINING_WEEKS = 10
 
+# ----------------------------------------------------------------------------
+# Pinned train / evaluation split (decided 2026-09-02 advisor sync)
+# ----------------------------------------------------------------------------
+# Every model in the model bank is fit on data from TRAIN_START_DATE up to the
+# rolling cutoff, and evaluated on cutoffs inside [EVAL_START_DATE,
+# EVAL_END_DATE]. Pinning these here means every comparison across families,
+# runs, and weeks shares one window - no per-script date arithmetic.
+#   train:    2022 -> 2025 (the FluSight target data begins 2022-02-05)
+#   evaluate: Oct 2025 -> May 2026 (the 2025-26 season)
+TRAIN_START_DATE = "2022-02-05"
+TRAIN_END_DATE = "2025-09-30"
+EVAL_START_DATE = "2025-10-01"
+EVAL_END_DATE = "2026-05-31"
+# FluSight reference dates fall on Saturdays; cutoffs follow that convention.
+EVAL_CUTOFF_WEEKDAY = "W-SAT"
+
+
+def generate_eval_cutoffs(stride_weeks: int = 1) -> list:
+    """Return the Saturday cutoff dates (YYYY-MM-DD) inside the pinned eval window.
+
+    stride_weeks=1 is the full weekly walk-forward; larger strides give a
+    cheaper subsample for warm-up runs and demos. Raises on stride < 1 so a
+    bad CLI flag fails loudly instead of silently returning every week.
+    """
+    import pandas as pd  # local import: keep config importable without pandas cost at startup
+
+    if stride_weeks < 1:
+        raise ValueError(f"stride_weeks must be >= 1, got {stride_weeks}")
+    dates = pd.date_range(start=EVAL_START_DATE, end=EVAL_END_DATE, freq=EVAL_CUTOFF_WEEKDAY)
+    return [d.strftime("%Y-%m-%d") for d in dates[::stride_weeks]]
+
 # Feature engineering configuration
 LAG_FEATURES = [1, 2, 3, 4, 8, 12, 52]  # Weeks to lag (52 = year-over-year)
 ROLLING_WINDOWS = [4, 8]  # Rolling window sizes
@@ -173,6 +204,13 @@ ENABLE_LOCATION_CLUSTERING = True  # Toggle cluster-specific models on/off
 N_LOCATION_CLUSTERS = 5  # Number of clusters for location grouping
 MIN_CLUSTER_SIZE = 3  # Minimum locations per cluster (smaller clusters get merged)
 
+# Model bank configuration (see src/model_bank/). The family names the
+# registered ForecastModel the pipeline trains; "xgboost_direct" is the
+# in-repo QuantileDirectForecastEnsemble and keeps the legacy code path.
+# Any other family (in-house model, Nixtla example, dotted "pkg.mod:Class")
+# is routed through src.model_bank.runner.
+DEFAULT_MODEL_FAMILY = "xgboost_direct"
+
 
 # ============================================================================
 # Dict-based config for the agent improvement loop (Milestone 2)
@@ -198,7 +236,8 @@ MIN_CLUSTER_SIZE = 3  # Minimum locations per cluster (smaller clusters get merg
 #   quantiles         Quantile regression settings
 #   clustering        Location clustering settings
 #   sample_weights    Optional reweighting (consumed by reweight_training_samples)
-#   data              Cutoff date / forecast horizon
+#   model             Model-bank family + family-specific params
+#   data              Cutoff date / forecast horizon / pinned train start
 
 import copy as _copy
 from typing import Any, Dict
@@ -259,10 +298,19 @@ def get_default_config() -> Dict[str, Any]:
             "by_horizon": {},               # e.g. {"4": 1.5}
             "by_location": {},              # e.g. {"06": 2.0}
         },
+        "model": {
+            # Which registered ForecastModel to train. Family-specific
+            # hyperparameters live in "params" (validated against the
+            # family's param_space()). The legacy xgboost_direct family keeps
+            # reading the "xgboost" section above for backward compatibility.
+            "family": DEFAULT_MODEL_FAMILY,
+            "params": {},
+        },
         "data": {
             "cutoff_date": DEFAULT_CUTOFF_DATE,
             "forecast_horizon": FORECAST_HORIZON,
             "min_training_weeks": MIN_TRAINING_WEEKS,
+            "train_start_date": TRAIN_START_DATE,
         },
     })
 

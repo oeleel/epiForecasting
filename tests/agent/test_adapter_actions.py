@@ -173,6 +173,90 @@ def test_target_transform_unknown_value_raises():
     )
 
 
+
+# ---- model-bank families (family-aware catalog + generic hyperparameter action) ----
+
+def _bank_config(family: str = "persistence"):
+    cfg = get_default_config()
+    cfg["model"]["family"] = family
+    return cfg
+
+
+def test_catalog_for_bank_family_is_param_space_plus_stop():
+    a = _adapter()
+    catalog = a.get_available_actions(_bank_config("persistence"))
+    names = [x["name"] for x in catalog]
+    assert names == ["adjust_hyperparameter", "stop"]
+    adjust = catalog[0]
+    assert adjust["params_schema"]["name"]["enum"] == ["residual_window_weeks"]
+    assert adjust["guardrails"]["residual_window_weeks"] == (8, 156)
+
+
+def test_catalog_without_config_is_legacy_catalog():
+    a = _adapter()
+    assert len(a.get_available_actions()) == 6
+    assert len(a.get_available_actions(get_default_config())) == 6
+
+
+def test_apply_adjust_hyperparameter_bank_family_writes_model_params():
+    a = _adapter()
+    cfg = _bank_config("persistence")
+    new_cfg, desc = a.apply_action(
+        {"name": "adjust_hyperparameter",
+         "params": {"name": "residual_window_weeks", "value": 52}},
+        cfg,
+    )
+    assert new_cfg["model"]["params"] == {"residual_window_weeks": 52}
+    assert cfg["model"]["params"] == {}  # input unchanged
+    assert new_cfg["xgboost"] == cfg["xgboost"]  # legacy section untouched
+    assert "model.params.residual_window_weeks" in desc
+
+
+def test_apply_adjust_hyperparameter_bank_family_enforces_param_space():
+    a = _adapter()
+    cfg = _bank_config("persistence")
+    try:
+        a.apply_action({"name": "adjust_hyperparameter",
+                        "params": {"name": "residual_window_weeks", "value": 1}}, cfg)
+        assert False, "expected guardrail violation"
+    except ValueError as e:
+        assert "guardrail" in str(e)
+    try:
+        a.apply_action({"name": "adjust_hyperparameter",
+                        "params": {"name": "max_depth", "value": 3}}, cfg)
+        assert False, "expected unknown param"
+    except ValueError as e:
+        assert "not tunable" in str(e)
+
+
+def test_legacy_only_actions_rejected_for_bank_family():
+    a = _adapter()
+    cfg = _bank_config("persistence")
+    try:
+        a.apply_action({"name": "toggle_feature",
+                        "params": {"feature_group": "lag", "enabled": False}}, cfg)
+        assert False, "expected rejection"
+    except ValueError as e:
+        assert "only available for the xgboost_direct family" in str(e)
+
+
+def test_stop_is_a_no_op_for_bank_family():
+    a = _adapter()
+    cfg = _bank_config("persistence")
+    new_cfg, desc = a.apply_action({"name": "stop", "params": {}}, cfg)
+    assert new_cfg == cfg and "stop" in desc
+
+
+def test_domain_context_describes_active_bank_family():
+    a = _adapter()
+    ctx = a.get_domain_context(_bank_config("persistence"))
+    assert "'persistence'" in ctx
+    assert "residual_window_weeks" in ctx
+    assert "Epidemic phases" in ctx
+    assert "XGBoost-based" not in ctx
+    legacy_ctx = a.get_domain_context()
+    assert "XGBoost-based" in legacy_ctx and "Epidemic phases" in legacy_ctx
+
 ALL = [
     test_catalog_has_six_actions,
     test_apply_adjust_hyperparameter,
@@ -191,6 +275,13 @@ ALL = [
     test_toggle_unknown_group_raises,
     test_floor_pct_above_guardrail_raises,
     test_target_transform_unknown_value_raises,
+    test_catalog_for_bank_family_is_param_space_plus_stop,
+    test_catalog_without_config_is_legacy_catalog,
+    test_apply_adjust_hyperparameter_bank_family_writes_model_params,
+    test_apply_adjust_hyperparameter_bank_family_enforces_param_space,
+    test_legacy_only_actions_rejected_for_bank_family,
+    test_stop_is_a_no_op_for_bank_family,
+    test_domain_context_describes_active_bank_family,
 ]
 
 

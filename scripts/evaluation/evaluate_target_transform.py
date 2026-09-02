@@ -192,7 +192,7 @@ def run_evaluation(target_mode: str, output_dir: str = "outputs/performance_trac
     for cutoff in evaluation_cutoffs:
         cutoff_dt = pd.to_datetime(cutoff)
         # Need at least 4 weeks of future data
-        if cutoff_dt + pd.Timedelta(weeks=4) <= max_date:
+        if cutoff_dt + pd.Timedelta(7 * (4), unit="D") <= max_date:
             valid_cutoffs.append(cutoff)
 
     if not valid_cutoffs:

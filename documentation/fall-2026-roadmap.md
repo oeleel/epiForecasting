@@ -14,6 +14,11 @@ warm-start research layer and the knowledge/reporting pieces needed for the
 - Internal exploration tool — not real-time, no operational submissions.
 - No forecast-summarization agent (deferred).
 - LLM refines configs against templates; it never writes model code.
+- **The lab's in-house models are the real model bank.** Nixtla families are
+  examples that prove the architecture (classical / boosted / neural through
+  one contract); do not invest in tuning them. Everything must stay
+  plug-and-play for whatever models the team brings
+  (`documentation/MODEL_BANK.md`).
 
 ---
 
@@ -23,31 +28,49 @@ warm-start research layer and the knowledge/reporting pieces needed for the
 |---|---|---|
 | 0.1 | Untrack committed `__pycache__` artifacts (gitignore already covers them) | ✅ 2026-09-02 |
 | 0.2 | Commit meeting notes + TS-Agent comparison notes | ✅ 2026-09-02 |
-| 0.3 | Refresh CDC FluSight cache (`python -m src.data_loader update`) — last data commit is through 2026-03-07; eval window ends May 2026 | ☐ |
-| 0.4 | Pin the agreed split as named constants in `src/config.py`: train **2022 → 2025**, evaluate **Oct 2025 → May 2026** | ☐ |
+| 0.3 | Refresh CDC FluSight cache (`python -m src.data_loader update`) — cache now runs through 2026-07-04, covering the whole eval window | ✅ 2026-09-02 |
+| 0.4 | Pin the agreed split as named constants in `src/config.py`: train **2022 → 2025**, evaluate **Oct 2025 → May 2026** (`TRAIN_START_DATE`, `EVAL_START_DATE`, `EVAL_END_DATE`, `generate_eval_cutoffs`) | ✅ 2026-09-02 |
 
-## Workstream 1 — Nixtla model bank (next-meeting goal)
+## Workstream 1 — Model bank (next-meeting goal)
 
-Uniform template for many candidate models; replaces hand-building competitors.
+One contract (`src/model_bank/contract.py: ForecastModel`) that any model
+implements; Nixtla families are the worked examples. Landed 2026-09-02 on
+`feature/model-bank`.
 
 | # | Task | Notes |
 |---|---|---|
-| 1.1 | Add Nixtla deps (`statsforecast`, `mlforecast`, `neuralforecast`) to requirements; keep isolated from the legacy pipeline | ☐ |
-| 1.2 | Data bridge: CDC weekly admissions → Nixtla long format (`unique_id`, `ds`, `y`), reusing `FluDataLoader` | ☐ |
-| 1.3 | Wrap an initial bank (e.g. AutoARIMA/ETS/Theta from statsforecast; XGBoost/LightGBM via mlforecast for continuity; NHITS/LSTM via neuralforecast) behind one interface | ☐ |
-| 1.4 | Quantile support: map model outputs to our levels `[0.05, 0.25, 0.5, 0.75, 0.95]` so `PhaseEvaluator` WIS/coverage work unchanged | ☐ |
-| 1.5 | Plug into the adapter contract (`run_pipeline(config)` with a `model.family` key) so the existing orchestrator can drive any bank model | ☐ |
+| 1.1 | Add Nixtla deps (`statsforecast`, `mlforecast`, `neuralforecast`) to requirements; keep isolated from the legacy pipeline | ✅ `documentation/requirements-nixtla.txt`; imports are guarded, families show as unavailable when missing |
+| 1.2 | Data bridge: CDC weekly admissions → Nixtla long format (`unique_id`, `ds`, `y`), reusing `FluDataLoader` | ✅ `src/model_bank/data_bridge.py` (both directions + forecast-CSV writer) |
+| 1.3 | Wrap an initial bank behind one interface | ✅ 9 families: `persistence`, `seasonal_naive`, `xgboost_direct`, `nn_quantile`, `sf_autoarima`, `sf_autoets`, `sf_autotheta`, `mlf_lightgbm`, `nf_nhits`; in-house models via dotted path `pkg.mod:Class` with no repo edit |
+| 1.4 | Quantile support: map model outputs to our levels so `PhaseEvaluator` WIS/coverage work unchanged | ✅ validated at the seam (`validate_forecast_frame`), crossings repaired + counted |
+| 1.5 | Plug into the adapter contract (`run_pipeline(config)` with a `model.family` key) so the existing orchestrator can drive any bank model | ✅ pipeline dispatches on `model.family`; Agent 2's `adjust_hyperparameter` is generated from each family's `param_space()` |
 
-**Acceptance:** one command runs ≥3 Nixtla models on the pinned split and emits
-phase-aware WIS per model. Target: working demo by the next Thursday sync.
+**Acceptance:** `python -m agent select-model --stride-weeks 4` runs every
+candidate on the pinned split and prints phase-aware WIS per family. ✅
+
+First run (2026-09-02, 9 cutoffs Oct 2025 → May 2026 at stride 4, US excluded,
+all defaults, no tuning; full result in `outputs/model_selection/demo_2026-09-02.json`):
+
+| family | WIS | MAPE | cov95 | onset WIS | peak WIS | decline WIS | fit s |
+|---|---|---|---|---|---|---|---|
+| xgboost_direct (incumbent) | 50.6 | 67.5 | 0.83 | 11.0 | 122.4 | 49.3 | 92.7 |
+| nf_nhits | 65.6 | 83.6 | 0.65 | 12.9 | 189.7 | 41.7 | 66.6 |
+| sf_autoets | 82.2 | 88.6 | 0.86 | 16.0 | 235.1 | 50.6 | 26.7 |
+| persistence | 90.5 | 89.0 | 0.72 | 20.4 | 235.8 | 70.9 | 0.1 |
+| mlf_lightgbm | 138.7 | 108.0 | 0.64 | 15.8 | 408.6 | 85.8 | 1.6 |
+| seasonal_naive | 153.2 | 163.2 | 0.76 | 23.2 | 304.6 | 209.2 | 0.1 |
+
+Read: the lab's XGBoost beats every untuned example, peak is where everyone
+loses, and NHITS already wins the decline phase — a concrete case for the
+goal-as-parameter selection (2.3).
 
 ## Workstream 2 — Model selection stage (TS-Agent Stage 1)
 
 | # | Task | Notes |
 |---|---|---|
-| 2.1 | Warm-up runs: cheap short-horizon fits of each bank model at the cutoff before committing to an incumbent | ☐ |
-| 2.2 | Incumbent selection by WIS (or the specified goal metric); hand off to the existing refinement loop | ☐ |
-| 2.3 | Goal-as-parameter: selection/refinement objective specified per run (peak performance vs. average vs. overall), settable via natural-language command | ☐ |
+| 2.1 | Warm-up runs: cheap short-horizon fits of each bank model at the cutoff before committing to an incumbent | ✅ `agent/model_selection.py: evaluate_candidates` (rolling origin over the pinned cutoffs, one family failing never sinks the rest) |
+| 2.2 | Incumbent selection by WIS (or the specified goal metric); hand off to the existing refinement loop | ✅ `select_incumbent`; `improve --model-family <incumbent>` |
+| 2.3 | Goal-as-parameter: selection/refinement objective specified per run (peak performance vs. average vs. overall), settable via natural-language command | ◐ `SelectionGoal(metric, phase)` + `--metric/--phase` flags done; natural-language front end not started |
 
 ## Workstream 3 — Orchestrator fixes (from the gap analysis, ranked)
 
@@ -95,8 +118,9 @@ retraining from scratch — and can the framework decide *a priori*?
 
 ## Sequencing
 
-1. **This week:** 0.3–0.4, then Workstream 1 (Nixtla demo for Thursday).
-2. **Next:** 3.1 (revert-on-regression, trivial), then Workstream 2.
+1. **This week:** ~~0.3–0.4, then Workstream 1 (demo for Thursday)~~ done 09-02.
+2. **Next:** 3.1 (revert-on-regression, trivial), then 2.3's natural-language goal,
+   then wrap the lab's first in-house model against the contract.
 3. **Then:** 4 (warm-start layer) and 5 (knowledge bank) in parallel — both feed the paper.
 4. **Ongoing:** 6 (reporting) as soon as multi-model runs exist; 7 from November.
 

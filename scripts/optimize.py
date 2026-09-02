@@ -130,7 +130,7 @@ class HyperparameterOptimizer:
             train_data = data_filtered[data_filtered['date'] <= cutoff_dt].copy()
 
             # Only evaluate on next 4 weeks (avoid data leakage from future cutoffs)
-            val_end_dt = cutoff_dt + pd.Timedelta(weeks=4)
+            val_end_dt = cutoff_dt + pd.Timedelta(7 * (4), unit="D")
             val_data = data_filtered[
                 (data_filtered['date'] > cutoff_dt) &
                 (data_filtered['date'] <= val_end_dt)

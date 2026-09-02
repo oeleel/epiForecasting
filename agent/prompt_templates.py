@@ -517,7 +517,7 @@ weak segment in the diagnosis. Consider:
 Output a single JSON object (no surrounding prose, no markdown fences):
 
 {{
-  "name": "<one of: adjust_hyperparameter | reweight_training_samples | toggle_feature | adjust_floor_constraint | change_target_transform | stop>",
+  "name": "<one of: {action_names}>",
   "params": {{ ... action-specific params ... }},
   "rationale": "<one sentence: why this action and why now>",
   "expected_effect": "<one sentence: what you expect to happen to {target_metric}>"
@@ -649,8 +649,21 @@ def format_action_proposal_prompt(
     # ---- Current config block -------------------------------------------------
     if current_config:
         cfg_lines = []
+        model_cfg = current_config.get("model") or {}
+        family = model_cfg.get("family")
+        is_bank_family = bool(family) and family != "xgboost_direct"
+        if family:
+            cfg_lines.append(f"Model family: {family}")
+        if is_bank_family:
+            model_params = model_cfg.get("params") or {}
+            if model_params:
+                cfg_lines.append("Model hyperparameters (overrides of the family defaults):")
+                for k, v in sorted(model_params.items()):
+                    cfg_lines.append(f"  - {k}: {v}")
+            else:
+                cfg_lines.append("Model hyperparameters: (family defaults)")
         xgb = current_config.get("xgboost", {})
-        if xgb:
+        if xgb and not is_bank_family:
             cfg_lines.append("XGBoost hyperparameters:")
             for k, v in sorted(xgb.items()):
                 cfg_lines.append(f"  - {k}: {v}")
@@ -674,7 +687,13 @@ def format_action_proposal_prompt(
     else:
         current_config_block = "(not available)"
 
+    # The schema example lists exactly the catalog's names so a bank family
+    # (whose catalog is generated from its param_space) is never told about
+    # legacy-only actions it cannot take.
+    action_names = " | ".join(a["name"] for a in action_catalog)
+
     return ACTION_PROPOSAL_PROMPT.format(
+        action_names=action_names,
         domain_context=domain_context,
         diagnosis_block=diagnosis_block,
         history_block=history_block,

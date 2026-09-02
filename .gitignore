@@ -4,3 +4,6 @@ __pycache__/
 .claude/settings.local.json
 outputs/agent_runs/
 *.db
+.venv/
+# timestamped demo runs (scripts/demo_stage1.py); curated runs are committed by hand
+outputs/model_selection/demo_????????-??????/

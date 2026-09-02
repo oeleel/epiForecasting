@@ -22,6 +22,12 @@ if str(PROJECT_ROOT) not in sys.path:
 from agent.domain_adapter import DomainAdapter
 from agent.phase_evaluator import PhaseEvaluator
 
+# The family whose knobs live in the legacy config sections (xgboost.*,
+# floor.*, target.*, features.*, sample_weights.*) and whose action catalog
+# is hand-written below. Every other family gets a catalog generated from
+# its ForecastModel.param_space(), and its knobs live in model.params.*.
+LEGACY_MODEL_FAMILY = "xgboost_direct"
+
 
 class FluForecastAdapter(DomainAdapter):
     """Adapter for the CDC FluSight influenza hospitalization forecasting model.
@@ -336,13 +342,59 @@ class FluForecastAdapter(DomainAdapter):
         },
     ]
 
-    def get_available_actions(self) -> List[Dict[str, Any]]:
+    @staticmethod
+    def model_family_of(config: Optional[Dict[str, Any]]) -> str:
+        """Active model family in a config (legacy default when absent)."""
+        from src.config import DEFAULT_MODEL_FAMILY
+
+        return ((config or {}).get("model") or {}).get("family") or DEFAULT_MODEL_FAMILY
+
+    def get_available_actions(
+        self, config: Optional[Dict[str, Any]] = None
+    ) -> List[Dict[str, Any]]:
         """Return the action catalog the LLM is allowed to choose from.
 
         Each entry has: name, description, params_schema, guardrails.
-        Pure read — does not consult any external state.
+        For the legacy XGBoost family this is the hand-written catalog
+        above. For any model-bank family the catalog is generated from the
+        family's `param_space()`: one `adjust_hyperparameter` action whose
+        allowed names and guardrails are exactly what the model declared,
+        plus `stop`. The pipeline-specific actions (feature toggles,
+        reweighting, floor, target transform) only apply to the legacy path.
         """
-        return list(self.ACTION_CATALOG)
+        family = self.model_family_of(config)
+        if family == LEGACY_MODEL_FAMILY:
+            return list(self.ACTION_CATALOG)
+
+        from src.model_bank.registry import resolve_family
+
+        model_cls = resolve_family(family)
+        space = model_cls.param_space()
+        catalog: List[Dict[str, Any]] = []
+        if space:
+            guardrails: Dict[str, Any] = {}
+            for name, spec in space.items():
+                if spec.kind in ("int", "float"):
+                    guardrails[name] = (spec.low, spec.high)
+                elif spec.kind == "categorical":
+                    guardrails[name] = list(spec.choices or ())
+                else:
+                    guardrails[name] = [True, False]
+            catalog.append({
+                "name": "adjust_hyperparameter",
+                "description": (
+                    f"Modify a single hyperparameter of the active {family} model "
+                    f"({model_cls.description}). Allowed names and bounds come from "
+                    f"the model's declared parameter space."
+                ),
+                "params_schema": {
+                    "name": {"type": "string", "enum": list(space)},
+                    "value": {"type": "number|string|boolean"},
+                },
+                "guardrails": guardrails,
+            })
+        catalog.append(next(a for a in self.ACTION_CATALOG if a["name"] == "stop"))
+        return catalog
 
     def apply_action(
         self,
@@ -389,6 +441,10 @@ class FluForecastAdapter(DomainAdapter):
         # ---- per-action handling ------------------------------------------------
         if name == "stop":
             return config, "stop (no change)"
+
+        family = self.model_family_of(config)
+        if family != LEGACY_MODEL_FAMILY:
+            return self._apply_bank_action(name, params, config, family)
 
         if name == "adjust_hyperparameter":
             self._require_keys(params, ["name", "value"])
@@ -473,6 +529,41 @@ class FluForecastAdapter(DomainAdapter):
         # Defensive — should be unreachable due to catalog check above
         raise ValueError(f"Unhandled action: {name}")
 
+    def _apply_bank_action(
+        self,
+        name: str,
+        params: Dict[str, Any],
+        config: Dict[str, Any],
+        family: str,
+    ) -> Tuple[Dict[str, Any], str]:
+        """apply_action for model-bank families: only param edits are meaningful."""
+        from src.config import get_config_value, set_config_value
+        from src.model_bank.contract import ModelBankError
+        from src.model_bank.registry import resolve_family
+
+        if name != "adjust_hyperparameter":
+            raise ValueError(
+                f"action {name!r} is only available for the {LEGACY_MODEL_FAMILY} family; "
+                f"active family {family!r} supports: adjust_hyperparameter, stop"
+            )
+        self._require_keys(params, ["name", "value"])
+        space = resolve_family(family).param_space()
+        hp_name = params["name"]
+        if hp_name not in space:
+            raise ValueError(
+                f"adjust_hyperparameter: {hp_name!r} not tunable for {family}; "
+                f"allowed: {sorted(space)}"
+            )
+        try:
+            hp_value = space[hp_name].validate(params["value"])
+        except ModelBankError as e:
+            raise ValueError(f"adjust_hyperparameter: {e}") from e
+        model_params = dict(get_config_value(config, "model.params") or {})
+        old = model_params.get(hp_name, "<default>")
+        model_params[hp_name] = hp_value
+        new_cfg = set_config_value(config, "model.params", model_params)
+        return new_cfg, f"model.params.{hp_name}: {old} -> {hp_value}"
+
     @staticmethod
     def _require_keys(params: Dict[str, Any], keys: List[str]) -> None:
         missing = [k for k in keys if k not in params]
@@ -502,21 +593,59 @@ class FluForecastAdapter(DomainAdapter):
 
     # ------------------------------------------------------------------
 
-    def get_domain_context(self) -> str:
-        """Return flu forecasting domain context for the LLM prompt."""
-        return (
-            "You are analyzing an XGBoost-based influenza hospitalization forecasting model. "
-            "The model uses a Direct Forecasting Ensemble: 4 independent XGBoost models, "
-            "one per forecast horizon (1-4 weeks ahead). It predicts weekly hospital "
-            "admissions for all US states and territories using CDC FluSight surveillance data.\n\n"
-            "Key model details:\n"
-            "- 59 engineered features: temporal indicators, lag values (1-52 weeks), "
-            "rolling statistics, year-over-year comparisons, season severity, "
-            "rate of change, US national context, and feature interactions\n"
-            "- Target transform: log1p(hospitalizations) during training, expm1() at inference\n"
-            "- Post-prediction floor constraint: predictions can't drop below 30% of last known value "
-            "(decays 5 percentage points per horizon)\n"
-            "- Regularized XGBoost: max_depth=3, subsample=0.7, L1/L2 regularization\n\n"
+    _XGBOOST_MODEL_CONTEXT = (
+        "You are analyzing an XGBoost-based influenza hospitalization forecasting model. "
+        "The model uses a Direct Forecasting Ensemble: 4 independent XGBoost models, "
+        "one per forecast horizon (1-4 weeks ahead). It predicts weekly hospital "
+        "admissions for all US states and territories using CDC FluSight surveillance data.\n\n"
+        "Key model details:\n"
+        "- 59 engineered features: temporal indicators, lag values (1-52 weeks), "
+        "rolling statistics, year-over-year comparisons, season severity, "
+        "rate of change, US national context, and feature interactions\n"
+        "- Target transform: log1p(hospitalizations) during training, expm1() at inference\n"
+        "- Post-prediction floor constraint: predictions can't drop below 30% of last known value "
+        "(decays 5 percentage points per horizon)\n"
+        "- Regularized XGBoost: max_depth=3, subsample=0.7, L1/L2 regularization\n\n"
+    )
+
+    def _bank_model_context(self, family: str, config: Dict[str, Any]) -> str:
+        from src.model_bank.registry import resolve_family
+
+        model_cls = resolve_family(family)
+        space = model_cls.param_space()
+        active = {**model_cls.default_params(), **((config.get("model") or {}).get("params") or {})}
+        lines = [
+            f"You are analyzing the '{family}' influenza hospitalization forecasting model: "
+            f"{model_cls.description}. It predicts weekly hospital admissions 1-4 weeks ahead "
+            "for all US states and territories using CDC FluSight surveillance data.",
+            "",
+            "Tunable hyperparameters (current value, allowed range):",
+        ]
+        if not space:
+            lines.append("- (none declared: this model exposes no knobs; only `stop` is useful)")
+        for name, spec in space.items():
+            bound = (
+                f"[{spec.low}, {spec.high}]" if spec.kind in ("int", "float")
+                else f"one of {list(spec.choices or ())}" if spec.kind == "categorical"
+                else "true/false"
+            )
+            desc = f" - {spec.description}" if spec.description else ""
+            lines.append(f"- {name} = {active.get(name, '?')} ({spec.kind}, {bound}){desc}")
+        lines.append("")
+        return "\n".join(lines)
+
+    def get_domain_context(self, config: Optional[Dict[str, Any]] = None) -> str:
+        """Return flu forecasting domain context for the LLM prompt.
+
+        The model-specific paragraph depends on the active family; the
+        epidemic-phase and performance context is shared by every model.
+        """
+        family = self.model_family_of(config)
+        if family == LEGACY_MODEL_FAMILY:
+            model_context = self._XGBOOST_MODEL_CONTEXT
+        else:
+            model_context = self._bank_model_context(family, config or {})
+        return model_context + (
             "Epidemic phases:\n"
             "- Onset (Oct-Nov): flu activity begins rising\n"
             "- Peak (Dec-Jan): highest hospitalization rates\n"

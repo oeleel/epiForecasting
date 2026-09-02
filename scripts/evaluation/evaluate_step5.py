@@ -174,8 +174,8 @@ def main():
     for cutoff in cutoff_dates:
         cutoff_dt = pd.to_datetime(cutoff)
         # Need at least 52 weeks before and 4 weeks after
-        if (cutoff_dt - pd.Timedelta(weeks=52) >= min_date and
-            cutoff_dt + pd.Timedelta(weeks=4) <= max_date):
+        if (cutoff_dt - pd.Timedelta(7 * (52), unit="D") >= min_date and
+            cutoff_dt + pd.Timedelta(7 * (4), unit="D") <= max_date):
             valid_cutoffs.append(cutoff)
 
     print(f"   Total cutoff dates: {len(cutoff_dates)}")

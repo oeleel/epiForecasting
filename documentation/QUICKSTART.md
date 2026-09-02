@@ -3,9 +3,11 @@
 ## Setup
 
 ```bash
-# Install dependencies
-pip install -r documentation/requirements.txt
-pip install langchain-openai   # required for LLM features
+# Install dependencies (uv; plain pip works too)
+uv venv --python 3.12 .venv
+uv pip install --python .venv/bin/python -r documentation/requirements.txt pytest langchain-openai
+uv pip install --python .venv/bin/python -r documentation/requirements-nixtla.txt   # optional example models
+source .venv/bin/activate
 
 # Start Ollama (local LLM server)
 brew install ollama            # one-time
@@ -28,6 +30,48 @@ python -m pytest tests/agent/ -v
 # Check that the agent CLI loads
 python -m agent --help
 ```
+
+## Researcher quickstart: pick a model, then refine it
+
+The framework has two stages. **Stage 1 (model selection)** answers "which
+model should I start from?" by warming up every candidate on the pinned
+evaluation window and ranking them by the goal metric. **Stage 2 (improvement
+loop)** hands that incumbent to the two LLM agents for constrained refinement.
+
+The fastest way to see both, with no LLM needed for the first six steps:
+
+```bash
+python scripts/demo_stage1.py            # <1 min: 6 locations, 3 cutoffs, 4 models
+python scripts/demo_stage1.py --full     # ~10 min: all locations, every 4th week
+python scripts/demo_stage1.py --improve --auto-apply   # + hand-off to the agents (needs an LLM)
+```
+
+The same thing as individual commands:
+
+```bash
+# What models can I try here? (in-house models: pass pkg.module:ClassName, no registration)
+python -m agent list-models
+
+# Which should I start from? Pinned window, phase-aware WIS, incumbent by goal.
+python -m agent select-model --stride-weeks 4 --exclude-locations US \
+    --json outputs/model_selection/run.json --report outputs/model_selection/run.md
+
+# Quick mode for a live demo (a few states, 3 cutoffs)
+python -m agent select-model --locations US 06 48 12 36 17 --max-cutoffs 3 --exclude-locations US
+
+# Same run, different objective (the goal is a parameter)
+python -m agent select-model --stride-weeks 4 --exclude-locations US --metric wis --phase peak
+
+# Compare your own model against the bank
+python -m agent select-model --families xgboost_direct my_lab.models:FluLSTM --stride-weeks 4
+
+# Refine the winner with the agents (any family)
+python -m agent improve --cutoff-date 2025-12-06 --model-family nf_nhits --auto-apply
+```
+
+What the pinned window is and why: `documentation/MODEL_BANK.md`. Adding a
+model takes two methods and a list of tunable parameters; the same document has
+the recipe.
 
 ## Workflow
 
@@ -97,7 +141,7 @@ The improvement loop has two LLM agents:
 
 | Action | What it does |
 |---|---|
-| `adjust_hyperparameter` | Tune XGBoost params (max_depth, learning_rate, etc.) |
+| `adjust_hyperparameter` | Tune one hyperparameter. For XGBoost: max_depth, learning_rate, etc. For any model-bank family: whatever its `param_space()` declares |
 | `reweight_training_samples` | Upweight training data by phase/horizon/location |
 | `toggle_feature` | Enable/disable feature groups (lag, rolling, yoy, etc.) |
 | `adjust_floor_constraint` | Change post-prediction floor percentage |
@@ -105,18 +149,27 @@ The improvement loop has two LLM agents:
 | `stop` | Declare convergence |
 
 All actions have guardrails — the LLM cannot set values outside safe ranges.
+The pipeline-specific actions (reweight, feature toggle, floor, target
+transform) apply to the legacy XGBoost family; other families get
+`adjust_hyperparameter` + `stop`, generated from their own declared knobs.
 
 ## File structure
 
 ```
 agent/
   cli.py              # All CLI commands
-  orchestrator.py     # Two-agent improvement loop
+  orchestrator.py     # Two-agent improvement loop (Stage 2)
+  model_selection.py  # Warm-up + incumbent selection (Stage 1)
   data_quality.py     # Pre-training data checks
   adapters/
     flu_forecast.py   # CDC FluSight adapter (actions, metrics, pipeline)
   llm_client.py       # Ollama/vLLM connection
   run_tracker.py      # SQLite history (outputs/agent_runs/runs.db)
+src/model_bank/
+  contract.py         # ForecastModel: what any model implements
+  registry.py         # named families + dotted-path in-house models
+  runner.py           # load -> fit -> predict -> forecast CSV
+scripts/demo_stage1.py   # the researcher walkthrough
 ```
 
 ## Troubleshooting
@@ -132,3 +185,11 @@ python -m src.data_loader update
 ```
 
 **Tests fail**: Check Python version (requires 3.11+) and dependencies.
+
+**A family shows `NO` in `list-models`**: its optional dependency is missing;
+the reason column names the package. Install `requirements-nixtla.txt` for the
+Nixtla examples.
+
+**`select-model` is slow**: use `--locations ... --max-cutoffs 3` for a demo,
+`--stride-weeks 4` for a full run. `sf_autoarima` is ~1 min per 3 series; leave
+it off the default lineup.

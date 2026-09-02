@@ -6,7 +6,7 @@ and evaluation tools are domain-agnostic — all domain knowledge lives here.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 
@@ -61,17 +61,22 @@ class DomainAdapter(ABC):
         ...
 
     @abstractmethod
-    def get_domain_context(self) -> str:
+    def get_domain_context(self, config: Optional[Dict[str, Any]] = None) -> str:
         """Return a string describing the domain for LLM prompt context.
 
         Should include: what the model predicts, how it works, key features,
         known limitations, and what "good" vs "bad" performance looks like.
+
+        `config` is the current pipeline config; adapters that support
+        several model families use it to describe the active one.
         """
         ...
 
     # --- Milestone 2+ stubs (override when implementing improvement loop) ---
 
-    def get_available_actions(self) -> List[Dict[str, Any]]:
+    def get_available_actions(
+        self, config: Optional[Dict[str, Any]] = None
+    ) -> List[Dict[str, Any]]:
         """Return the constrained set of actions the LLM can suggest.
 
         Each action is a dict with at minimum:
@@ -79,7 +84,9 @@ class DomainAdapter(ABC):
             - "description": str (what it does)
             - "params": list of parameter names
 
-        The LLM can ONLY suggest actions from this list.
+        The LLM can ONLY suggest actions from this list. `config` is the
+        current pipeline config so the catalog can depend on the active
+        model family (different families expose different knobs).
         """
         raise NotImplementedError(
             "get_available_actions() is not implemented yet (Milestone 2). "

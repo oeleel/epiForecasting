@@ -307,7 +307,60 @@ def test_invalid_llm_response_repair():
 # Runner
 # ---------------------------------------------------------------------------
 
+
+def test_loop_refines_a_bank_family_through_model_params():
+    """End to end with a non-legacy family: catalog, prompt, apply, and retrain all key off model.family."""
+    from src.config import get_default_config
+
+    with tempfile.TemporaryDirectory() as td:
+        tmp_dir = Path(td)
+        seed = _seed_baseline_csv(tmp_dir)
+        cfg = get_default_config()
+        cfg["model"]["family"] = "persistence"
+        fake_llm = FakeLLM([
+            json.dumps(valid_diagnosis()),
+            json.dumps(valid_action(
+                name="adjust_hyperparameter",
+                params={"name": "residual_window_weeks", "value": 52},
+            )),
+            json.dumps(valid_diagnosis()),
+            json.dumps(valid_action(name="stop", params={})),
+        ])
+        pipeline = ScriptedPipeline()
+        orch = Orchestrator(
+            adapter=FakeAdapter(target_sequence=[100.0, 90.0]),
+            llm=fake_llm,
+            pipeline=pipeline,
+            tracker=RunTracker(db_path=tmp_dir / "test.db"),
+            confirmer=auto_apply_confirmer,
+            max_iterations=3,
+            run_dir=tmp_dir / "run",
+            verbose=False,
+        )
+        result = orch.run(
+            initial_forecast=str(seed), cutoff_date="2025-12-06",
+            initial_config=cfg, regenerate_baseline=False,
+        )
+
+    # The retrain received the bank-family config with the param written under model.params
+    assert len(pipeline.calls) == 1
+    retrain_cfg = pipeline.calls[0]["config"]
+    assert retrain_cfg["model"]["family"] == "persistence"
+    assert retrain_cfg["model"]["params"] == {"residual_window_weeks": 52}
+    assert retrain_cfg["xgboost"] == cfg["xgboost"]  # legacy section untouched
+
+    # Agent 2 saw the family-specific catalog and context, not the XGBoost one
+    proposal_prompt = fake_llm.calls[1]
+    assert "Model family: persistence" in proposal_prompt
+    assert "residual_window_weeks" in proposal_prompt
+    assert "toggle_feature" not in proposal_prompt
+    assert "XGBoost-based" not in proposal_prompt
+
+    assert result.iterations[1].action_status == "applied"
+    assert result.stop_reason == "agent_stop"
+
 ALL_TESTS = [
+    test_loop_refines_a_bank_family_through_model_params,
     test_max_iterations_stop,
     test_agent_stop_action,
     test_two_regressions_stop,
