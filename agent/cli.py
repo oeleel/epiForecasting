@@ -25,6 +25,7 @@ Usage examples:
     python -m agent select-model --stride-weeks 4
     python -m agent select-model --families persistence sf_autoets mlf_lightgbm --metric wis --phase peak
     python -m agent improve --cutoff-date 2025-12-06 --model-family mlf_lightgbm --auto-apply
+    python -m agent select-model --goal "which model is best at the peak" --explain-goal
 """
 
 import argparse
@@ -434,7 +435,34 @@ def cmd_select_model(args) -> None:
         cutoffs = repo_config.generate_eval_cutoffs(stride_weeks=args.stride_weeks)
         if args.max_cutoffs:
             cutoffs = cutoffs[: args.max_cutoffs]
-    goal = SelectionGoal(metric=args.metric, phase=args.phase)
+    if args.goal:
+        from agent.goal_parser import parse_goal
+
+        # temperature=0.0, not the LLMClient default of 0.3: the same sentence
+        # must map to the same goal on every run or the experiment log is noise.
+        llm = None
+        if not args.no_llm:
+            llm = LLMClient(base_url=args.base_url, model=args.model, temperature=0.0)
+        try:
+            parsed = parse_goal(args.goal, llm=llm)
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+        goal = parsed.goal
+        for w in parsed.warnings:
+            print(f"warning: {w}", file=sys.stderr)
+        if args.metric or args.phase:
+            goal = SelectionGoal(metric=args.metric or goal.metric, phase=args.phase or goal.phase)
+            print("note: explicit --metric/--phase override the parsed goal", file=sys.stderr)
+        print(f'goal: "{args.goal}" -> {goal.describe()}  [{parsed.source}]')
+        if parsed.rationale:
+            print(f"  rationale: {parsed.rationale}")
+    else:
+        goal = SelectionGoal(metric=args.metric or "wis", phase=args.phase or "all")
+        if args.explain_goal:
+            print(f"goal: {goal.describe()}  [flags]")
+    if args.explain_goal:
+        return  # print the mapping and stop before the multi-minute warm-up
 
     print(f"\nselect-model: {len(families)} families x {len(cutoffs)} cutoffs "
           f"({cutoffs[0]} .. {cutoffs[-1]}), goal = {goal.describe()}")
@@ -920,13 +948,17 @@ def main():
         "--cutoffs", nargs="+", default=None,
         help="Explicit cutoff dates (YYYY-MM-DD); overrides the pinned window",
     )
+    # default=None (not "wis"/"all") so cmd_select_model can tell "the user typed
+    # --metric wis" from "argparse filled it in" — the defaults are applied there.
+    # keep in sync with agent.model_selection.VALID_METRICS / VALID_PHASES
+    # (not imported: agent.model_selection pulls pandas into every CLI startup)
     select_parser.add_argument(
-        "--metric", default="wis",
+        "--metric", default=None,
         choices=["wis", "mape", "mae", "rmse", "coverage_95", "bias"],
         help="Goal metric for ranking (default: wis)",
     )
     select_parser.add_argument(
-        "--phase", default="all", choices=["all", "onset", "peak", "decline"],
+        "--phase", default=None, choices=["all", "onset", "peak", "decline"],
         help="Read the goal metric from this phase (default: all = overall)",
     )
     select_parser.add_argument(
@@ -945,6 +977,21 @@ def main():
         "--save-forecasts", default=None, help="Directory to write one forecast CSV per family",
     )
     select_parser.add_argument("--quiet", action="store_true", help="Hide per-cutoff progress")
+    select_parser.add_argument(
+        "--goal", default=None,
+        help='Say the objective in English, e.g. "which model is best at the peak". '
+             'Explicit --metric/--phase win over the parsed goal.',
+    )
+    select_parser.add_argument("--base-url", default=None, help="LLM server URL (for --goal)")
+    select_parser.add_argument("--model", default=None, help="LLM model name (for --goal)")
+    select_parser.add_argument(
+        "--no-llm", action="store_true",
+        help="Parse --goal with the deterministic keyword table only; never call the LLM",
+    )
+    select_parser.add_argument(
+        "--explain-goal", action="store_true",
+        help="Print the parsed goal and exit without running the warm-up",
+    )
 
     args = parser.parse_args()
 
