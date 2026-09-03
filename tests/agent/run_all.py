@@ -29,6 +29,7 @@ MODULES = [
     "tests.agent.test_orchestrator",
     "tests.agent.test_model_bank",
     "tests.agent.test_model_selection",
+    "tests.agent.test_run_report",
 ]
 
 

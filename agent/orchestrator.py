@@ -124,9 +124,10 @@ class IterationRecord:
     metrics: Dict[str, Any]
     diagnosis: Optional[Dict[str, Any]] = None
     action: Optional[Dict[str, Any]] = None
-    action_status: str = "n/a"  # baseline | applied | skipped | invalid | stop
+    action_status: str = "n/a"  # baseline | applied | skipped | no_op | stop | user_stop
     target_value: Optional[float] = None
     elapsed_s: float = 0.0
+    change_desc: Optional[str] = None  # adapter.apply_action's human-readable summary
 
 
 @dataclass
@@ -459,6 +460,7 @@ class Orchestrator:
                     diagnosis=diagnosis,
                     action=action,
                     action_status="applied",
+                    change_desc=change_desc,
                 )
                 iterations.append(record)
 
@@ -538,7 +540,7 @@ class Orchestrator:
         self.tracker.finish_run(run_id, status="completed")
         self._log(f"\n=== finished: stop_reason={stop_reason} best_iter={best_idx} ===")
 
-        return RunResult(
+        result = RunResult(
             run_id=run_id,
             iterations=iterations,
             best_iteration=best_idx,
@@ -546,6 +548,20 @@ class Orchestrator:
             stop_reason=stop_reason,
             target_metric=self.target_metric,
         )
+
+        # The end-of-run report (roadmap 6.1) is the deliverable a reader
+        # actually opens, but it is downstream of a finished run: a formatting
+        # bug here must never turn a completed run into a failed one.
+        # Imported locally so `run_report` can import this module at top level.
+        try:
+            from agent.run_report import build_report, write_report
+
+            md_path, _json_path = write_report(build_report(result), self.run_dir)
+            self._log(f"    report: {md_path}")
+        except Exception as exc:
+            self._log(f"    (report generation failed: {exc})")
+
+        return result
 
     # ---------- node implementations (each is straightforward) -------------
 
@@ -557,6 +573,7 @@ class Orchestrator:
         diagnosis: Optional[Dict[str, Any]] = None,
         action: Optional[Dict[str, Any]] = None,
         action_status: str = "baseline",
+        change_desc: Optional[str] = None,
     ) -> IterationRecord:
         """Compute metrics for a forecast file and wrap as an IterationRecord."""
         t0 = time.time()
@@ -577,6 +594,7 @@ class Orchestrator:
             action_status=action_status,
             target_value=target,
             elapsed_s=time.time() - t0,
+            change_desc=change_desc,
         )
 
     def _diagnose(self, current: IterationRecord) -> Dict[str, Any]:

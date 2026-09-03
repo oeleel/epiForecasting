@@ -7,6 +7,7 @@ Commands:
     history    — List past improve runs from the SQLite tracker.
     status     — Show detailed iteration-by-iteration view of a run.
     compare    — Diff two improve runs side-by-side.
+    report     — Regenerate the end-of-run report for a past run.
     list-models  — Show every model-bank family available in this environment.
     select-model — Stage 1: warm-up every candidate family on the pinned
                    eval window, score with phase-aware WIS, name the incumbent.
@@ -19,6 +20,7 @@ Usage examples:
     python -m agent history
     python -m agent status 20260410-153022-a3f2
     python -m agent compare 20260410-153022-a3f2 20260411-091844-7d10
+    python -m agent report 20260903-145933-0732
     python -m agent list-models
     python -m agent select-model --stride-weeks 4
     python -m agent select-model --families persistence sf_autoets mlf_lightgbm --metric wis --phase peak
@@ -372,6 +374,22 @@ def cmd_improve(args) -> None:
             f"{(summary['relative_pct'] or 0):+.1f}%)"
         )
     print(f"  best forecast:    {summary['best_forecast_path']}")
+
+    # The orchestrator already wrote report.md/report.json into the run dir;
+    # point at them rather than rebuilding a second, possibly divergent copy.
+    from pathlib import Path as _Path
+
+    run_dir = _Path(summary["best_forecast_path"]).parent
+    print(f"  report:           {run_dir / 'report.md'}")
+
+    if args.report:
+        from agent.run_report import build_report, render_markdown
+
+        out = _Path(args.report)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(render_markdown(build_report(result)))
+        print(f"wrote {out}")
+
     print()
     print("To inspect this run later:")
     print(f"  python -m agent history")
@@ -644,6 +662,42 @@ def cmd_compare(args) -> None:
         )
 
 
+def cmd_report(args) -> None:
+    """Print (or write) the end-of-run report for a past run.
+
+    Prefers the `report.md` the orchestrator wrote at the end of the run — it
+    carries fields SQLite never stored (`action_status`, `change_desc`,
+    `stop_reason`). Falls back to rebuilding from `runs.db`, which degrades
+    those fields loudly rather than guessing at them.
+    """
+    from pathlib import Path as _Path
+
+    from agent.run_report import build_report_from_tracker, render_markdown
+
+    run = RunTracker().get_run(args.run_id)
+    if run is None:
+        print(f"Run not found: {args.run_id}", file=sys.stderr)
+        sys.exit(1)
+
+    stored = _Path("outputs/agent_runs") / args.run_id / "report.md"
+    if stored.exists() and not args.rebuild:
+        markdown = stored.read_text()
+        source_note = f"(stored report: {stored})"
+    else:
+        markdown = render_markdown(build_report_from_tracker(run))
+        source_note = "(rebuilt from runs.db)"
+
+    if args.out:
+        out = _Path(args.out)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(markdown)
+        print(f"wrote {out} {source_note}")
+        return
+
+    print(source_note, file=sys.stderr)
+    print(markdown)
+
+
 # ----------------------------------------------------------------------------
 # Top-level argparse
 # ----------------------------------------------------------------------------
@@ -791,6 +845,10 @@ def main():
              "pipeline). Registered names from `list-models` or a dotted path "
              "'pkg.module:Class' for an in-house model.",
     )
+    improve_parser.add_argument(
+        "--report", default=None,
+        help="Also write the run report here (it is always written to the run dir)",
+    )
 
     # ---- history subcommand ------------------------------------------------
     history_parser = subparsers.add_parser(
@@ -820,6 +878,19 @@ def main():
         "--metric", default="wis",
         choices=["wis", "mape", "coverage_95", "bias"],
         help="Metric to compare on (default: wis)",
+    )
+
+    # ---- report subcommand -------------------------------------------------
+    report_parser = subparsers.add_parser(
+        "report", help="Regenerate the end-of-run report for a past run",
+    )
+    report_parser.add_argument("run_id", help="The run_id to report on")
+    report_parser.add_argument(
+        "--out", default=None, help="Write the markdown here instead of stdout",
+    )
+    report_parser.add_argument(
+        "--rebuild", action="store_true",
+        help="Rebuild from runs.db even if report.md exists (degrades unpersisted fields)",
     )
 
     # ---- list-models subcommand --------------------------------------------
@@ -893,6 +964,8 @@ def main():
         cmd_status(args)
     elif args.command == "compare":
         cmd_compare(args)
+    elif args.command == "report":
+        cmd_report(args)
     elif args.command == "list-models":
         cmd_list_models(args)
     elif args.command == "select-model":
