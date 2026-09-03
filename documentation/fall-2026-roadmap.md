@@ -76,7 +76,7 @@ goal-as-parameter selection (2.3).
 
 | # | Task | Notes |
 |---|---|---|
-| 3.1 | **Revert-on-regression** — restore previous config when an iteration regresses instead of committing it (orchestrator step 8). Few lines; do first | ☐ |
+| 3.1 | **Revert-on-regression** — restore best-known config when an iteration regresses instead of committing it (orchestrator step 8) | ✅ 2026-09-03 `agent/orchestrator.py`: comparisons now use `iterations[best_idx]` instead of the previous iteration; on regression, `config = copy.deepcopy(iterations[best_idx].config)` before the next diagnosis. Live A/B on `nf_nhits` @ 2026-01-24: before, iter2 built on a regressed `input_size=52` and reached WIS 300.5 (3x baseline) before stopping at `max_iterations`; after, iter2 diagnosed from the reverted baseline, proposed an independent fix, reached WIS 105.7 (4% off baseline), and stopped correctly at `regressed_x2`. All 138 tests still pass (`test_two_regressions_stop`, `test_best_forecast_retained_on_regression` unchanged). |
 | 3.2 | Case retrieval over `runs.db` — surface "what worked at similar cutoffs/phases in past runs" in Agent 2's proposal prompt | ☐ |
 
 ## Workstream 4 — Warm-start research layer (paper centerpiece)

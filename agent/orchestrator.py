@@ -11,7 +11,9 @@ into an iterative loop that:
     6. applies the action to a config dict
     7. retrains the model + generates a new forecast
     8. logs the iteration to the SQLite run tracker
-    9. decides whether to stop or loop
+    9. decides whether to stop or loop — on a regression (worse than the best
+       config seen so far), reverts the working config to that best config
+       before the next diagnosis, so the search never builds on a bad edit
 
 Why plain Python and not LangGraph:
 
@@ -344,14 +346,18 @@ class Orchestrator:
             config=config,
         )
         iterations.append(baseline)
+        best_idx = 0  # index into `iterations` of the best config seen so far
 
         # ---- improvement loop ---------------------------------------------
         for it in range(1, self.max_iterations + 1):
             self._log(f"\n[iteration {it}/{self.max_iterations}]")
 
             try:
-                # ---- 1. diagnose -------------------------------------------
-                diagnosis = self._diagnose(iterations[-1])
+                # ---- 1. diagnose ---------------------------------------
+                # Diagnose from the best-known state, not the last-tried one:
+                # after a regression `config` has already been reverted below,
+                # so this keeps Agent 1/2 reasoning from a regressed baseline.
+                diagnosis = self._diagnose(iterations[best_idx])
                 self._print_diagnosis(diagnosis)
 
                 # ---- 2. propose --------------------------------------------
@@ -455,7 +461,6 @@ class Orchestrator:
                     action_status="applied",
                 )
                 iterations.append(record)
-                config = new_config  # commit
 
                 self.tracker.log_iteration(
                     run_id, it,
@@ -466,17 +471,23 @@ class Orchestrator:
                     forecast_path=forecast_path,
                 )
 
-                # ---- 8. stop checks ----------------------------------------
-                prev_target = iterations[-2].target_value
+                # ---- 8. stop checks + revert-on-regression -----------------
+                # Compare against the best config seen so far, not merely the
+                # previous iteration — otherwise a regressed iteration becomes
+                # the new floor and the search degrades from there (TS-Agent
+                # gap #2: they revert on regression, we used to commit anyway).
+                best_target = iterations[best_idx].target_value
                 cur_target = record.target_value
-                if cur_target is None or prev_target is None:
+                if cur_target is None or best_target is None:
                     self._log("  warning: target metric missing; cannot evaluate progress")
                     continue
 
-                if _is_better(self.target_metric, cur_target, prev_target):
-                    delta = _improvement_pct(self.target_metric, cur_target, prev_target)
+                if _is_better(self.target_metric, cur_target, best_target):
+                    delta = _improvement_pct(self.target_metric, cur_target, best_target)
                     self._log(f"  improved by {delta*100:+.1f}% on {self.target_metric}")
                     regression_streak = 0
+                    best_idx = len(iterations) - 1
+                    config = new_config  # commit: this is now the best-known config
                     if delta < self.no_improvement_threshold:
                         no_improvement_streak += 1
                         if no_improvement_streak >= 2:
@@ -487,7 +498,12 @@ class Orchestrator:
                 else:
                     regression_streak += 1
                     no_improvement_streak = 0
-                    self._log(f"  regression #{regression_streak} on {self.target_metric}")
+                    self._log(
+                        f"  regression #{regression_streak} on {self.target_metric} "
+                        f"(best so far: iter {best_idx} = {best_target:.3f}); "
+                        f"reverting to that config for the next proposal"
+                    )
+                    config = copy.deepcopy(iterations[best_idx].config)
                     if regression_streak >= 2:
                         stop_reason = "regressed_x2"
                         break
