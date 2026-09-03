@@ -19,6 +19,11 @@ The key idea: replace the manual "run model → inspect CSVs → tweak parameter
 uv venv --python 3.12 .venv
 uv pip install --python .venv/bin/python -r documentation/requirements.txt pytest langchain-openai
 uv pip install --python .venv/bin/python -r documentation/requirements-nixtla.txt   # optional example families
+
+# macOS only: xgboost + torch bundle separate libomp.dylib copies; running both
+# in one process (agent select-model / improve does) segfaults without this
+export KMP_DUPLICATE_LIB_OK=TRUE
+export OMP_NUM_THREADS=1
 ```
 
 ### Agent Framework (primary focus)

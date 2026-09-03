@@ -13,6 +13,10 @@ source .venv/bin/activate
 brew install ollama            # one-time
 ollama serve                   # start server
 ollama pull qwen3:8b           # download model (~5GB)
+
+# macOS only: avoid an OpenMP segfault when torch and xgboost share a process
+export KMP_DUPLICATE_LIB_OK=TRUE
+export OMP_NUM_THREADS=1
 ```
 
 For Rivanna (vLLM), set the environment variable instead:
@@ -193,3 +197,18 @@ Nixtla examples.
 **`select-model` is slow**: use `--locations ... --max-cutoffs 3` for a demo,
 `--stride-weeks 4` for a full run. `sf_autoarima` is ~1 min per 3 series; leave
 it off the default lineup.
+
+**Segfault training a neuralforecast/torch family (e.g. `nf_nhits`), often
+right after `Seed set to 1`**: macOS-only OpenMP conflict. `agent improve`
+loads the whole model bank in one process, so `xgboost`'s bundled
+`libomp.dylib` and `torch`'s bundled `libomp.dylib` both end up loaded
+together; when both try to run parallel work at once their thread pools
+corrupt each other and the process crashes (visible in the crash report as a
+segfault inside `__kmp_fork_barrier`/`__kmp_suspend_64`). Fix:
+```bash
+export KMP_DUPLICATE_LIB_OK=TRUE
+export OMP_NUM_THREADS=1
+```
+before running `agent improve` or `agent select-model` with a torch-based
+family. Already in the Setup section above; add it to your shell profile so
+it's always set.
