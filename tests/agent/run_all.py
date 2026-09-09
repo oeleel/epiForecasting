@@ -30,6 +30,7 @@ MODULES = [
     "tests.agent.test_model_bank",
     "tests.agent.test_model_selection",
     "tests.agent.test_run_report",
+    "tests.agent.test_phase_segmentation",
     "tests.agent.test_goal_parser",
 ]
 
