@@ -122,13 +122,25 @@ PYTHONPATH=. .venv/bin/python tests/agent/run_all.py
 4. Major 11 (docs sync) last, in the same commit series.
 5. Re-run both gates; then squash-merge to main per repo convention.
 
-## 5. Next research actions (independent of the fixes)
+## 5. Next research actions — REPRIORITIZED by the advisor meeting
 
-- **Re-run Stage-1 selection under curve-based phase labels** (`phase_segmentation`)
-  and check whether "NHITS wins decline" survives — the replication result for the
-  January paper.
-- Advisor inputs pending from the 09-10 meeting (capture outcomes when known):
-  δ per-week vs per-segment; replace-vs-parallel phase labels; his best-practices
-  list (knowledge-bank seed); January framing; day-to-day use case.
-- Novel directions pitched (see the briefing artifact / `phase-based-training-papers.md` §7):
-  phase→model roster, phase-boundary retrain trigger, self-writing knowledge bank.
+Full decisions: `meeting-notes/2026-09-10-knowledge-bank-first.md`. Summary:
+
+1. **PRIMARY: the knowledge bank, design-first.** Deliverables to him ~Fri/Mon
+   via Teams, final by next Thursday: an overall **architecture diagram**, a
+   **knowledge-bank design doc** (sub-banks: model characteristics / input data /
+   forecasts + background-vs-runs split; queryable storage; retrieval into the
+   agents), and a **knowledge-graph vs flat-bank** recommendation. The lab will
+   supply content; the structure is ours to propose. Seed entry he gave: onset =
+   3 consecutive weeks of increase above a threshold, with per-season onset dates
+   + variance (note: a different rule than his papers' ±10% breakpoints — reconcile).
+2. **NL front end is now LOW priority ("cosmetic")** — researchers will write
+   JSON directly. Finish the open Feature-B findings for correctness, but invest
+   nothing further there. The structured spec format still matters.
+3. **Coming: his RL-framing write-up** — reward = change in evaluation score,
+   memory of state→action→reward. This is the paper's formal differentiator and
+   the knowledge bank is its prerequisite (it constrains the action space).
+4. Still worth doing when time allows: re-run Stage-1 selection under
+   curve-based phase labels ("NHITS wins decline" replication); regime-restricted
+   sampling got an explicit endorsement ("only sample data from that regime").
+5. Rivanna port is a secondary effort; Dustin is back and the advisor is pinging him.
