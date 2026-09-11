@@ -11,12 +11,15 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from agent.adapters.flu_forecast import FluForecastAdapter
+from agent.model_selection import VALID_METRICS, VALID_PHASES
 from agent.prompt_templates import (
     extract_json_from_response,
     format_action_proposal_prompt,
+    format_goal_parse_prompt,
     format_structured_diagnosis_prompt,
     validate_action_proposal,
     validate_diagnosis,
+    validate_goal,
 )
 
 
@@ -236,6 +239,29 @@ def test_validate_action_params_must_be_dict():
         pass
 
 
+def test_validate_goal_rejects_missing_keys():
+    try:
+        validate_goal({"metric": "wis"}, VALID_METRICS, VALID_PHASES)
+        assert False, "should have raised"
+    except ValueError as e:
+        assert "phase" in str(e)
+    validate_goal(
+        {"metric": "wis", "phase": "peak", "rationale": "the sentence said peak"},
+        VALID_METRICS,
+        VALID_PHASES,
+    )
+
+
+def test_format_goal_parse_prompt_lists_legal_values():
+    prompt = format_goal_parse_prompt("best at the peak", VALID_METRICS, VALID_PHASES)
+    for metric in VALID_METRICS:
+        assert metric in prompt
+    for phase in VALID_PHASES:
+        assert phase in prompt
+    assert "Output ONLY the JSON object" in prompt
+    assert "off_season" not in prompt
+
+
 ALL = [
     test_diagnosis_prompt_includes_required_phrases,
     test_extract_json_bare,
@@ -254,6 +280,9 @@ ALL = [
     test_validate_action_missing_keys_raises,
     test_validate_action_empty_rationale_raises,
     test_validate_action_params_must_be_dict,
+    test_extract_json_qwen3_think_tags,  # was defined but never registered (drift fix)
+    test_validate_goal_rejects_missing_keys,
+    test_format_goal_parse_prompt_lists_legal_values,
 ]
 
 

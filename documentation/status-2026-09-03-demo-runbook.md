@@ -4,6 +4,16 @@ Verified against `main` at `26cc786` on 2026-09-03. Every claim under "What
 works" was executed, not read from docs. Companion to
 `fall-2026-roadmap.md` (the plan) and `MODEL_BANK.md` (the contract).
 
+> **Addendum 2026-09-11.** Since this was written: roadmap 3.1
+> (revert-on-regression), 2.3 (goal parser) and 6.1 (run report) have landed
+> on `main`; `improve` now writes `report.md` next to the run and `agent
+> report <run_id>` regenerates it. The "runs.db empty" claim below was true of
+> the desktop only - `outputs/agent_runs/` is gitignored and per-machine; the
+> MacBook holds 15 live runs from the 09-09 review. Items 1-2 and the 6.1 half
+> of item 6 in "What still needs implementing" are done. Priorities were reset
+> by the advisor on 09-10: knowledge bank first
+> (`meeting-notes/2026-09-10-knowledge-bank-first.md`).
+
 ## What works (verified)
 
 - **Tests:** `tests/agent/` - 138 passed in <1 s (`-W error::DeprecationWarning`).
@@ -97,19 +107,16 @@ Talking points mapped to the 09-02 decisions:
 Roadmap order. Items 0.3, 0.4, and Workstream 1 are done and ticked in
 `fall-2026-roadmap.md`.
 
-1. **3.1 Revert-on-regression.** `agent/orchestrator.py` (~line 488) counts a
-   regression streak and stops after 2 but keeps the regressed config. Must
-   restore the previous best. Small; do first.
-2. **2.3 Natural-language goal.** Selection takes `--metric --phase` flags
-   only. The "say in English what to optimize" layer does not exist.
+1. ~~**3.1 Revert-on-regression.**~~ Done 2026-09-03 (`f327adc`).
+2. ~~**2.3 Natural-language goal.**~~ Done 2026-09-09 (`agent/goal_parser.py`);
+   advisor 09-10 demoted the English layer to low priority.
 3. **3.2 Case retrieval over `runs.db`.** Nothing in the prompts consults past
    runs.
 4. **Workstream 4, warm start (paper centerpiece).** `get_state` / `set_state`
    hooks exist on `ForecastModel` but nothing calls them. No `fine_tune` vs
    `retrain_from_scratch` action, no regime-change flag, no experiment harness.
 5. **Workstream 5, knowledge bank.** No heuristics file, no prompt injection.
-6. **Workstream 6, run reporting.** Selection writes a report; the improvement
-   loop has no end-of-run "what was tried / where the benefit came from"
-   report and there is no cross-run view. Advisor called this the most
-   important output.
+6. **Workstream 6, run reporting.** 6.1 done 2026-09-09 (`agent/run_report.py`,
+   per-run `report.md`). 6.2 cross-run view still open. Advisor called this
+   the most important output.
 7. **Workstream 7, paper.** Outline by November, results freeze December.

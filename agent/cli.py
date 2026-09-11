@@ -7,6 +7,7 @@ Commands:
     history    — List past improve runs from the SQLite tracker.
     status     — Show detailed iteration-by-iteration view of a run.
     compare    — Diff two improve runs side-by-side.
+    report     — Regenerate the end-of-run report for a past run.
     list-models  — Show every model-bank family available in this environment.
     select-model — Stage 1: warm-up every candidate family on the pinned
                    eval window, score with phase-aware WIS, name the incumbent.
@@ -19,10 +20,12 @@ Usage examples:
     python -m agent history
     python -m agent status 20260410-153022-a3f2
     python -m agent compare 20260410-153022-a3f2 20260411-091844-7d10
+    python -m agent report 20260903-145933-0732
     python -m agent list-models
     python -m agent select-model --stride-weeks 4
     python -m agent select-model --families persistence sf_autoets mlf_lightgbm --metric wis --phase peak
     python -m agent improve --cutoff-date 2025-12-06 --model-family mlf_lightgbm --auto-apply
+    python -m agent select-model --goal "which model is best at the peak" --explain-goal
 """
 
 import argparse
@@ -372,6 +375,22 @@ def cmd_improve(args) -> None:
             f"{(summary['relative_pct'] or 0):+.1f}%)"
         )
     print(f"  best forecast:    {summary['best_forecast_path']}")
+
+    # The orchestrator already wrote report.md/report.json into the run dir;
+    # point at them rather than rebuilding a second, possibly divergent copy.
+    from pathlib import Path as _Path
+
+    run_dir = _Path(summary["best_forecast_path"]).parent
+    print(f"  report:           {run_dir / 'report.md'}")
+
+    if args.report:
+        from agent.run_report import build_report, render_markdown
+
+        out = _Path(args.report)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(render_markdown(build_report(result)))
+        print(f"wrote {out}")
+
     print()
     print("To inspect this run later:")
     print(f"  python -m agent history")
@@ -416,7 +435,34 @@ def cmd_select_model(args) -> None:
         cutoffs = repo_config.generate_eval_cutoffs(stride_weeks=args.stride_weeks)
         if args.max_cutoffs:
             cutoffs = cutoffs[: args.max_cutoffs]
-    goal = SelectionGoal(metric=args.metric, phase=args.phase)
+    if args.goal:
+        from agent.goal_parser import parse_goal
+
+        # temperature=0.0, not the LLMClient default of 0.3: the same sentence
+        # must map to the same goal on every run or the experiment log is noise.
+        llm = None
+        if not args.no_llm:
+            llm = LLMClient(base_url=args.base_url, model=args.model, temperature=0.0)
+        try:
+            parsed = parse_goal(args.goal, llm=llm)
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+        goal = parsed.goal
+        for w in parsed.warnings:
+            print(f"warning: {w}", file=sys.stderr)
+        if args.metric or args.phase:
+            goal = SelectionGoal(metric=args.metric or goal.metric, phase=args.phase or goal.phase)
+            print("note: explicit --metric/--phase override the parsed goal", file=sys.stderr)
+        print(f'goal: "{args.goal}" -> {goal.describe()}  [{parsed.source}]')
+        if parsed.rationale:
+            print(f"  rationale: {parsed.rationale}")
+    else:
+        goal = SelectionGoal(metric=args.metric or "wis", phase=args.phase or "all")
+        if args.explain_goal:
+            print(f"goal: {goal.describe()}  [flags]")
+    if args.explain_goal:
+        return  # print the mapping and stop before the multi-minute warm-up
 
     print(f"\nselect-model: {len(families)} families x {len(cutoffs)} cutoffs "
           f"({cutoffs[0]} .. {cutoffs[-1]}), goal = {goal.describe()}")
@@ -644,6 +690,42 @@ def cmd_compare(args) -> None:
         )
 
 
+def cmd_report(args) -> None:
+    """Print (or write) the end-of-run report for a past run.
+
+    Prefers the `report.md` the orchestrator wrote at the end of the run — it
+    carries fields SQLite never stored (`action_status`, `change_desc`,
+    `stop_reason`). Falls back to rebuilding from `runs.db`, which degrades
+    those fields loudly rather than guessing at them.
+    """
+    from pathlib import Path as _Path
+
+    from agent.run_report import build_report_from_tracker, render_markdown
+
+    run = RunTracker().get_run(args.run_id)
+    if run is None:
+        print(f"Run not found: {args.run_id}", file=sys.stderr)
+        sys.exit(1)
+
+    stored = _Path("outputs/agent_runs") / args.run_id / "report.md"
+    if stored.exists() and not args.rebuild:
+        markdown = stored.read_text()
+        source_note = f"(stored report: {stored})"
+    else:
+        markdown = render_markdown(build_report_from_tracker(run))
+        source_note = "(rebuilt from runs.db)"
+
+    if args.out:
+        out = _Path(args.out)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(markdown)
+        print(f"wrote {out} {source_note}")
+        return
+
+    print(source_note, file=sys.stderr)
+    print(markdown)
+
+
 # ----------------------------------------------------------------------------
 # Top-level argparse
 # ----------------------------------------------------------------------------
@@ -791,6 +873,10 @@ def main():
              "pipeline). Registered names from `list-models` or a dotted path "
              "'pkg.module:Class' for an in-house model.",
     )
+    improve_parser.add_argument(
+        "--report", default=None,
+        help="Also write the run report here (it is always written to the run dir)",
+    )
 
     # ---- history subcommand ------------------------------------------------
     history_parser = subparsers.add_parser(
@@ -822,6 +908,19 @@ def main():
         help="Metric to compare on (default: wis)",
     )
 
+    # ---- report subcommand -------------------------------------------------
+    report_parser = subparsers.add_parser(
+        "report", help="Regenerate the end-of-run report for a past run",
+    )
+    report_parser.add_argument("run_id", help="The run_id to report on")
+    report_parser.add_argument(
+        "--out", default=None, help="Write the markdown here instead of stdout",
+    )
+    report_parser.add_argument(
+        "--rebuild", action="store_true",
+        help="Rebuild from runs.db even if report.md exists (degrades unpersisted fields)",
+    )
+
     # ---- list-models subcommand --------------------------------------------
     subparsers.add_parser(
         "list-models", help="List model-bank families available in this environment",
@@ -849,13 +948,17 @@ def main():
         "--cutoffs", nargs="+", default=None,
         help="Explicit cutoff dates (YYYY-MM-DD); overrides the pinned window",
     )
+    # default=None (not "wis"/"all") so cmd_select_model can tell "the user typed
+    # --metric wis" from "argparse filled it in" — the defaults are applied there.
+    # keep in sync with agent.model_selection.VALID_METRICS / VALID_PHASES
+    # (not imported: agent.model_selection pulls pandas into every CLI startup)
     select_parser.add_argument(
-        "--metric", default="wis",
+        "--metric", default=None,
         choices=["wis", "mape", "mae", "rmse", "coverage_95", "bias"],
         help="Goal metric for ranking (default: wis)",
     )
     select_parser.add_argument(
-        "--phase", default="all", choices=["all", "onset", "peak", "decline"],
+        "--phase", default=None, choices=["all", "onset", "peak", "decline"],
         help="Read the goal metric from this phase (default: all = overall)",
     )
     select_parser.add_argument(
@@ -874,6 +977,21 @@ def main():
         "--save-forecasts", default=None, help="Directory to write one forecast CSV per family",
     )
     select_parser.add_argument("--quiet", action="store_true", help="Hide per-cutoff progress")
+    select_parser.add_argument(
+        "--goal", default=None,
+        help='Say the objective in English, e.g. "which model is best at the peak". '
+             'Explicit --metric/--phase win over the parsed goal.',
+    )
+    select_parser.add_argument("--base-url", default=None, help="LLM server URL (for --goal)")
+    select_parser.add_argument("--model", default=None, help="LLM model name (for --goal)")
+    select_parser.add_argument(
+        "--no-llm", action="store_true",
+        help="Parse --goal with the deterministic keyword table only; never call the LLM",
+    )
+    select_parser.add_argument(
+        "--explain-goal", action="store_true",
+        help="Print the parsed goal and exit without running the warm-up",
+    )
 
     args = parser.parse_args()
 
@@ -893,6 +1011,8 @@ def main():
         cmd_status(args)
     elif args.command == "compare":
         cmd_compare(args)
+    elif args.command == "report":
+        cmd_report(args)
     elif args.command == "list-models":
         cmd_list_models(args)
     elif args.command == "select-model":

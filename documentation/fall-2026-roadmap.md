@@ -20,6 +20,13 @@ warm-start research layer and the knowledge/reporting pieces needed for the
   plug-and-play for whatever models the team brings
   (`documentation/MODEL_BANK.md`).
 
+**Reprioritized 2026-09-10** (`meeting-notes/2026-09-10-knowledge-bank-first.md`):
+Workstream 5 (knowledge bank) is now FIRST and must be finished before the
+rest; the natural-language front end in 2.3 is "cosmetic" and gets no further
+investment; the paper gains a formal RL framing (reward = change in the
+evaluation score, memory of state -> action -> reward) for which the knowledge
+bank is the prerequisite. No code-writing agents, confirmed.
+
 ---
 
 ## Workstream 0 — Repo hygiene & data refresh
@@ -70,7 +77,7 @@ goal-as-parameter selection (2.3).
 |---|---|---|
 | 2.1 | Warm-up runs: cheap short-horizon fits of each bank model at the cutoff before committing to an incumbent | ✅ `agent/model_selection.py: evaluate_candidates` (rolling origin over the pinned cutoffs, one family failing never sinks the rest) |
 | 2.2 | Incumbent selection by WIS (or the specified goal metric); hand off to the existing refinement loop | ✅ `select_incumbent`; `improve --model-family <incumbent>` |
-| 2.3 | Goal-as-parameter: selection/refinement objective specified per run (peak performance vs. average vs. overall), settable via natural-language command | ◐ `SelectionGoal(metric, phase)` + `--metric/--phase` flags done; natural-language front end not started |
+| 2.3 | Goal-as-parameter: selection/refinement objective specified per run (peak performance vs. average vs. overall), settable via natural-language command | ✅ 2026-09-09 `SelectionGoal(metric, phase)` + `--metric/--phase`; `agent/goal_parser.py` + `select-model --goal "..." [--no-llm] [--explain-goal]`. Advisor 09-10: the English layer is low priority ("cosmetic"); open review findings (keyword substring matches, override bypassing the guard) listed in `handoff-2026-09-11-desktop.md` §3, deliberately not fixed further |
 
 ## Workstream 3 — Orchestrator fixes (from the gap analysis, ranked)
 
@@ -103,7 +110,7 @@ retraining from scratch — and can the framework decide *a priori*?
 
 | # | Task | Notes |
 |---|---|---|
-| 6.1 | End-of-run report generator: what was tried, per-iteration deltas, where the benefit came from, final recommendation — markdown, agent- and human-legible | ☐ |
+| 6.1 | End-of-run report generator: what was tried, per-iteration deltas, where the benefit came from, final recommendation — markdown, agent- and human-legible | ✅ 2026-09-09 `agent/run_report.py`, auto-written `report.md`/`report.json` per `improve` run, `agent report <run_id> [--rebuild]`. 2026-09-11: blockers fixed (int horizon keys blanked the live table; improvement across mismatched eval windows now withheld as inconclusive). Remaining majors/minors in `handoff-2026-09-11-desktop.md` §3 |
 | 6.2 | Cross-run assessment view: which models did well in which phases with how much (re)training — the evidence base for promoting a model into the lab's software | ☐ |
 
 ## Workstream 7 — Paper (January)

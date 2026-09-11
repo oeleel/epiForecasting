@@ -45,6 +45,12 @@ python -m agent list-models
 python -m agent select-model --stride-weeks 4 --exclude-locations US --json outputs/model_selection/run.json
 python -m agent select-model --families persistence my_lab.models:FluLSTM --metric wis --phase peak
 python -m agent improve --cutoff-date 2025-12-06 --model-family mlf_lightgbm --auto-apply
+
+# Goal in plain English (LOW priority per advisor 09-10 - researchers write the JSON spec directly)
+python -m agent select-model --goal "which model is best at the peak" --explain-goal
+
+# End-of-run report: written automatically after every improve run; regenerate for a past run
+python -m agent report <run_id> [--rebuild] [--out report.md]
 ```
 
 ### Forecasting Pipeline (underlying model)
@@ -67,10 +73,10 @@ python -m src.data_loader update
 
 ### Testing
 ```bash
-.venv/bin/python -m pytest tests/agent/ -q -W error::DeprecationWarning   # 136 tests
+.venv/bin/python -m pytest tests/agent/ -q -W error::DeprecationWarning   # 186 tests
 PYTHONPATH=. .venv/bin/python tests/agent/run_all.py                        # no-pytest fallback
 ```
-Covers: adapter actions (legacy + bank families), config, data quality, feature toggle, orchestrator, prompts, run tracker, sample weights, WIS scoring, model bank (contract/registry/bridge/baselines/runner), model selection.
+Covers: adapter actions (legacy + bank families), config, data quality, feature toggle, orchestrator, prompts, run tracker, sample weights, WIS scoring, model bank (contract/registry/bridge/baselines/runner), model selection, run report, goal parser, phase segmentation.
 
 ### Key Config Details
 - Active XGBoost params: `XGBOOST_PARAMS_V2` (regularized) in `src/config.py`
@@ -97,7 +103,10 @@ agent/
 ├── prompt_templates.py      # LLM prompt templates + formatter + validators
 ├── llm_client.py            # Provider-agnostic LLM wrapper (OpenAI-compatible API)
 ├── model_selection.py       # Stage 1: rolling warm-up of bank families + incumbent selection
-├── cli.py                   # CLI: check-data, summarize, improve, history, status, compare, list-models, select-model
+├── run_report.py            # End-of-run report (report.md + report.json per improve run; `agent report`)
+├── goal_parser.py           # Natural-language goal -> SelectionGoal (`select-model --goal`); low priority
+├── phase_segmentation.py    # Curve-based phase labels (Adiga surge/plateau/decline), alternative to calendar phases
+├── cli.py                   # CLI: check-data, summarize, improve, history, status, compare, report, list-models, select-model
 └── adapters/
     ├── __init__.py
     └── flu_forecast.py      # Concrete adapter for flu forecasting
@@ -126,7 +135,7 @@ agent/
 ### LLM Infrastructure
 | Environment | Tool | Model | Purpose |
 |---|---|---|---|
-| Laptop (dev) | Ollama | Qwen 2.5 7B | Fast iteration, testing |
+| Laptop (dev) | Ollama | Qwen 3 8B (`qwen3:8b`, the code default) | Fast iteration, testing |
 | UVA Rivanna | vLLM on A100 GPU | Qwen 2.5 72B (AWQ quantized) | Full-quality analysis |
 
 Both expose an OpenAI-compatible API (`/v1/chat/completions`). Swapping environments = changing one URL.
@@ -160,6 +169,13 @@ Both expose an OpenAI-compatible API (`/v1/chat/completions`). Swapping environm
 - `agent/model_selection.py` + `select-model` CLI: rolling-origin warm-up on the pinned split, phase-aware WIS, incumbent by `SelectionGoal(metric, phase)`
 - `improve --model-family X`: the loop refines any family; `adjust_hyperparameter` comes from the family's `param_space()`
 - **In-house lab models are the real bank; Nixtla is example scaffolding.** See `documentation/MODEL_BANK.md` for the 30-line plug-in recipe.
+
+**Run report, NL goal, curve-based phases** — LANDED (2026-09-11)
+- `agent/run_report.py` (roadmap 6.1): every `improve` run writes `report.md` + `report.json`; `agent report <run_id>` regenerates. Never claims an improvement across different evaluation windows.
+- `agent/goal_parser.py` (roadmap 2.3): `select-model --goal "..."`. Advisor (09-10) rated the English front end cosmetic - do not invest further; the structured spec still matters.
+- `agent/phase_segmentation.py`: Adiga-style surge/plateau/decline segmentation from the curve, alongside the calendar phases.
+- Open review findings on the report + goal parser: `documentation/handoff-2026-09-11-desktop.md` §3.
+- **Current priority (advisor 09-10): knowledge bank first** - `documentation/meeting-notes/2026-09-10-knowledge-bank-first.md`.
 
 **Milestone 4: Generalization** — PLANNED
 - Template adapter for new domains (finance, sales, etc.)
@@ -208,7 +224,7 @@ CDC FluSight Repository: weekly influenza hospitalization data fetched from GitH
 | Forecasting model | XGBoost (primary), PyTorch NN (alternative) |
 | Agent orchestration | LangGraph (Milestone 2+) |
 | LLM serving | vLLM (cluster) / Ollama (laptop) |
-| LLM model | Qwen 2.5 (7B dev / 72B AWQ prod) |
+| LLM model | Qwen 3 8B (dev) / Qwen 2.5 72B AWQ (prod) |
 | LLM integration | langchain-openai (`ChatOpenAI`) |
 | Hyperparameter tuning | Optuna |
 | Feature importance | SHAP |

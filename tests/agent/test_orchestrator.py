@@ -359,8 +359,35 @@ def test_loop_refines_a_bank_family_through_model_params():
     assert result.iterations[1].action_status == "applied"
     assert result.stop_reason == "agent_stop"
 
+def test_run_writes_report_into_run_dir():
+    """A completed run leaves report.md + report.json next to its forecasts (roadmap 6.1)."""
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_dir = Path(tmp)
+        baseline = _seed_baseline_csv(tmp_dir)
+
+        seq = [200.0, 180.0, 160.0]
+        orch = _make_orch(tmp_dir, _build_llm(2), seq, max_iterations=2)
+        result = orch.run(
+            initial_forecast=str(baseline),
+            cutoff_date="2024-11-02",
+            regenerate_baseline=False,
+        )
+
+        md_path = tmp_dir / "run" / "report.md"
+        json_path = tmp_dir / "run" / "report.json"
+        assert md_path.exists(), "orchestrator must write report.md into the run dir"
+        assert json_path.exists(), "orchestrator must write report.json into the run dir"
+
+        payload = json.loads(json_path.read_text())
+        assert payload["run_id"] == result.run_id
+        assert payload["stop_reason"] == result.stop_reason
+        assert payload["source"] == "run_result"
+        assert md_path.read_text().startswith("# ")
+
+
 ALL_TESTS = [
     test_loop_refines_a_bank_family_through_model_params,
+    test_run_writes_report_into_run_dir,
     test_max_iterations_stop,
     test_agent_stop_action,
     test_two_regressions_stop,
