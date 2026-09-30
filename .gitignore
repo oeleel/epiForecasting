@@ -15,3 +15,7 @@ outputs/experiments/**
 !outputs/experiments/**/
 !outputs/experiments/**/summary.md
 !outputs/experiments/**/manifest.json
+# only the merged sweep dir keeps its summary/manifest; splits and smoke runs are scratch
+outputs/experiments/pr-split-*/
+outputs/experiments/*-smoke-*/
+outputs/experiments/sweep-logs/

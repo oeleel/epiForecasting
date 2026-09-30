@@ -48,7 +48,27 @@ python -m agent improve --cutoff-date 2025-12-06 --model-family mlf_lightgbm --a
 
 # End-of-run report: written automatically after every improve run; regenerate for a past run
 python -m agent report <run_id> [--rebuild] [--out report.md]
+
+# Knowledge bank (curated YAML in knowledge/curated/ -> SQLite knowledge/knowledge.db)
+python -m agent knowledge validate [--dir <yaml-dir>]                  # lab's authoring check; exit 1 on any error
+python -m agent knowledge rebuild                                      # reload curated YAML into the DB, print counts
+python -m agent knowledge list [--provenance P] [--category C]         # table of stored entries
+python -m agent knowledge query [--phase P] [--model M] [--metric X] [--season-week N]   # print the KNOWN FACTS block
 ```
+
+### Experiment harness (peak rectification)
+```bash
+# Full sweep: pinned split, 9 stride-4 cutoffs, baseline + lambda + lambda_calendar + window arms.
+# ~70 s per config per cutoff, so run it in the background.
+.venv/bin/python scripts/experiments/peak_rectification.py
+
+# Smoke run: first cutoff only (writes to a -smoke-<N>cutoffs sibling dir)
+.venv/bin/python scripts/experiments/peak_rectification.py --cutoffs 1 --arms baseline lambda --lambdas 2
+
+# Regenerate summary.md from log.jsonl, trains nothing
+.venv/bin/python scripts/experiments/peak_rectification.py --summary-only
+```
+Other flags: `--arms {baseline,lambda,lambda_calendar,window}`, `--lambdas`, `--calendar-lambdas`, `--windows`, `--out`, `--verbose`. Resumable (logged `config_id`s are skipped). Output in `outputs/experiments/peak_rectification/` (`manifest.json`, `log.jsonl`, `forecasts/`, `summary.md`). Script docstring has the design.
 
 ### Forecasting Pipeline (underlying model)
 ```bash
@@ -82,6 +102,8 @@ Covers: adapter actions (legacy + bank families), config, data quality, feature 
 - Pinned split (2026-09-02): `TRAIN_START_DATE` 2022-02-05, eval `EVAL_START_DATE`..`EVAL_END_DATE` = 2025-10-01..2026-05-31; `generate_eval_cutoffs(stride_weeks)`
 - Model family: `config["model"]["family"]` (default `xgboost_direct` = legacy path); family params in `config["model"]["params"]`
 - Location clustering: 5 clusters, min 3 locations per cluster
+- `config["sample_weights"]["approaching_peak"] = {"weeks_before": K, "weight": lambda}` (additive, default absent): upweights rows whose origin is K weeks before a season's observed max (K default 6). Only seasons complete relative to the data in hand and with >= 40 observed weeks are labelled, so the in-progress season is never labelled. XGBoost's validation split is positional (last ~20% of locations), so weights on those rows are unused. Implemented in `src/direct_forecast.py::_compute_sample_weights`
+- `config["data"]["train_window_weeks"] = N` (additive, default absent): fit only on the last N weeks of feature-engineered rows, lags intact (not `data.train_start_date`, which truncates history before feature engineering). Minimum 8 (`ValueError` below). Implemented in `src/pipeline.py::run_pipeline`
 - Agent dependencies (langchain-openai) are not in `documentation/requirements.txt` — install separately for agent work
 
 ## Architecture
@@ -102,10 +124,23 @@ agent/
 ├── model_selection.py       # Stage 1: rolling warm-up of bank families + incumbent selection
 ├── run_report.py            # End-of-run report (report.md + report.json per improve run; `agent report`)
 ├── phase_segmentation.py    # Curve-based phase labels (Adiga surge/plateau/decline), alternative to calendar phases
-├── cli.py                   # CLI: check-data, summarize, improve, history, status, compare, report, list-models, select-model
+├── cli.py                   # CLI: check-data, summarize, improve, history, status, compare, report, list-models, select-model, knowledge
+├── knowledge/               # Knowledge bank v1 (design: documentation/knowledge-bank-design.md)
+│   ├── __init__.py          # Public API + __all__
+│   ├── schema.py            # KnowledgeEntry, RetrievalContext, vocab constants (design s3)
+│   ├── store.py             # KnowledgeBank: SQLite DDL, upsert/get/list/query/rebuild_curated (design s4, s6)
+│   ├── curated.py           # YAML intake: load_curated_dir with file+index error messages (design s4)
+│   └── render.py            # render_known_facts: the KNOWN FACTS prompt block (design s6)
 └── adapters/
     ├── __init__.py
     └── flu_forecast.py      # Concrete adapter for flu forecasting
+```
+
+```
+knowledge/                   # Human-authored bank content (not code)
+├── README.md                # What the bank is, entry shape, how the lab adds entries
+├── curated/*.yaml           # One YAML list of entries per file; files starting with `_` are skipped (template, stub)
+└── knowledge.db             # Generated SQLite, gitignored; `knowledge rebuild` recreates it
 ```
 
 **DomainAdapter ABC** (`domain_adapter.py`) — every domain implements:
@@ -173,6 +208,13 @@ Both expose an OpenAI-compatible API (`/v1/chat/completions`). Swapping environm
 - Open review findings on the report: `documentation/handoff-2026-09-11-desktop.md` §3 (the goal-parser findings there are moot after the demotion).
 - **Current priority (advisor 09-10): knowledge bank first** - `documentation/meeting-notes/2026-09-10-knowledge-bank-first.md`.
 
+**Knowledge bank v1** - LANDED (2026-09-30)
+- Exists: entry schema, SQLite store, curated YAML intake, query, `knowledge` CLI, KNOWN FACTS renderer (`agent/knowledge/`); seeded curated entries in `knowledge/curated/` (advisor's five rectification actions, training-strategy rules, domain context migrated out of `FluForecastAdapter.get_domain_context`, which now serves them from the bank)
+- Curated entries with `recommendation.action: not_yet_available` (rectification entry #4 and the two training-strategy window rules) wait on a `set_training_window` adapter action; the harness sets `data.train_window_weeks` directly
+- Lab intake stub: `knowledge/curated/_training-strategy-by-model-class.yaml` (per-model-class strategies, rename to activate)
+- Deferred: derived refresh jobs, per-iteration injection of retrieved entries into the loop (only the adapter domain context reads the bank today), experiential bank-writer (all in design doc s9)
+- Experiment harness `scripts/experiments/peak_rectification.py`: lambda, lambda_calendar, window arms vs baseline; logs (state, action, reward) rows a future summarizer can read
+
 **Milestone 4: Generalization** — PLANNED
 - Template adapter for new domains (finance, sales, etc.)
 
@@ -207,7 +249,10 @@ Key details:
 
 - **`scripts/evaluation/`** — Feature importance and regularization evaluation scripts (`evaluate_features.py`, `evaluate_regularization.py`, `evaluate_target_transform.py`)
 - **`analysis/`** — SHAP feature importance analysis (`shap_analysis.py`) and Plotly performance dashboard (`performance_dashboard.py`)
-- **`tests/agent/`** — the real test suite (pytest or `run_all.py`); `tests/test.py` is a legacy placeholder
+- **`tests/agent/`** - the real test suite (pytest or `run_all.py`)
+- **`scripts/experiments/`** - controlled experiments whose logs feed the knowledge bank (`peak_rectification.py`)
+- **`scrap/`** - demoted code (NL goal parser), kept for reference only; never imported, tested, or maintained (see `scrap/README.md`)
+- **`documentation/archive/`** - superseded March 2026 framing docs (automate-end-to-end), kept for history; current direction is in `documentation/meeting-notes/`
 
 ## Data Source
 

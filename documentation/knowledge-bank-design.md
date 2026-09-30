@@ -96,13 +96,14 @@ One schema for all provenances. Curated entries are authored in YAML exactly
 in this shape; derived and experiential entries are the same rows written by
 code.
 
+**Worked example 1 - curated (the onset rule):**
+
 ```yaml
 id: onset-definition-v1            # stable slug; versioned on change
 provenance: curated                # curated | derived | experiential
 category: domain_dynamics          # model_characteristics | input_data |
                                    #   forecasts | domain_dynamics
-statement: >                       # one-sentence human-readable fact
-  Season onset = 3 consecutive weeks of increase above threshold T.
+statement: "Season onset = 3 consecutive weeks of increase above threshold T."
 
 entities:                          # typed refs - the graph-ready part (§7)
   phase: onset                     # any of: model, phase, data_source,
@@ -113,8 +114,8 @@ context:                           # retrieval keys - WHEN this is relevant
   # phase: [decline]               # applicable phases (omit = all)
   # model: [nhits]                 # applicable models (omit = all)
 
-payload:                           # structured data, JSON; shape varies by
-  rule:                            #   entry type, validated per-type
+payload:                           # free JSON; shape varies by entry type
+  rule:
     consecutive_weeks: 3
     threshold: TBD                 # open question §10
 
@@ -126,8 +127,54 @@ evidence:
 confidence: high                   # high | medium | low
 llm_gloss: null                    # optional LLM one-liner, ALWAYS marked as
                                    #   interpretation, never a queryable field
-created_at: 2026-09-17
+created_at: "2026-09-17"           # quoted ISO date, required for every provenance
 ```
+
+Field rules (enforced by `agent/knowledge/schema.py`; a violation raises a
+`ValueError` naming the field):
+
+- `statement` is one line (a folded `>` scalar is tolerated, an interior newline is not).
+- `created_at` is an ISO date `YYYY-MM-DD` (quoted or unquoted in YAML). Timestamps are rejected.
+- Unknown keys raise, at the entry level, inside `evidence`, and inside `payload.recommendation`.
+- `entities`, `context`, `payload`, `llm_gloss` may be omitted or `null`; `id`,
+  `provenance`, `category`, `statement`, `evidence`, `confidence`, `created_at` are required.
+- `payload` must be plain JSON (quote dates and other scalars in YAML).
+
+**Phase vocabulary.** `entities.phase`, `context.phase`, and the retrieval
+context accept exactly `KNOWN_PHASES`:
+
+| Phase | Vocabulary it comes from |
+|---|---|
+| `onset`, `peak`, `decline` | Calendar phases (`PhaseEvaluator.PHASE_MAP`) |
+| `surge`, `plateau` | Curve phases (`agent/phase_segmentation.py`); `decline` is shared |
+| `approaching_peak` | Hindsight label on training rows (K weeks before an eligible season's max), used by the peak-rectification experiment |
+| `off_season` | Calendar gap (May-Sep), skipped by evaluation |
+
+Both vocabularies are accepted and deliberately not unified in v1. Which one
+the bank should key on is an open question (§10).
+
+**The `payload.recommendation` convention.** A "what to do" entry carries its
+advice in a validated sub-object so the loop and the bank-writer can read it
+without parsing prose:
+
+```yaml
+payload:
+  recommendation:
+    action: reweight_training_samples   # adapter action name, or "not_yet_available"
+    params: {dimension: approaching_peak, weight: ">1, to be learned"}
+    note: "Optional free text: caveats, what is planned."
+```
+
+| Key | Required | Rule |
+|---|---|---|
+| `action` | yes | Non-empty string: an adapter action name, or the literal `not_yet_available` when the lever does not exist in the adapter yet |
+| `params` | yes | Mapping; use `{}` when the action takes none |
+| `note` | no | Non-empty string when present |
+
+The schema checks shape only. A seed-file test checks that every `action` is in
+the adapter's action catalogue or is `not_yet_available`, so a typo in an action
+name fails CI. Other `payload` keys stay free.
+
 
 **Worked example 2 - derived (the onset dates):**
 
@@ -141,7 +188,7 @@ context: {season_week: [36, 46]}     # retrievable as expected onset approaches
 payload: {onsets: {"2022": 41, "2023": 42, "2024": 41, "2025": 43}, std_weeks: 0.9}
 evidence: {source: "job derive_onsets vs data/raw CDC series", n_observations: 4}
 confidence: high
-created_at: 2026-09-20                  # required for every provenance; jobs fill it
+created_at: "2026-09-20"               # required for every provenance; jobs fill it
 ```
 
 This is exactly the advisor's "as the expected onset approaches, the bank tells
@@ -164,7 +211,7 @@ payload:
   reward: {metric: wis, delta: +301.4, direction: worse}
 evidence: {source: "run 20260903-xxxxxx", n_observations: 1, reward_delta: 301.4}
 confidence: low                     # single observation; rises with replication
-created_at: 2026-09-03              # required; the bank-writer fills it from the run
+created_at: "2026-09-03"            # required; the bank-writer fills it from the run
 ```
 
 One schema, three provenances, uniform retrieval. Repeated observations do not
@@ -340,20 +387,71 @@ The loop reads the bank at every proposal; the bank grows only between runs.
 `runs.db` (raw experience) and `knowledge.db` (distilled memory) are the two
 halves of the RL formalization's memory.
 
+### 8.1 The advisor's three-agent sketch (09-24), mapped onto the code
+
+On 09-24 the advisor described the loop as an orchestrator, a data agent, and a
+trainer agent: the trainer asks for data ("Virginia, last 12 weeks"), the
+orchestrator distills the request, the data agent serves it, and what was
+requested and what was served gets logged. Solid boxes below exist today;
+the dashed edge and dashed box are the parts that do not.
+
+```mermaid
+flowchart LR
+  subgraph ORCH["Orchestrator - agent/orchestrator.py"]
+    O["evaluate, diagnose, propose, validate, apply, retrain"]
+  end
+
+  subgraph DATAAG["Data agent - data.* config keys + data bridge"]
+    DK["data.cutoff_date, train_start_date, train_window_weeks, locations"]
+    BR["src/model_bank/data_bridge.py (to_long/from_long) + runner.load_history"]
+    DK --> BR
+  end
+
+  subgraph TRAINER["Trainer - src/pipeline.run_pipeline + src/model_bank/runner.py"]
+    PIPE["run_pipeline: xgboost_direct (legacy path)"]
+    RUN["run_bank_model: every other family"]
+  end
+
+  O -.->|"config written by CLI / harness; no adapter action yet"| DK
+  DK -->|"rows the model may fit on"| PIPE
+  BR -->|"long-format history"| RUN
+  PIPE --> CSV["forecast CSV"]
+  RUN --> CSV
+  CSV -->|"evaluate"| O
+  O --> LEDGER[("runs.db ledger")]
+
+  TRAINER -.->|"not built: trainer requests data, served-data log"| DATAAG
+```
+
+| Advisor's role | Existing component | Built? |
+|---|---|---|
+| Orchestrator | `agent/orchestrator.py` (two-agent loop, plain Python) | Yes |
+| Data agent | `data.*` config keys, including `train_window_weeks` (legacy `xgboost_direct` path only; the bank-family runner does not read it), and the CDC-to-long bridge in `src/model_bank/data_bridge.py` | As config and a function, not as an agent |
+| Trainer | `src/pipeline.run_pipeline` (XGBoost) and `src/model_bank/runner.py` (other families) | Yes, as a callable |
+
+What is built: the orchestrator mutates `sample_weights.*` (and model, feature,
+floor and target keys) through adapter actions; `data.*` is set by the CLI and the
+experiment harness, not by any action. The trainer runs from that config. What is not built: the
+trainer cannot ask the data agent for data in natural language, no component
+distills such a request, and nothing logs what was requested versus what was
+served (seeds, sample indices). The adapter has no `set_training_window` action
+yet, so the window knob is set by the experiment harness, not by the agent.
+
 ## 9. Implementation plan (v1)
 
-| # | Unit | Contents |
-|---|---|---|
-| 1 | `agent/knowledge_bank.py` | `KnowledgeEntry` (frozen dataclass), SQLite store, YAML compiler, `query(context)` with trust/confidence ordering |
-| 2 | `knowledge/curated/*.yaml` | Seed entries: onset rule; short-window rule; model-phase affinities from the two Adiga papers (SEIR/surge, LSTM/transitions, AR-Kalman/plateau); auxiliary-data findings |
-| 3 | `agent/derived_knowledge.py` | Onset-dates job (curated rule + `phase_segmentation` over the CDC series) |
-| 4 | Orchestrator integration | Injection point B: retrieval + prompt block at each proposal; override log |
-| 5 | `agent/bank_writer.py` | End-of-run distiller from tracker rows + report; merge/confidence logic |
-| 6 | Stage 1 integration (A) | Selection-prompt retrieval |
-| 7 | Evaluation | Re-run a recorded regression scenario with the bank seeded; measure whether the known-bad action is avoided (first behavioral evidence for the paper) |
+| # | Unit | Status (2026-09-30) | Contents |
+|---|---|---|---|
+| 1 | `agent/knowledge/` package (`schema.py`, `store.py`, `curated.py`, `render.py`) | [x] done | `KnowledgeEntry` (frozen dataclass), SQLite store, YAML loader, `query(context)` with trust/confidence ordering, `KNOWN FACTS` renderer, `python -m agent knowledge validate / rebuild / list / query` |
+| 2 | `knowledge/curated/*.yaml` | [x] done | Seeded: the advisor's five rectification actions, training-strategy rules (from 09-03 / 09-09 / 09-24), and the domain context migrated out of the adapter. Not seeded: the model-phase affinities from the two Adiga papers and the auxiliary-data findings. Intake stub for the lab's per-model-class strategies: `_training-strategy-by-model-class.yaml` |
+| 3 | `agent/derived_knowledge.py` | [ ] not started | Onset-dates job (curated rule + `phase_segmentation` over the CDC series). Blocked on onset threshold T (§10 Q1) |
+| 4 | Orchestrator integration | [ ] partly | Partial: `FluForecastAdapter.get_domain_context` already renders the `KNOWN FACTS` block from the bank, filtered by model family. Not built: retrieval keyed on phase / season week / metric at each proposal, the requirement that the agent cites the entry it acted on, and the override log |
+| 5 | `agent/bank_writer.py` | [ ] not started | End-of-run distiller from tracker rows + report; merge/confidence logic. The experiment harness already writes (state, action, reward) rows in `log.jsonl` with the fields an experiential entry carries, so a writer can read them unchanged |
+| 6 | Stage 1 integration (A) | [ ] not started | Selection-prompt retrieval |
+| 7 | Evaluation | [ ] not started | Re-run a recorded regression scenario with the bank seeded; measure whether the known-bad action is avoided (first behavioral evidence for the paper) |
 
-Tests ship with each unit (`tests/agent/test_<module>.py`, both gates). Units
-1-5 are the Thursday-to-Thursday scope; 6-7 stretch.
+Tests ship with each unit (`tests/agent/test_<module>.py`, both gates; 281
+tests in `tests/agent` as of 2026-09-30). Units 1-5 are the original
+Thursday-to-Thursday scope; 6-7 stretch.
 
 ## 10. Open questions for the advisor
 
@@ -368,3 +466,17 @@ Tests ship with each unit (`tests/agent/test_<module>.py`, both gates). Units
    calibratable). Reasonable starting points?
 4. **KG prototype** - want the networkx materialization + one multi-hop demo
    query next week, or park it until a real multi-hop need appears?
+5. **Approaching-peak definition and K** - K weeks before the season max
+   (default K = 6, our assumption), or the surge interval from the curve-based
+   segmentation in `phase_segmentation`? If K, which value or range?
+6. **Earlier seasons** - are the 2020-22 COVID-era seasons admissible as
+   "additional examples" (rectification action 1), or does `TRAIN_START_DATE`
+   = 2022-02-05 stay fixed?
+7. **Loss-weight range** - we sweep lambda 1.5 / 2 / 3 / 5. Wider, finer, or learned
+   per season or per location? (The adapter guardrail is currently [1, 5].)
+8. **Warm-start vs retrain** across a regime change (08-27) - a bank category
+   now, an experiment arm later?
+9. **Calendar vs curve phases for scoring** - keep both vocabularies, or
+   switch evaluation and the bank to the curve-based one? Every reported
+   metric and the pinned 09-02 baseline (xgboost_direct peak WIS 122.37) use
+   the calendar phases.
