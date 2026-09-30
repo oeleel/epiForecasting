@@ -9,3 +9,9 @@ outputs/agent_runs/
 outputs/model_selection/demo_????????-??????/
 # local review surfaces (lavish-axi)
 .lavish/
+# experiment harnesses (scripts/experiments/): raw logs + pooled forecasts stay
+# local; summary.md and manifest.json are committed by hand
+outputs/experiments/**
+!outputs/experiments/**/
+!outputs/experiments/**/summary.md
+!outputs/experiments/**/manifest.json
