@@ -1,16 +1,26 @@
 """CLI for the agentic forecasting framework.
 
 Commands:
-    check-data — Pre-training data quality checks on raw CDC data.
-    summarize  — Compute metrics + LLM-generated performance report.
-    improve    — Run the two-agent improvement loop.
-    history    — List past improve runs from the SQLite tracker.
-    status     — Show detailed iteration-by-iteration view of a run.
-    compare    — Diff two improve runs side-by-side.
-    report     — Regenerate the end-of-run report for a past run.
-    list-models  — Show every model-bank family available in this environment.
-    select-model — Stage 1: warm-up every candidate family on the pinned
+    check-data - Pre-training data quality checks on raw CDC data.
+    summarize  - Compute metrics + LLM-generated performance report.
+    improve    - Run the two-agent improvement loop.
+    history    - List past improve runs from the SQLite tracker.
+    status     - Show detailed iteration-by-iteration view of a run.
+    compare    - Diff two improve runs side-by-side.
+    report     - Regenerate the end-of-run report for a past run.
+    list-models  - Show every model-bank family available in this environment.
+    select-model - Stage 1: warm-up every candidate family on the pinned
                    eval window, score with phase-aware WIS, name the incumbent.
+    knowledge  - Knowledge bank (documentation/knowledge-bank-design.md):
+                 `validate` is the lab's authoring check for the curated YAML
+                 files, `rebuild` reloads them into the SQLite bank, `list`
+                 tabulates the stored entries, `query` prints the KNOWN FACTS
+                 block the loop would see for a retrieval context. Every action
+                 except `validate` re-reads the repo's curated dir into the
+                 repo DB first, so the bank can never be stale relative to the
+                 YAML. `--dir` belongs to `validate` only: the other actions
+                 always reflect `knowledge/curated/`, so a stray directory can
+                 never be loaded into the repo DB.
 
 Usage examples:
     python -m agent check-data --cutoff-date 2024-11-02 --dry-run
@@ -25,14 +35,31 @@ Usage examples:
     python -m agent select-model --stride-weeks 4
     python -m agent select-model --families persistence sf_autoets mlf_lightgbm --metric wis --phase peak
     python -m agent improve --cutoff-date 2025-12-06 --model-family mlf_lightgbm --auto-apply
-    python -m agent select-model --goal "which model is best at the peak" --explain-goal
+    python -m agent knowledge validate
+    python -m agent knowledge rebuild
+    python -m agent knowledge list --provenance curated --category model_characteristics
+    python -m agent knowledge query --phase peak --model xgboost_direct
 """
+
+from __future__ import annotations
 
 import argparse
 import json
 import sys
+from pathlib import Path
 
 from agent.adapters.flu_forecast import FluForecastAdapter
+from agent.knowledge import (
+    CATEGORIES,
+    DEFAULT_CURATED_DIR,
+    KNOWN_PHASES,
+    PROVENANCES,
+    KnowledgeBank,
+    RetrievalContext,
+    list_curated_files,
+    load_curated_dir,
+    render_known_facts,
+)
 from agent.llm_client import LLMClient
 from agent.prompt_templates import format_summary_prompt
 from agent.run_tracker import RunTracker
@@ -435,34 +462,7 @@ def cmd_select_model(args) -> None:
         cutoffs = repo_config.generate_eval_cutoffs(stride_weeks=args.stride_weeks)
         if args.max_cutoffs:
             cutoffs = cutoffs[: args.max_cutoffs]
-    if args.goal:
-        from agent.goal_parser import parse_goal
-
-        # temperature=0.0, not the LLMClient default of 0.3: the same sentence
-        # must map to the same goal on every run or the experiment log is noise.
-        llm = None
-        if not args.no_llm:
-            llm = LLMClient(base_url=args.base_url, model=args.model, temperature=0.0)
-        try:
-            parsed = parse_goal(args.goal, llm=llm)
-        except ValueError as e:
-            print(f"Error: {e}", file=sys.stderr)
-            sys.exit(1)
-        goal = parsed.goal
-        for w in parsed.warnings:
-            print(f"warning: {w}", file=sys.stderr)
-        if args.metric or args.phase:
-            goal = SelectionGoal(metric=args.metric or goal.metric, phase=args.phase or goal.phase)
-            print("note: explicit --metric/--phase override the parsed goal", file=sys.stderr)
-        print(f'goal: "{args.goal}" -> {goal.describe()}  [{parsed.source}]')
-        if parsed.rationale:
-            print(f"  rationale: {parsed.rationale}")
-    else:
-        goal = SelectionGoal(metric=args.metric or "wis", phase=args.phase or "all")
-        if args.explain_goal:
-            print(f"goal: {goal.describe()}  [flags]")
-    if args.explain_goal:
-        return  # print the mapping and stop before the multi-minute warm-up
+    goal = SelectionGoal(metric=args.metric or "wis", phase=args.phase or "all")
 
     print(f"\nselect-model: {len(families)} families x {len(cutoffs)} cutoffs "
           f"({cutoffs[0]} .. {cutoffs[-1]}), goal = {goal.describe()}")
@@ -727,6 +727,180 @@ def cmd_report(args) -> None:
 
 
 # ----------------------------------------------------------------------------
+# Knowledge bank: validate / rebuild / list / query
+# ----------------------------------------------------------------------------
+
+KNOWLEDGE_ACTIONS = ("validate", "rebuild", "list", "query")
+
+# Which flags each action reads. Anything else passed with that action is a
+# user mistake and is rejected up front rather than silently ignored.
+KNOWLEDGE_FLAGS_BY_ACTION = {
+    "validate": ("dir",),
+    "rebuild": (),
+    "list": ("provenance", "category"),
+    "query": ("phase", "model", "metric", "season_week"),
+}
+_KNOWLEDGE_ALL_FLAGS = ("dir", "provenance", "category", "phase", "model", "metric", "season_week")
+
+# `knowledge list` column widths. Statements are truncated to fit one line so
+# the table stays scannable; `query` prints statements in full.
+KNOWLEDGE_LIST_ID_WIDTH = 44
+KNOWLEDGE_LIST_PROV_WIDTH = 12
+KNOWLEDGE_LIST_CAT_WIDTH = 22
+KNOWLEDGE_LIST_CONF_WIDTH = 6
+KNOWLEDGE_LIST_STATEMENT_WIDTH = 60
+_TRUNCATION_SUFFIX = "..."
+
+
+def _truncate(text: str, width: int) -> str:
+    if len(text) <= width:
+        return text
+    return text[: width - len(_TRUNCATION_SUFFIX)] + _TRUNCATION_SUFFIX
+
+
+def _knowledge_validate(curated_dir: str | Path) -> None:
+    """Parse only: per-file entry counts on success, the error list on failure."""
+    import yaml
+
+    try:
+        entries = load_curated_dir(curated_dir)
+    except ValueError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    # load_curated_dir has already proven every file is a YAML list of valid
+    # entries, so re-reading each file for its length cannot fail.
+    files = list_curated_files(curated_dir)
+    print(f"\ncurated dir: {curated_dir}")
+    print(f"{'file':<48} {'entries':>7}")
+    print("-" * 56)
+    for path in files:
+        with open(path, encoding="utf-8") as fh:
+            n_in_file = len(yaml.safe_load(fh))
+        print(f"{path.name:<48} {n_in_file:>7}")
+    print("-" * 56)
+    print(f"{'total':<48} {len(entries):>7}")
+    print(f"\nOK: {len(entries)} entries in {len(files)} file(s), no errors")
+
+
+def _open_bank() -> KnowledgeBank:
+    """Open the repo DB with curated rows rebuilt from the repo curated dir; exit 1 on error.
+
+    Deliberately takes no directory: the repo DB only ever holds the repo's
+    curated files. Use `knowledge validate --dir` to check a foreign directory.
+    """
+    try:
+        # Check the dir before KnowledgeBank.open() creates the DB file, so
+        # running before the seeds land leaves no stray DB.
+        list_curated_files(DEFAULT_CURATED_DIR)
+        return KnowledgeBank.open(curated_dir=DEFAULT_CURATED_DIR)
+    except ValueError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def _knowledge_rebuild() -> None:
+    """Open + rebuild; print the row count per provenance."""
+    bank = _open_bank()
+    print(f"\nrebuilt curated entries from {DEFAULT_CURATED_DIR}")
+    print(f"db: {bank.db_path}")
+    print(f"\n{'provenance':<14} {'entries':>7}")
+    print("-" * 22)
+    for provenance in PROVENANCES:
+        print(f"{provenance:<14} {bank.count(provenance):>7}")
+    print("-" * 22)
+    print(f"{'total':<14} {bank.count():>7}")
+
+
+def _knowledge_list(provenance: str | None, category: str | None) -> None:
+    """Fixed-width table of stored entries, in the bank's query order."""
+    bank = _open_bank()
+    entries = bank.list(provenance=provenance, category=category)
+    filters = [f"provenance={provenance}" if provenance else "",
+               f"category={category}" if category else ""]
+    filter_note = ", ".join(f for f in filters if f) or "no filter"
+    if not entries:
+        print(f"(no entries: {filter_note})")
+        return
+
+    print(
+        f"\n{'id':<{KNOWLEDGE_LIST_ID_WIDTH}} {'prov':<{KNOWLEDGE_LIST_PROV_WIDTH}} "
+        f"{'category':<{KNOWLEDGE_LIST_CAT_WIDTH}} {'conf':<{KNOWLEDGE_LIST_CONF_WIDTH}} statement"
+    )
+    total_width = (
+        KNOWLEDGE_LIST_ID_WIDTH + KNOWLEDGE_LIST_PROV_WIDTH + KNOWLEDGE_LIST_CAT_WIDTH
+        + KNOWLEDGE_LIST_CONF_WIDTH + KNOWLEDGE_LIST_STATEMENT_WIDTH + 4
+    )
+    print("-" * total_width)
+    for entry in entries:
+        print(
+            f"{_truncate(entry.id, KNOWLEDGE_LIST_ID_WIDTH):<{KNOWLEDGE_LIST_ID_WIDTH}} "
+            f"{entry.provenance:<{KNOWLEDGE_LIST_PROV_WIDTH}} "
+            f"{entry.category:<{KNOWLEDGE_LIST_CAT_WIDTH}} "
+            f"{entry.confidence:<{KNOWLEDGE_LIST_CONF_WIDTH}} "
+            f"{_truncate(entry.statement, KNOWLEDGE_LIST_STATEMENT_WIDTH)}"
+        )
+    print(f"\n{len(entries)} entries ({filter_note})")
+
+
+def _knowledge_query(
+    phase: str | None,
+    model: str | None,
+    metric: str | None,
+    season_week: int | None,
+) -> None:
+    """Print the KNOWN FACTS block the loop would see for this retrieval context."""
+    try:
+        ctx = RetrievalContext(phase=phase, model=model, metric=metric, season_week=season_week)
+    except ValueError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+    bank = _open_bank()
+    entries = bank.query(ctx)
+    omitted = bank.count_matching(ctx) - len(entries)
+
+    # Context note on stderr so stdout is exactly the block a prompt would carry.
+    set_keys = {k: v for k, v in
+                (("phase", phase), ("model", model), ("metric", metric),
+                 ("season_week", season_week)) if v is not None}
+    ctx_note = ", ".join(f"{k}={v}" for k, v in set_keys.items()) or "unconstrained"
+    print(
+        f"(query: {ctx_note}; {len(entries) + omitted} matching entries, {len(entries)} shown)",
+        file=sys.stderr,
+    )
+    print(render_known_facts(entries, omitted=omitted))
+
+
+def cmd_knowledge(args: argparse.Namespace) -> None:
+    """Dispatch `knowledge <action>`; reject flags the action does not read."""
+    allowed = KNOWLEDGE_FLAGS_BY_ACTION[args.action]
+    stray = [
+        f"--{flag.replace('_', '-')}"
+        for flag in _KNOWLEDGE_ALL_FLAGS
+        if flag not in allowed and getattr(args, flag) is not None
+    ]
+    if stray:
+        print(
+            f"Error: knowledge {args.action} does not accept {', '.join(stray)} "
+            f"(accepts: {', '.join('--' + f.replace('_', '-') for f in allowed)})",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    if args.action == "validate":
+        _knowledge_validate(args.dir if args.dir is not None else DEFAULT_CURATED_DIR)
+    elif args.action == "rebuild":
+        _knowledge_rebuild()
+    elif args.action == "list":
+        _knowledge_list(args.provenance, args.category)
+    elif args.action == "query":
+        _knowledge_query(args.phase, args.model, args.metric, args.season_week)
+    else:
+        print(f"Unknown knowledge action: {args.action}", file=sys.stderr)
+        sys.exit(1)
+
+
+# ----------------------------------------------------------------------------
 # Top-level argparse
 # ----------------------------------------------------------------------------
 
@@ -977,20 +1151,47 @@ def main():
         "--save-forecasts", default=None, help="Directory to write one forecast CSV per family",
     )
     select_parser.add_argument("--quiet", action="store_true", help="Hide per-cutoff progress")
-    select_parser.add_argument(
-        "--goal", default=None,
-        help='Say the objective in English, e.g. "which model is best at the peak". '
-             'Explicit --metric/--phase win over the parsed goal.',
+
+    # ---- knowledge subcommand ----------------------------------------------
+    knowledge_parser = subparsers.add_parser(
+        "knowledge",
+        help="Knowledge bank: validate curated YAML, rebuild the DB, list or query entries",
     )
-    select_parser.add_argument("--base-url", default=None, help="LLM server URL (for --goal)")
-    select_parser.add_argument("--model", default=None, help="LLM model name (for --goal)")
-    select_parser.add_argument(
-        "--no-llm", action="store_true",
-        help="Parse --goal with the deterministic keyword table only; never call the LLM",
+    knowledge_parser.add_argument(
+        "action", choices=KNOWLEDGE_ACTIONS,
+        help="validate: parse the curated YAML files (the lab's authoring check); "
+             "rebuild: reload them into the SQLite bank and print counts; "
+             "list: table of stored entries; "
+             "query: print the KNOWN FACTS block for a retrieval context",
     )
-    select_parser.add_argument(
-        "--explain-goal", action="store_true",
-        help="Print the parsed goal and exit without running the warm-up",
+    knowledge_parser.add_argument(
+        "--dir", default=None,
+        help=f"validate: curated YAML directory to check (default: {DEFAULT_CURATED_DIR}); "
+             "the other actions always use the repo's curated dir",
+    )
+    knowledge_parser.add_argument(
+        "--provenance", default=None, choices=list(PROVENANCES),
+        help="list: keep only this provenance",
+    )
+    knowledge_parser.add_argument(
+        "--category", default=None, choices=list(CATEGORIES),
+        help="list: keep only this category",
+    )
+    knowledge_parser.add_argument(
+        "--phase", default=None, choices=list(KNOWN_PHASES),
+        help="query: the epidemic phase the loop is in",
+    )
+    knowledge_parser.add_argument(
+        "--model", default=None,
+        help="query: the model family being refined (e.g. xgboost_direct)",
+    )
+    knowledge_parser.add_argument(
+        "--metric", default=None,
+        help="query: the target metric (e.g. wis)",
+    )
+    knowledge_parser.add_argument(
+        "--season-week", dest="season_week", type=int, default=None,
+        help="query: the current season week (1-53)",
     )
 
     args = parser.parse_args()
@@ -1017,6 +1218,8 @@ def main():
         cmd_list_models(args)
     elif args.command == "select-model":
         cmd_select_model(args)
+    elif args.command == "knowledge":
+        cmd_knowledge(args)
     else:
         print(f"Unknown command: {args.command}", file=sys.stderr)
         sys.exit(1)

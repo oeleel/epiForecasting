@@ -1,0 +1,125 @@
+# Domain context that used to be hardcoded in
+# agent/adapters/flu_forecast.py::get_domain_context ("Epidemic phases" and
+# "Performance context" bullets), migrated here on 2026-09-30 so the adapter
+# serves it from the bank like every other fact. The wording is kept close to
+# the original bullets; the calendar phases are the ones PhaseEvaluator.PHASE_MAP
+# scores with (advisor question: calendar vs curve-based phases).
+#
+# `context.season_week` is the epidemiological week of the year (1..53, week 40
+# is early October), inclusive. The peak window (Dec-Jan) wraps the year
+# boundary, which a [lo, hi] window cannot express, so that entry carries only
+# `context.phase` and lists its months in `payload`.
+
+- id: calendar-phase-onset
+  provenance: curated
+  category: domain_dynamics
+  statement: "Onset phase (Oct-Nov): flu activity begins rising."
+  entities: {phase: onset}
+  context: {phase: [onset], season_week: [40, 48]}
+  payload:
+    months: [10, 11]
+    source_of_truth: agent/phase_evaluator.py PhaseEvaluator.PHASE_MAP
+  evidence:
+    source: "migrated from agent/adapters/flu_forecast.py get_domain_context, 2026-09-30"
+    n_observations: null
+    reward_delta: null
+  confidence: high
+  llm_gloss: null
+  created_at: 2026-09-30
+
+- id: calendar-phase-peak
+  provenance: curated
+  category: domain_dynamics
+  statement: "Peak phase (Dec-Jan): highest hospitalization rates."
+  entities: {phase: peak}
+  context: {phase: [peak]}
+  payload:
+    months: [12, 1]
+    source_of_truth: agent/phase_evaluator.py PhaseEvaluator.PHASE_MAP
+  evidence:
+    source: "migrated from agent/adapters/flu_forecast.py get_domain_context, 2026-09-30"
+    n_observations: null
+    reward_delta: null
+  confidence: high
+  llm_gloss: null
+  created_at: 2026-09-30
+
+- id: calendar-phase-decline
+  provenance: curated
+  category: domain_dynamics
+  statement: "Decline phase (Feb-Apr): activity decreasing."
+  entities: {phase: decline}
+  context: {phase: [decline], season_week: [5, 17]}
+  payload:
+    months: [2, 3, 4]
+    source_of_truth: agent/phase_evaluator.py PhaseEvaluator.PHASE_MAP
+  evidence:
+    source: "migrated from agent/adapters/flu_forecast.py get_domain_context, 2026-09-30"
+    n_observations: null
+    reward_delta: null
+  confidence: high
+  llm_gloss: null
+  created_at: 2026-09-30
+
+- id: mape-quality-bands
+  provenance: curated
+  category: forecasts
+  statement: "MAPE < 40% is good, 40-60% is acceptable, > 60% indicates problems."
+  entities: {metric: mape}
+  context: {metric: [mape]}
+  payload:
+    bands: {good_below_pct: 40, acceptable_below_pct: 60}
+  evidence:
+    source: "migrated from agent/adapters/flu_forecast.py get_domain_context, 2026-09-30"
+    n_observations: null
+    reward_delta: null
+  confidence: medium
+  llm_gloss: null
+  created_at: 2026-09-30
+
+- id: error-grows-with-horizon
+  provenance: curated
+  category: forecasts
+  statement: "Error typically increases with horizon (week 1 best, week 4 worst)."
+  entities: {}
+  context: {}
+  payload:
+    horizons_weeks: [1, 2, 3, 4]
+  evidence:
+    source: "migrated from agent/adapters/flu_forecast.py get_domain_context, 2026-09-30"
+    n_observations: null
+    reward_delta: null
+  confidence: high
+  llm_gloss: null
+  created_at: 2026-09-30
+
+- id: peak-is-hardest-to-forecast
+  provenance: curated
+  category: forecasts
+  statement: "Peak periods are the hardest to forecast because of rapid changes."
+  entities: {phase: peak}
+  context: {}
+  payload: {}
+  evidence:
+    source: "migrated from agent/adapters/flu_forecast.py get_domain_context, 2026-09-30"
+    n_observations: null
+    reward_delta: null
+  confidence: high
+  llm_gloss: null
+  created_at: 2026-09-30
+
+- id: bias-sign-convention
+  provenance: curated
+  category: forecasts
+  statement: "Positive bias = the model over-predicts; negative bias = the model under-predicts."
+  entities: {metric: bias}
+  context: {}
+  payload:
+    definition: "bias = mean(predicted - actual)"
+  evidence:
+    source: "migrated from agent/adapters/flu_forecast.py get_domain_context, 2026-09-30"
+    n_observations: null
+    reward_delta: null
+  confidence: high
+  llm_gloss: null
+  created_at: 2026-09-30

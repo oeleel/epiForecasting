@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 The key idea: replace the manual "run model → inspect CSVs → tweak parameters → re-run" loop with an LLM agent that reasons over structured metrics and takes constrained improvement actions.
 
 ### Two Layers
-1. **Domain-agnostic orchestration layer** — LangGraph state machine, LLM client, prompt templates, run tracker (reusable across any forecasting domain)
+1. **Domain-agnostic orchestration layer** — plain-Python orchestrator (`agent/orchestrator.py`, no LangGraph), LLM client, prompt templates, run tracker (reusable across any forecasting domain)
 2. **Domain-specific adapter** — Flu forecasting adapter wrapping the existing XGBoost pipeline (`src/`)
 
 ## Commands
@@ -46,9 +46,6 @@ python -m agent select-model --stride-weeks 4 --exclude-locations US --json outp
 python -m agent select-model --families persistence my_lab.models:FluLSTM --metric wis --phase peak
 python -m agent improve --cutoff-date 2025-12-06 --model-family mlf_lightgbm --auto-apply
 
-# Goal in plain English (LOW priority per advisor 09-10 - researchers write the JSON spec directly)
-python -m agent select-model --goal "which model is best at the peak" --explain-goal
-
 # End-of-run report: written automatically after every improve run; regenerate for a past run
 python -m agent report <run_id> [--rebuild] [--out report.md]
 ```
@@ -73,10 +70,10 @@ python -m src.data_loader update
 
 ### Testing
 ```bash
-.venv/bin/python -m pytest tests/agent/ -q -W error::DeprecationWarning   # 186 tests
+.venv/bin/python -m pytest tests/agent/ -q -W error::DeprecationWarning   # 281 tests
 PYTHONPATH=. .venv/bin/python tests/agent/run_all.py                        # no-pytest fallback
 ```
-Covers: adapter actions (legacy + bank families), config, data quality, feature toggle, orchestrator, prompts, run tracker, sample weights, WIS scoring, model bank (contract/registry/bridge/baselines/runner), model selection, run report, goal parser, phase segmentation.
+Covers: adapter actions (legacy + bank families), config, data quality, feature toggle, orchestrator, prompts, run tracker, sample weights, WIS scoring, model bank (contract/registry/bridge/baselines/runner), model selection, run report, phase segmentation, knowledge bank (schema/intake/store/render/seeds), peak-rectification harness (arms/deltas/reward/summary).
 
 ### Key Config Details
 - Active XGBoost params: `XGBOOST_PARAMS_V2` (regularized) in `src/config.py`
@@ -104,7 +101,6 @@ agent/
 ├── llm_client.py            # Provider-agnostic LLM wrapper (OpenAI-compatible API)
 ├── model_selection.py       # Stage 1: rolling warm-up of bank families + incumbent selection
 ├── run_report.py            # End-of-run report (report.md + report.json per improve run; `agent report`)
-├── goal_parser.py           # Natural-language goal -> SelectionGoal (`select-model --goal`); low priority
 ├── phase_segmentation.py    # Curve-based phase labels (Adiga surge/plateau/decline), alternative to calendar phases
 ├── cli.py                   # CLI: check-data, summarize, improve, history, status, compare, report, list-models, select-model
 └── adapters/
@@ -170,11 +166,11 @@ Both expose an OpenAI-compatible API (`/v1/chat/completions`). Swapping environm
 - `improve --model-family X`: the loop refines any family; `adjust_hyperparameter` comes from the family's `param_space()`
 - **In-house lab models are the real bank; Nixtla is example scaffolding.** See `documentation/MODEL_BANK.md` for the 30-line plug-in recipe.
 
-**Run report, NL goal, curve-based phases** — LANDED (2026-09-11)
+**Run report, curve-based phases** — LANDED (2026-09-11)
 - `agent/run_report.py` (roadmap 6.1): every `improve` run writes `report.md` + `report.json`; `agent report <run_id>` regenerates. Never claims an improvement across different evaluation windows.
-- `agent/goal_parser.py` (roadmap 2.3): `select-model --goal "..."`. Advisor (09-10) rated the English front end cosmetic - do not invest further; the structured spec still matters.
+- NL goal (roadmap 2.3): **demoted 2026-09-30 to `scrap/goal_parser/`** (advisor 09-10: cosmetic, do not invest). The structured `SelectionGoal(metric, phase)` + `select-model --metric/--phase` stay. `scrap/` is never imported or tested; see `scrap/README.md`.
 - `agent/phase_segmentation.py`: Adiga-style surge/plateau/decline segmentation from the curve, alongside the calendar phases.
-- Open review findings on the report + goal parser: `documentation/handoff-2026-09-11-desktop.md` §3.
+- Open review findings on the report: `documentation/handoff-2026-09-11-desktop.md` §3 (the goal-parser findings there are moot after the demotion).
 - **Current priority (advisor 09-10): knowledge bank first** - `documentation/meeting-notes/2026-09-10-knowledge-bank-first.md`.
 
 **Milestone 4: Generalization** — PLANNED
@@ -222,7 +218,7 @@ CDC FluSight Repository: weekly influenza hospitalization data fetched from GitH
 | Component | Technology |
 |---|---|
 | Forecasting model | XGBoost (primary), PyTorch NN (alternative) |
-| Agent orchestration | LangGraph (Milestone 2+) |
+| Agent orchestration | Plain Python (`agent/orchestrator.py`); no LangGraph |
 | LLM serving | vLLM (cluster) / Ollama (laptop) |
 | LLM model | Qwen 3 8B (dev) / Qwen 2.5 72B AWQ (prod) |
 | LLM integration | langchain-openai (`ChatOpenAI`) |

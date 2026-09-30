@@ -5,7 +5,9 @@ the 09-10 sync (`meeting-notes/2026-09-10-knowledge-bank-first.md`): the
 knowledge-bank design, the overall architecture diagram (§8), and the
 knowledge-graph vs flat-bank recommendation (§7).
 
-Status: **design, not yet implemented.** §9 is the implementation plan.
+Status: **v1 core + curated intake implemented 2026-09-30** (`agent/knowledge/`,
+`knowledge/curated/`; §9 units 1-2). Unit 3 (derived jobs), unit 4 (loop
+injection point) and unit 5 (experiential bank-writer) are not started.
 
 ---
 
@@ -139,6 +141,7 @@ context: {season_week: [36, 46]}     # retrievable as expected onset approaches
 payload: {onsets: {"2022": 41, "2023": 42, "2024": 41, "2025": 43}, std_weeks: 0.9}
 evidence: {source: "job derive_onsets vs data/raw CDC series", n_observations: 4}
 confidence: high
+created_at: 2026-09-20                  # required for every provenance; jobs fill it
 ```
 
 This is exactly the advisor's "as the expected onset approaches, the bank tells
@@ -161,6 +164,7 @@ payload:
   reward: {metric: wis, delta: +301.4, direction: worse}
 evidence: {source: "run 20260903-xxxxxx", n_observations: 1, reward_delta: 301.4}
 confidence: low                     # single observation; rises with replication
+created_at: 2026-09-03              # required; the bank-writer fills it from the run
 ```
 
 One schema, three provenances, uniform retrieval. Repeated observations do not
@@ -224,9 +228,13 @@ sourced from what already exists - the run tracker rows and the run report:
 **Mechanism: deterministic, context-keyed.** At proposal time the framework
 *knows* the context - current phase (from `phase_segmentation`), week-of-season,
 model family, target metric. Retrieval is a SQL filter on the `context` keys
-plus a relevance ordering (provenance-trust, confidence, recency,
-n_observations). No embeddings; no LLM-composed queries - qwen3:8b writing its
-own queries is a reliability hole we do not need at this scale.
+plus a relevance ordering. As implemented (`agent/knowledge/store.py`,
+`_ORDER_BY_SQL`): provenance trust desc (curated 3 > derived 2 > experiential
+1), confidence desc (high > medium > low), `n_observations` desc (NULL last),
+`updated_at` desc, `id` asc - total and deterministic, so ties between curated
+entries loaded in one rebuild fall to the id. No embeddings; no LLM-composed
+queries - qwen3:8b writing its own queries is a reliability hole we do not
+need at this scale.
 
 Retrieved entries are rendered into a compact prompt block:
 

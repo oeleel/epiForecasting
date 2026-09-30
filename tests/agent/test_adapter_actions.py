@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+import tempfile
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -10,6 +11,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from agent.adapters.flu_forecast import FluForecastAdapter
+from agent.knowledge import DEFAULT_CURATED_DIR, DEFAULT_HEADER, KnowledgeBank
 from src.config import get_default_config
 
 
@@ -48,6 +50,28 @@ def test_apply_reweight_phase():
         cfg,
     )
     assert new_cfg["sample_weights"]["by_phase"] == {"peak": 2.5}
+
+
+def test_apply_reweight_approaching_peak():
+    a = _adapter()
+    cfg = get_default_config()
+    new_cfg, desc = a.apply_action(
+        {"name": "reweight_training_samples",
+         "params": {"dimension": "approaching_peak", "value": 6, "weight": 2.0}},
+        cfg,
+    )
+    assert new_cfg["sample_weights"]["approaching_peak"] == {"weeks_before": 6, "weight": 2.0}
+    assert "approaching_peak" not in cfg["sample_weights"]  # input unchanged
+    assert new_cfg["sample_weights"]["by_phase"] == {}  # other dimensions untouched
+    assert "approaching_peak" in desc
+
+
+def test_catalog_reweight_lists_approaching_peak_dimension():
+    a = _adapter()
+    spec = next(x for x in a.get_available_actions() if x["name"] == "reweight_training_samples")
+    assert "approaching_peak" in spec["params_schema"]["dimension"]["enum"]
+    assert spec["guardrails"]["approaching_peak_weeks"] == (2, 12)
+    assert "approaching_peak" in spec["description"]
 
 
 def test_apply_toggle_feature():
@@ -140,6 +164,38 @@ def test_reweight_unknown_phase_raises():
         {"name": "reweight_training_samples",
          "params": {"dimension": "phase", "value": "autumn", "weight": 2}},
         "phase=autumn",
+    )
+
+
+def test_reweight_approaching_peak_weeks_below_guardrail_raises():
+    _expect_value_error(
+        {"name": "reweight_training_samples",
+         "params": {"dimension": "approaching_peak", "value": 1, "weight": 2.0}},
+        "weeks_before=1",
+    )
+
+
+def test_reweight_approaching_peak_weeks_above_guardrail_raises():
+    _expect_value_error(
+        {"name": "reweight_training_samples",
+         "params": {"dimension": "approaching_peak", "value": 13, "weight": 2.0}},
+        "weeks_before=13",
+    )
+
+
+def test_reweight_approaching_peak_weight_above_guardrail_raises():
+    _expect_value_error(
+        {"name": "reweight_training_samples",
+         "params": {"dimension": "approaching_peak", "value": 6, "weight": 6}},
+        "weight=6",
+    )
+
+
+def test_reweight_approaching_peak_non_integer_weeks_raises():
+    _expect_value_error(
+        {"name": "reweight_training_samples",
+         "params": {"dimension": "approaching_peak", "value": "six", "weight": 2.0}},
+        "weeks_before=six",
     )
 
 
@@ -248,19 +304,29 @@ def test_stop_is_a_no_op_for_bank_family():
 
 
 def test_domain_context_describes_active_bank_family():
-    a = _adapter()
-    ctx = a.get_domain_context(_bank_config("persistence"))
-    assert "'persistence'" in ctx
-    assert "residual_window_weeks" in ctx
-    assert "Epidemic phases" in ctx
-    assert "XGBoost-based" not in ctx
-    legacy_ctx = a.get_domain_context()
-    assert "XGBoost-based" in legacy_ctx and "Epidemic phases" in legacy_ctx
+    # The bank is built in a temp dir from the real curated files so the test
+    # never writes knowledge/knowledge.db.
+    with tempfile.TemporaryDirectory() as tmp:
+        bank = KnowledgeBank.open(DEFAULT_CURATED_DIR, Path(tmp) / "knowledge.db")
+        a = FluForecastAdapter(knowledge_bank=bank)
+        migrated = "Onset phase (Oct-Nov): flu activity begins rising."
+
+        ctx = a.get_domain_context(_bank_config("persistence"))
+        assert "'persistence'" in ctx
+        assert "residual_window_weeks" in ctx
+        assert DEFAULT_HEADER in ctx
+        assert migrated in ctx
+        assert "XGBoost-based" not in ctx
+        legacy_ctx = a.get_domain_context()
+        assert "XGBoost-based" in legacy_ctx
+        assert DEFAULT_HEADER in legacy_ctx and migrated in legacy_ctx
 
 ALL = [
     test_catalog_has_six_actions,
     test_apply_adjust_hyperparameter,
     test_apply_reweight_phase,
+    test_apply_reweight_approaching_peak,
+    test_catalog_reweight_lists_approaching_peak_dimension,
     test_apply_toggle_feature,
     test_apply_adjust_floor,
     test_apply_change_target_transform,
@@ -271,6 +337,10 @@ ALL = [
     test_unknown_hp_name_raises,
     test_reweight_weight_above_guardrail_raises,
     test_reweight_unknown_phase_raises,
+    test_reweight_approaching_peak_weeks_below_guardrail_raises,
+    test_reweight_approaching_peak_weeks_above_guardrail_raises,
+    test_reweight_approaching_peak_weight_above_guardrail_raises,
+    test_reweight_approaching_peak_non_integer_weeks_raises,
     test_reweight_unknown_dimension_raises,
     test_toggle_unknown_group_raises,
     test_floor_pct_above_guardrail_raises,
