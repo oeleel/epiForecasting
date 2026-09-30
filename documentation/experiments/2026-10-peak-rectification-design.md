@@ -2,7 +2,7 @@
 
 This is the design of the controlled XGBoost experiment the advisor asked for on 2026-09-24: what is fixed, what is varied, how each configuration is scored and logged. It is written for sign-off before the numbers are read; the numbers live in the results doc.
 
-Status (2026-09-30): harness built and smoke-tested; the full sweep is running now. Results are pending (see [Results](#results)).
+Status (2026-09-30): harness built and smoke-tested; the full sweep finished on 2026-09-30 (see [Results](#results)).
 
 ## 1. Question
 
@@ -84,9 +84,9 @@ Entry #4 and the two window rules in `knowledge/curated/training-strategy.yaml` 
 
 Lambda values are `DEFAULT_LAMBDAS = (1.5, 2.0, 3.0, 5.0)`; the adapter's guardrail for `reweight_training_samples` weights is [1.0, 5.0], so 5 is the top of what the loop may propose. Windows are `DEFAULT_WINDOWS = (12, 26, 52)`: the advisor's takeoff window, a half year, and his lull window. 104 weeks (the other lull value he named) is not in this sweep; it is a one-flag addition (`--arms baseline window --windows 104`) if 52 looks promising.
 
-### How the sweep is being run
+### How the sweep was run
 
-Runtime is ~70 s per config per cutoff, so ~10 min per config. The 10 configs are split over five background processes, each with its own output directory and its own baseline:
+The sweep was run as five parallel background processes, one output directory each, each with its own baseline. With five processes sharing the machine, a weight config took about 30-60 s per cutoff (265-525 s for 9 cutoffs, `seconds` in the split logs); the window configs were faster (78-192 s). All ten configs finished in about 21 minutes of wall time (manifests created 20:02:49-20:03:04 UTC, last row logged 20:24:12 UTC).
 
 | process | output dir | configs |
 |---|---|---|
@@ -96,7 +96,7 @@ Runtime is ~70 s per config per cutoff, so ~10 min per config. The 10 configs ar
 | 4 | `outputs/experiments/pr-split-4` | baseline, window 12, 26 |
 | 5 | `outputs/experiments/pr-split-5` | baseline, window 52 |
 
-Each delta is computed against its own directory's baseline. The five baselines use the same config and seed, so they are expected to match. The merge into one table (done after the sweep, not yet written) must check that first; a mismatch is reported as a finding (nondeterminism), not averaged away. The harness default output directory for a single-process run is `outputs/experiments/peak_rectification/`.
+Each delta is computed against its own directory's baseline. The five baselines use the same config and seed, and they matched exactly: identical `metrics` in all five `log.jsonl` baseline rows (peak WIS 121.01, overall WIS 50.05) and byte-identical `forecasts/baseline.csv` files. So the run is deterministic and every split shares one reference. The merged log, `summary.md` and `manifest.json` are in `outputs/experiments/peak_rectification/`, which is also the harness default output directory for a single-process run.
 
 ## 5. The approaching-peak label
 
@@ -214,7 +214,7 @@ Not built yet. The plan, in order:
 
 ## Results
 
-Pending. The sweep is running as of 2026-09-30. Results, with every number traced to a `log.jsonl` line, go in [`2026-10-peak-rectification-results.md`](2026-10-peak-rectification-results.md).
+The sweep finished on 2026-09-30: all 10 configs over 9 cutoffs, merged into `outputs/experiments/peak_rectification/log.jsonl`. Results and their reading, with every number traced to a `log.jsonl` line, are in [`2026-10-peak-rectification-results.md`](2026-10-peak-rectification-results.md).
 
 ## 9. Questions for the advisor
 
