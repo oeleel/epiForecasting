@@ -74,6 +74,37 @@ def test_feature_groups_match_default_groups_enabled():
     assert set(cfg["features"]["groups_enabled"].keys()) == set(FEATURE_GROUPS.keys())
 
 
+def test_default_config_train_window_weeks_is_unset():
+    cfg = get_default_config()
+    assert "train_window_weeks" in cfg["data"]
+    assert cfg["data"]["train_window_weeks"] is None
+
+
+def test_train_window_weeks_below_minimum_raises():
+    # src.pipeline imports xgboost; import lazily so the rest of this module
+    # stays dependency-free.
+    from src.pipeline import MIN_TRAIN_WINDOW_WEEKS, validate_train_window_weeks
+
+    assert validate_train_window_weeks(MIN_TRAIN_WINDOW_WEEKS) == MIN_TRAIN_WINDOW_WEEKS
+    assert validate_train_window_weeks(12) == 12
+    try:
+        validate_train_window_weeks(MIN_TRAIN_WINDOW_WEEKS - 1)
+        assert False, "below-minimum window should have raised"
+    except ValueError as e:
+        assert str(MIN_TRAIN_WINDOW_WEEKS) in str(e)
+
+
+def test_train_window_weeks_non_integer_raises():
+    from src.pipeline import validate_train_window_weeks
+
+    for bad in (12.0, "12", True):
+        try:
+            validate_train_window_weeks(bad)
+            assert False, f"{bad!r} should have raised"
+        except ValueError:
+            pass
+
+
 ALL = [
     test_default_config_has_all_sections,
     test_default_config_is_independent_per_call,
@@ -83,6 +114,9 @@ ALL = [
     test_set_config_value_returns_new_dict,
     test_set_config_value_creates_leaf_keys,
     test_feature_groups_match_default_groups_enabled,
+    test_default_config_train_window_weeks_is_unset,
+    test_train_window_weeks_below_minimum_raises,
+    test_train_window_weeks_non_integer_raises,
 ]
 
 

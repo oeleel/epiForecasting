@@ -7,6 +7,28 @@ Supports multiple target transformation modes to address ceiling effects:
 - "raw": Direct hospitalization counts (original behavior)
 - "ratio": Predict value(t+h) / value(t), then multiply by current value
 - "log": Predict log1p(value(t+h)), then apply expm1 to convert back
+
+Sample weights (agent action `reweight_training_samples`, knowledge-bank
+design doc, rectification action 5 "loss weight lambda on approaching-peak
+rows"): `_compute_sample_weights` turns the config's `sample_weights` section
+into a per-row weight vector. Four dimensions multiply together:
+
+    by_phase          calendar phase of the row's origin date (onset/peak/decline)
+    by_horizon        the horizon the row trains
+    by_location       zero-padded FIPS
+    approaching_peak  {"weeks_before": K, "weight": lambda} - rows whose origin
+                      date falls in the K weeks before an eligible season's
+                      observed peak (see `_approaching_peak_mask`)
+
+Invariants:
+    - Weights are computed on the horizon-shifted training rows (after the
+      NaN-target drop), so the vector is aligned 1:1 with X.
+    - `approaching_peak` labels only seasons that are complete relative to the
+      data in hand AND have >= MIN_SEASON_WEEKS observed weeks. The in-progress
+      season at an eval cutoff is therefore always weight 1.0: its running
+      maximum is not a peak, and labeling it would leak the future.
+    - Off-window rows are exactly 1.0; a uniform result returns None so
+      XGBoost takes the unweighted fast path.
 """
 
 import pandas as pd
@@ -24,6 +46,150 @@ from src import config
 # Sample-weight helpers (used by the agent reweight_training_samples action)
 # ----------------------------------------------------------------------------
 
+# Flu seasons run Oct 1 .. Sep 30; a row dated in month >= SEASON_START_MONTH
+# belongs to the season that starts that calendar year, otherwise to the one
+# that started the year before.
+SEASON_START_MONTH = 10
+
+# A season with fewer observed weeks than this is never labeled: it is either
+# the in-progress season (peak not yet known) or a partial first season such
+# as 2021-22 in the FluSight cache (data begins 2022-02-05). 40 weeks reaches
+# July, well past any plausible flu peak (Dec-Feb).
+MIN_SEASON_WEEKS = 40
+
+# Human-calibratable starting point (advisor question): how many weeks before
+# the season peak count as "approaching peak". 6 covers the 4-week horizons
+# whose targets land on the rise.
+DEFAULT_APPROACHING_PEAK_WEEKS = 6
+
+_APPROACHING_PEAK_KEYS = frozenset({"weeks_before", "weight"})
+
+DAYS_PER_WEEK = 7
+
+
+def _parse_approaching_peak(spec: object) -> Optional[Tuple[int, float]]:
+    """Validate `sample_weights.approaching_peak` and return (weeks_before, weight).
+
+    Returns None when the section is absent/empty (dimension not in use).
+    Raises ValueError, naming the offending key, on any malformed shape:
+    a silently ignored weight spec would make an experiment arm a no-op
+    without anyone noticing.
+    """
+    if spec is None or spec == {}:
+        return None
+    if not isinstance(spec, dict):
+        raise ValueError(
+            "sample_weights.approaching_peak must be a dict "
+            f"{{'weeks_before': int, 'weight': float}}, got {type(spec).__name__}: {spec!r}"
+        )
+    unknown = set(spec) - _APPROACHING_PEAK_KEYS
+    if unknown:
+        raise ValueError(
+            f"sample_weights.approaching_peak has unknown keys {sorted(unknown)}; "
+            f"allowed keys are {sorted(_APPROACHING_PEAK_KEYS)}"
+        )
+    if "weight" not in spec:
+        raise ValueError("sample_weights.approaching_peak is missing required key 'weight'")
+
+    weeks_before = spec.get("weeks_before", DEFAULT_APPROACHING_PEAK_WEEKS)
+    if isinstance(weeks_before, bool) or not isinstance(weeks_before, (int, np.integer)):
+        raise ValueError(
+            "sample_weights.approaching_peak.weeks_before must be an int, "
+            f"got {type(weeks_before).__name__}: {weeks_before!r}"
+        )
+    if weeks_before < 1:
+        raise ValueError(
+            f"sample_weights.approaching_peak.weeks_before must be >= 1, got {weeks_before}"
+        )
+
+    weight = spec["weight"]
+    if isinstance(weight, bool) or not isinstance(weight, (int, float, np.integer, np.floating)):
+        raise ValueError(
+            "sample_weights.approaching_peak.weight must be a number, "
+            f"got {type(weight).__name__}: {weight!r}"
+        )
+    if not np.isfinite(weight) or weight <= 0:
+        raise ValueError(
+            f"sample_weights.approaching_peak.weight must be a finite number > 0, got {weight}"
+        )
+    return int(weeks_before), float(weight)
+
+
+def _approaching_peak_mask(meta_df: pd.DataFrame, weeks_before: int) -> np.ndarray:
+    """Boolean mask of rows in the `weeks_before` weeks before an eligible season peak.
+
+    Label rule (training rows only - hindsight is legitimate there):
+        - season = Oct 1 .. Sep 30 per location (SEASON_START_MONTH)
+        - eligible season: season_end <= meta_df.date.max() (complete relative
+          to the data in hand) AND >= MIN_SEASON_WEEKS distinct observed weeks
+        - peak_date = argmax(value) within the eligible season
+        - row is approaching-peak when
+              peak_date - weeks_before*7d <= date < peak_date
+          The peak row itself and everything after it are NOT labeled.
+
+    The window is measured on the location's full date series, not inside the
+    season group: a peak in the first K weeks of a season (an October surge)
+    still labels the K weeks before it even though those rows are dated in the
+    previous season's tail. Eligibility is decided per season; the window is
+    decided per peak.
+
+    Boundary note: `meta_df` holds the horizon-shifted rows, so its last date
+    is cutoff - horizon weeks. At an early-October cutoff the season that just
+    ended (Sep 30) is therefore not yet "complete" and is left unlabeled; this
+    is the conservative side of the leakage rule, not a bug.
+
+    Requires 'date', 'location', 'value' columns; raises ValueError otherwise
+    so a mis-wired meta frame cannot silently disable the dimension.
+    """
+    required = ("date", "location", "value")
+    missing = [c for c in required if c not in meta_df.columns]
+    if missing:
+        raise ValueError(
+            f"approaching_peak weighting needs meta columns {list(required)}; "
+            f"missing {missing}. Build meta via prepare_horizon_data(return_metadata=True)."
+        )
+
+    dates = pd.to_datetime(meta_df["date"])
+    season_start_year = dates.dt.year.where(
+        dates.dt.month >= SEASON_START_MONTH, dates.dt.year - 1
+    )
+    frame = pd.DataFrame({
+        "date": dates.values,
+        "location": meta_df["location"].astype(str).values,
+        "value": pd.to_numeric(meta_df["value"]).values,
+        "season": season_start_year.values,
+    })
+    last_date = frame["date"].max()
+
+    # Explicit-unit Timedeltas: the keyword form (days=..., weeks=...)
+    # raises a numpy 2.x "generic unit" DeprecationWarning under -W error.
+    window_length = pd.Timedelta(DAYS_PER_WEEK * weeks_before, unit="D")
+
+    mask = np.zeros(len(frame), dtype=bool)
+    for _, loc_rows in frame.groupby("location", sort=False):
+        # Pass 1: one peak date per ELIGIBLE season of this location.
+        peak_dates = []
+        for season, grp in loc_rows.groupby("season", sort=False):
+            season_end = (
+                pd.Timestamp(year=int(season) + 1, month=SEASON_START_MONTH, day=1)
+                - pd.Timedelta(1, unit="D")
+            )
+            if season_end > last_date:
+                continue  # in-progress season: its running max is not a peak
+            if grp["date"].nunique() < MIN_SEASON_WEEKS:
+                continue  # partial season (e.g. 2021-22 in the cache)
+            if grp["value"].isna().all():
+                continue
+            peak_dates.append(grp.loc[grp["value"].idxmax(), "date"])
+        # Pass 2: the K-week window before each peak over the whole location
+        # series, so a window that starts before Oct 1 is not truncated.
+        for peak_date in peak_dates:
+            window_start = peak_date - window_length
+            in_window = (loc_rows["date"] >= window_start) & (loc_rows["date"] < peak_date)
+            mask[loc_rows.index[in_window]] = True
+    return mask
+
+
 def _compute_sample_weights(
     meta_df: pd.DataFrame,
     sample_weights_config: Optional[Dict],
@@ -34,9 +200,10 @@ def _compute_sample_weights(
     src.config.get_default_config():
 
         {
-            "by_phase":    {"peak": 2.0, ...},
-            "by_horizon":  {"4": 1.5, ...},
-            "by_location": {"06": 2.0, ...},
+            "by_phase":         {"peak": 2.0, ...},
+            "by_horizon":       {"4": 1.5, ...},
+            "by_location":      {"06": 2.0, ...},
+            "approaching_peak": {"weeks_before": 6, "weight": 3.0},
         }
 
     Weights from each dimension are multiplied together. Missing keys
@@ -44,14 +211,18 @@ def _compute_sample_weights(
     uniform (all 1.0) so XGBoost can take the fast path.
 
     Args:
-        meta_df: DataFrame with columns 'date', 'location', 'horizon'.
-                 Must be aligned 1:1 with the X DataFrame the weights
-                 will be applied to.
+        meta_df: DataFrame with columns 'date', 'location', 'horizon' and,
+                 when approaching_peak is used, 'value'. Must be aligned 1:1
+                 with the X DataFrame the weights will be applied to.
         sample_weights_config: dict with by_phase / by_horizon / by_location
-                               sub-dicts. Pass None for uniform weights.
+                               sub-dicts and/or an approaching_peak dict.
+                               Pass None for uniform weights.
 
     Returns:
         np.ndarray of shape (len(meta_df),) or None.
+
+    Raises:
+        ValueError: if approaching_peak is malformed or meta lacks 'value'.
     """
     if not sample_weights_config:
         return None
@@ -59,8 +230,9 @@ def _compute_sample_weights(
     by_phase = sample_weights_config.get("by_phase") or {}
     by_horizon = sample_weights_config.get("by_horizon") or {}
     by_location = sample_weights_config.get("by_location") or {}
+    approaching_peak = _parse_approaching_peak(sample_weights_config.get("approaching_peak"))
 
-    if not (by_phase or by_horizon or by_location):
+    if not (by_phase or by_horizon or by_location or approaching_peak):
         return None
 
     n = len(meta_df)
@@ -91,6 +263,12 @@ def _compute_sample_weights(
             mask = locs == str(loc_key).zfill(2)
             if mask.any():
                 weights[mask] *= float(loc_w)
+
+    if approaching_peak is not None:
+        weeks_before, ap_weight = approaching_peak
+        mask = _approaching_peak_mask(meta_df, weeks_before)
+        if mask.any():
+            weights[mask] *= ap_weight
 
     if np.allclose(weights, 1.0):
         return None
@@ -145,8 +323,9 @@ class DirectForecastEnsemble:
             horizon: Number of weeks ahead for this model
             return_raw_targets: If True, also return raw (untransformed) targets for evaluation
             return_metadata: If True, also return a metadata DataFrame with
-                'date', 'location', 'horizon' columns aligned 1:1 with X.
-                Used by the agent loop to compute per-row sample weights.
+                'date', 'location', 'horizon', 'value' columns aligned 1:1
+                with X. Used by the agent loop to compute per-row sample
+                weights ('value' feeds the approaching_peak dimension).
 
         Returns:
             Tuple of (X, y, y_raw, [meta]). y_raw is None when return_raw_targets
@@ -173,6 +352,7 @@ class DirectForecastEnsemble:
                 'date': df['date'].values,
                 'location': df['location'].astype(str).values,
                 'horizon': horizon,
+                'value': df['value'].values,  # origin-week value, for approaching_peak
             })
 
         # Apply target transformation based on mode
@@ -239,7 +419,13 @@ class DirectForecastEnsemble:
                 data, horizon, return_raw_targets=True, return_metadata=True
             )
 
-            # Split into train/validation (temporal split)
+            # Split into train/validation. NOTE: prepare_horizon_data sorts by
+            # (location, date), so this positional split holds out the LAST
+            # ~20% of LOCATIONS (by FIPS order), not the last 20% of weeks.
+            # Sample weights on those rows are never used and early stopping
+            # runs on location-held-out data. Pre-existing behaviour, kept
+            # identical across experiment arms; a per-location temporal split
+            # is a separate change.
             split_idx = int(len(X) * (1 - validation_split))
             X_train, X_val = X.iloc[:split_idx], X.iloc[split_idx:]
             y_train, y_val = y.iloc[:split_idx], y.iloc[split_idx:]
@@ -583,7 +769,7 @@ class QuantileDirectForecastEnsemble:
             return_raw_targets: Whether to return raw (untransformed) targets
             quantile: If specified, use this quantile's model for feature prep
             return_metadata: If True, also return a metadata DataFrame with
-                'date', 'location', 'horizon' columns aligned 1:1 with X.
+                'date', 'location', 'horizon', 'value' columns aligned 1:1 with X.
         """
         df = data.copy()
         df = df.sort_values(['location', 'date']).reset_index(drop=True)
@@ -599,6 +785,7 @@ class QuantileDirectForecastEnsemble:
                 'date': df['date'].values,
                 'location': df['location'].astype(str).values,
                 'horizon': horizon,
+                'value': df['value'].values,  # origin-week value, for approaching_peak
             })
 
         if self.target_mode == "ratio":
@@ -665,6 +852,8 @@ class QuantileDirectForecastEnsemble:
                     data, horizon, return_raw_targets=True, quantile=q,
                     return_metadata=True,
                 )
+                # Positional split over (location, date)-sorted rows: holds out
+                # the last ~20% of locations, not weeks (see DirectForecastEnsemble.train).
                 split_idx_q = int(len(X_q) * (1 - validation_split))
                 X_train_q, X_val_q = X_q.iloc[:split_idx_q], X_q.iloc[split_idx_q:]
                 y_train_q, y_val_q = y_q.iloc[:split_idx_q], y_q.iloc[split_idx_q:]
@@ -983,7 +1172,7 @@ class ClusteredDirectForecastEnsemble:
             return_raw_targets: Whether to return raw (untransformed) targets
             model: Model to use for feature preparation (uses default if None)
             return_metadata: If True, also return a metadata DataFrame with
-                'date', 'location', 'horizon' columns aligned 1:1 with X.
+                'date', 'location', 'horizon', 'value' columns aligned 1:1 with X.
         """
         df = data.copy()
         df = df.sort_values(['location', 'date']).reset_index(drop=True)
@@ -999,6 +1188,7 @@ class ClusteredDirectForecastEnsemble:
                 'date': df['date'].values,
                 'location': df['location'].astype(str).values,
                 'horizon': horizon,
+                'value': df['value'].values,  # origin-week value, for approaching_peak
             })
 
         if self.target_mode == "ratio":
