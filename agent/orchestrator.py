@@ -500,8 +500,12 @@ class Orchestrator:
                 else:
                     regression_streak += 1
                     no_improvement_streak = 0
+                    # Equal-to-best counts toward the streak (it is not progress)
+                    # but is labelled honestly: a stub pipeline or a no-op
+                    # action yields "no change", not a regression.
+                    outcome = "no change" if cur_target == best_target else "regression"
                     self._log(
-                        f"  regression #{regression_streak} on {self.target_metric} "
+                        f"  {outcome} #{regression_streak} on {self.target_metric} "
                         f"(best so far: iter {best_idx} = {best_target:.3f}); "
                         f"reverting to that config for the next proposal"
                     )
