@@ -1,5 +1,9 @@
 """Natural-language front end for `SelectionGoal` (TS-Agent Stage 1, roadmap 2.3).
 
+DEMOTED 2026-09-30 to scrap/ (advisor 09-10: the English front end is
+cosmetic; do not invest). Not imported by agent/, not collected by the
+documented test commands. See scrap/goal_parser/README.md.
+
 `agent select-model --goal "which model is best at the peak"` has to become
 `SelectionGoal(metric="wis", phase="peak")` before a multi-minute rolling
 warm-up starts. This module is the whole mapping, and nothing else: it takes
@@ -54,11 +58,8 @@ from agent.model_selection import (
     VALID_PHASES,
     SelectionGoal,
 )
-from agent.prompt_templates import (
-    extract_json_from_response,
-    format_goal_parse_prompt,
-    validate_goal,
-)
+from agent.prompt_templates import extract_json_from_response
+from scrap.goal_parser.prompt import format_goal_parse_prompt, validate_goal
 
 __all__ = [
     "METRIC_KEYWORDS",

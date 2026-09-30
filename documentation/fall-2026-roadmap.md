@@ -77,7 +77,7 @@ goal-as-parameter selection (2.3).
 |---|---|---|
 | 2.1 | Warm-up runs: cheap short-horizon fits of each bank model at the cutoff before committing to an incumbent | ✅ `agent/model_selection.py: evaluate_candidates` (rolling origin over the pinned cutoffs, one family failing never sinks the rest) |
 | 2.2 | Incumbent selection by WIS (or the specified goal metric); hand off to the existing refinement loop | ✅ `select_incumbent`; `improve --model-family <incumbent>` |
-| 2.3 | Goal-as-parameter: selection/refinement objective specified per run (peak performance vs. average vs. overall), settable via natural-language command | ✅ 2026-09-09 `SelectionGoal(metric, phase)` + `--metric/--phase`; `agent/goal_parser.py` + `select-model --goal "..." [--no-llm] [--explain-goal]`. Advisor 09-10: the English layer is low priority ("cosmetic"); open review findings (keyword substring matches, override bypassing the guard) listed in `handoff-2026-09-11-desktop.md` §3, deliberately not fixed further |
+| 2.3 | Goal-as-parameter: selection/refinement objective specified per run (peak performance vs. average vs. overall), settable via natural-language command | ✅ 2026-09-09 `SelectionGoal(metric, phase)` + `--metric/--phase` (structured spec, kept). **NL front end demoted 2026-09-30** to `scrap/goal_parser/` (advisor 09-10: "cosmetic"; open review findings in `handoff-2026-09-11-desktop.md` §3 will not be fixed). No `--goal` flag any more |
 
 ## Workstream 3 — Orchestrator fixes (from the gap analysis, ranked)
 

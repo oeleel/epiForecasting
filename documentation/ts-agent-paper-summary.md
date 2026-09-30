@@ -168,7 +168,7 @@ argue our own loop earns its keep.
 | Stage 1 model pre-selection | ✅ `agent/model_selection.py` — rolling-origin warm-up, `SelectionGoal(metric, phase)` |
 | Stage 2 accept-or-revert | ✅ landed 2026-09-03 (`f327adc`) — compares against best-so-far, reverts on regression |
 | Full audit trail / logging | ✅ `runs.db` + (new) `agent/run_report.py` end-of-run report |
-| Task `desc` conditioning the run | ⚠️ partial — `--goal "english"` exists for Stage 1 only (`agent/goal_parser.py`) |
+| Task `desc` conditioning the run | ❌ structured `SelectionGoal(metric, phase)` only; the NL `--goal` front end was demoted 2026-09-30 to `scrap/goal_parser/` (advisor: cosmetic) |
 | **Case Bank / cross-run retrieval** | ❌ nothing; `runs.db` has the data but never informs a new run |
 | **Refinement Knowledge Bank** | ❌ nothing; Agent 2 gets only generic domain context |
 | **Parallel round-robin warm-up** | ❌ serial (`model_selection.py:184` loops families, `:190` loops cutoffs) |
@@ -192,9 +192,10 @@ Design:
 - **Two front doors to the same object:**
   - *Natural language* for exploration —
     `agent run --task "compare NHITS and XGBoost over the 2025-26 season, optimize for
-    the peak, and tell me whether fine-tuning beats retraining"`. Extends the existing
-    `goal_parser.py` ladder (keywords → LLM → repair retry → fallback) from just
-    metric+phase to the whole spec.
+    the peak, and tell me whether fine-tuning beats retraining"`. Would extend the
+    keyword -> LLM -> repair-retry -> fallback ladder that lived in `agent/goal_parser.py`
+    (demoted 2026-09-30 to `scrap/goal_parser/`; advisor: cosmetic) from just
+    metric+phase to the whole spec. Low priority for the same reason.
   - *A YAML file* for reproducibility —
     `agent run --spec experiments/peak-vs-average.yaml`.
 - **The two compose, and that is the point:** NL parsing *emits* the YAML. You state
@@ -205,8 +206,9 @@ Design:
 - A spec directory also gives us **batch execution**: queue ten specs, run them
   overnight, and the January results table writes itself from the run reports.
 
-Effort: moderate. `goal_parser.py`, `run_report.py`, and the CLI already exist;
-this is mostly a dataclass, a YAML loader, and a `run` subcommand.
+Effort: moderate for the YAML door. `run_report.py` and the CLI already exist;
+this is mostly a dataclass, a YAML loader, and a `run` subcommand. The NL door
+would have to be revived from `scrap/goal_parser/` first.
 
 ### 7.2 An epi Refinement Knowledge Bank
 

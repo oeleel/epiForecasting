@@ -39,6 +39,8 @@ PYTHONPATH=. .venv/bin/python tests/agent/run_all.py
   auto-written `report.md`/`report.json` per improve run. Built, findings open.
 - **Natural-language goals** (roadmap 2.3) — `agent/goal_parser.py`,
   `select-model --goal "..." [--no-llm] [--explain-goal]`. Built, findings open.
+  **Demoted 2026-09-30 to `scrap/goal_parser/`** (advisor 09-10: cosmetic); the
+  `goal_parser.py` / `cli.py --goal` findings below are kept for the record but moot.
 - **Curve-based phase segmentation** — `agent/phase_segmentation.py` (Adiga
   Algorithms 1+3, surge/plateau/decline), 19 tests. Solid.
 - **Paper summaries** — `ts-agent-paper-summary.md`, `phase-based-training-papers.md`

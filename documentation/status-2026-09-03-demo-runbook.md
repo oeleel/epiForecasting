@@ -108,8 +108,9 @@ Roadmap order. Items 0.3, 0.4, and Workstream 1 are done and ticked in
 `fall-2026-roadmap.md`.
 
 1. ~~**3.1 Revert-on-regression.**~~ Done 2026-09-03 (`f327adc`).
-2. ~~**2.3 Natural-language goal.**~~ Done 2026-09-09 (`agent/goal_parser.py`);
-   advisor 09-10 demoted the English layer to low priority.
+2. ~~**2.3 Natural-language goal.**~~ Done 2026-09-09; advisor 09-10 rated the
+   English layer cosmetic; **demoted 2026-09-30 to `scrap/goal_parser/`**. The
+   structured `SelectionGoal` + `--metric/--phase` remain.
 3. **3.2 Case retrieval over `runs.db`.** Nothing in the prompts consults past
    runs.
 4. **Workstream 4, warm start (paper centerpiece).** `get_state` / `set_state`

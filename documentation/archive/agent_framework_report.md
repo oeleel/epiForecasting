@@ -1,3 +1,5 @@
+> **Superseded 2026-08-27** (exploration tool, not real-time); see `documentation/meeting-notes/`. Kept in `documentation/archive/` for the March 2026 framing only.
+
 # Agentic Forecasting Framework — Research Meeting Report
 
 > Status Report | March 2026
