@@ -5,9 +5,11 @@ the 09-10 sync (`meeting-notes/2026-09-10-knowledge-bank-first.md`): the
 knowledge-bank design, the overall architecture diagram (§8), and the
 knowledge-graph vs flat-bank recommendation (§7).
 
-Status: **v1 core + curated intake implemented 2026-09-30** (`agent/knowledge/`,
-`knowledge/curated/`; §9 units 1-2). Unit 3 (derived jobs), unit 4 (loop
-injection point) and unit 5 (experiential bank-writer) are not started.
+Status: **units 1, 2, 4 and 5 (slice) implemented**. Units 1-2 (core + curated
+intake) landed 2026-09-30. On 2026-10-01: unit 4 v1 (phase-keyed retrieval at
+every proposal + citations + advisory override log) and the unit 5 experiment-import
+slice (`knowledge import-experiment`). The end-of-run bank-writer that merges
+repeated observations is still open, as are unit 3 (derived jobs) and units 6-7.
 
 ---
 
@@ -315,6 +317,22 @@ which feeds directly into the RL evaluation section of the paper. Escalation
 to hard blocks is a v2 decision, taken only once entries carry enough
 `n_observations` to justify it.
 
+**As built (2026-10-01).** At each proposal the orchestrator renders the retrieved
+facts with their ids into the proposal prompt and asks the LLM to list the ids it
+relied on as `cited_entries`. Citations are checked against the retrieved set: an id
+that was not retrieved is dropped from the record, logged as a warning (hallucinated
+citation), and never blocks the action. The action then carries `cited_entries`,
+`supported_by` (retrieved entries whose `recommendation.action` equals the proposed
+action), `supported_by_params_mismatch` (supporting entries whose recommended params
+differ from the proposal on a shared key) and `retrieved_entry_ids`; the run report
+prints `cites: ...`. If retrieved entries recommend actions but none recommends the
+proposed one, the loop logs an override line and continues. In v1 that override is a
+log line, not a stored record. The shown set is capped at the store's query limit; when
+the matches exceed it, up to six experiential entries are guaranteed a place so the
+curated-first ranking cannot hide every past-run lesson. `improve --no-knowledge`
+switches off both the per-prompt `KNOWN FACTS` block and this proposal-step retrieval,
+so a control run reads no bank at all.
+
 ## 7. Knowledge graph vs flat bank - research summary and recommendation
 
 **Flat bank**: knowledge as rows; each entry self-contained; retrieval is
@@ -439,21 +457,23 @@ yet, so the window knob is set by the experiment harness, not by the agent.
 
 ## 9. Implementation plan (v1)
 
-| # | Unit | Status (2026-09-30) | Contents |
+| # | Unit | Status (2026-10-01) | Contents |
 |---|---|---|---|
 | 1 | `agent/knowledge/` package (`schema.py`, `store.py`, `curated.py`, `render.py`) | [x] done | `KnowledgeEntry` (frozen dataclass), SQLite store, YAML loader, `query(context)` with trust/confidence ordering, `KNOWN FACTS` renderer, `python -m agent knowledge validate / rebuild / list / query` |
 | 2 | `knowledge/curated/*.yaml` | [x] done | Seeded: the advisor's five rectification actions, training-strategy rules (from 09-03 / 09-09 / 09-24), and the domain context migrated out of the adapter. Not seeded: the model-phase affinities from the two Adiga papers and the auxiliary-data findings. Intake stub for the lab's per-model-class strategies: `_training-strategy-by-model-class.yaml` |
 | 3 | `agent/derived_knowledge.py` | [ ] not started | Onset-dates job (curated rule + `phase_segmentation` over the CDC series). Blocked on onset threshold T (§10 Q1) |
-| 4 | Orchestrator integration | [ ] partly | Partial: `FluForecastAdapter.get_domain_context` already renders the `KNOWN FACTS` block from the bank, filtered by model family. Not built: retrieval keyed on phase / season week / metric at each proposal, the requirement that the agent cites the entry it acted on, and the override log |
-| 5 | `agent/bank_writer.py` | [ ] not started | End-of-run distiller from tracker rows + report; merge/confidence logic. The experiment harness already writes (state, action, reward) rows in `log.jsonl` with the fields an experiential entry carries, so a writer can read them unchanged |
+| 4 | Orchestrator integration | [x] v1 done 2026-10-01 | `FluForecastAdapter.get_domain_context` renders the model-keyed `KNOWN FACTS` block. At every proposal the orchestrator also retrieves on diagnosed weak phase + model family + target metric, shows entries with ids, asks for and records `cited_entries`, drops unretrieved citations, records `supported_by` / `supported_by_params_mismatch` / `retrieved_entry_ids`, and logs advisory overrides (section 6). Not built: season-week keying, persisted override table, diagnosis enrichment (point C) |
+| 5 | `agent/knowledge/experiment_import.py` (slice) | [~] slice done 2026-10-01 | `python -m agent knowledge import-experiment [--log PATH]` turns the sweep's `log.jsonl` into 9 experiential entries (deterministic, confidence low, one observation each). Still open: the end-of-run bank-writer (distiller from tracker rows + report) that merges repeated observations and applies the confidence rules |
 | 6 | Stage 1 integration (A) | [ ] not started | Selection-prompt retrieval |
 | 7 | Evaluation | [ ] not started | Re-run a recorded regression scenario with the bank seeded; measure whether the known-bad action is avoided (first behavioral evidence for the paper) |
 
 Tests ship with each unit (`tests/agent/test_<module>.py`, both gates; 281
-tests in `tests/agent` as of 2026-09-30). Units 1-5 are the original
+tests in `tests/agent` as of 2026-09-30; see pytest for the current count). Units 1-5 are the original
 Thursday-to-Thursday scope; 6-7 stretch.
 
 ## 10. Open questions for the advisor
+
+Note (2026-10-01): the `set_training_window` adapter action now exists (weeks in [8, 104] or null), and the three window entries recommend it (12 / 12 / 52 weeks). Q1-Q4 and 9 below are unchanged.
 
 1. **Onset threshold T** - what value (or per-season quantile) for "increase
    above a threshold"? And should the 3-consecutive-weeks rule and the papers'

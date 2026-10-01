@@ -74,48 +74,13 @@ So the harness is deterministic at this seed, and the deltas above are not noise
 
 **Rules must carry model-class context.** `knowledge/curated/training-strategy.yaml::train-short-window-on-takeoff` has `context: {phase: [surge, onset, approaching_peak]}` and no `model` key, so it is retrieved for every family, including `xgboost_direct`, for which an unconditional 12-, 26- or 52-week window hurt every phase in this sweep. The fix is not to delete the rule but to scope it: `context.model` on the per-class entries the advisor promised (`knowledge/curated/_training-strategy-by-model-class.yaml` is the stub), and a negative experiential entry for `xgboost_direct` so the loop sees the warning next to the rule. This is the first case where the bank would send the loop down a known-bad path once `set_training_window` exists, and it is the reason the design keeps guardrails advisory with an override log rather than hard blocks.
 
-**The lambda outcome as a candidate experiential entry.** The harness already writes the fields an experiential entry carries. Below is what the end-of-run bank-writer (design doc unit 5, not built) would produce from the four `lambda` rows. It validates against `agent/knowledge/schema.py` (checked with `KnowledgeEntry.from_dict`), but it is a **draft, not yet in the bank**: experiential rows are written by code, not by hand, and `n_observations = 4` is four configs on one seed and one split, which is why confidence is `low`. `reward_delta` is the mean of the four logged `reward.delta` values (2.73, 2.53, 2.70, 2.86).
+**The nine outcomes are in the bank as experiential entries.** On 2026-10-01 `python -m agent knowledge import-experiment` turned the nine non-baseline `log.jsonl` rows into experiential entries (ids such as `exp-lambda-3-2025`). Import is deterministic code, not hand authoring. Each entry has confidence `low` and one observation, because a config is one run on one seed and one split. They render after the curated entries, for example in `knowledge query --phase peak --model xgboost_direct`. One real line:
 
-```yaml
-# DRAFT - not yet in the bank. What the bank-writer would emit from log.jsonl.
-- id: exp-xgb-lambda-approaching-peak-001
-  provenance: experiential
-  category: model_characteristics
-  statement: >
-    On xgboost_direct, loss weight lambda 1.5-5 on approaching-peak rows (K=6) moved peak bias
-    from -58.8 to between -35.7 and +7.9 but left peak WIS +2.5 to +2.9 worse (121.01 -> 123.54-123.87)
-    and cut peak 95% coverage from 0.855 to 0.769-0.835; a level fix, not a score fix.
-  entities: {model: xgboost_direct, phase: approaching_peak, metric: wis}
-  context:
-    model: [xgboost_direct]
-    phase: [peak, approaching_peak]
-    metric: [wis]
-  payload:
-    state: {phase: peak, model: xgboost_direct, metric: wis, baseline: {peak_wis: 121.01, peak_bias: -58.8, peak_coverage_95: 0.855}}
-    action: {type: reweight_training_samples, params: {dimension: approaching_peak, weeks_before: 6, weight: [1.5, 2.0, 3.0, 5.0]}}
-    reward:
-      metric: wis
-      phase: peak
-      direction: worse
-      by_config:
-        lambda_1.5: {peak_wis: 123.74, delta: 2.73, peak_bias: -35.7, peak_coverage_95: 0.835}
-        lambda_2: {peak_wis: 123.54, delta: 2.53, peak_bias: -17.9, peak_coverage_95: 0.821}
-        lambda_3: {peak_wis: 123.71, delta: 2.70, peak_bias: -6.4, peak_coverage_95: 0.808}
-        lambda_5: {peak_wis: 123.87, delta: 2.86, peak_bias: 7.9, peak_coverage_95: 0.769}
-      guard: {metric: overall_wis, baseline: 50.05, range: [50.40, 50.92]}
-    related_curated_entry: rectify-peak-loss-weight-approaching-peak
-    split: {train_start_date: "2022-02-05", eval_start_date: "2025-10-01", eval_end_date: "2026-05-31", stride_weeks: 4, n_cutoffs: 9}
-    seed: 42
-  evidence:
-    source: "outputs/experiments/peak_rectification/log.jsonl: lambda_1.5, lambda_2, lambda_3, lambda_5 vs baseline (git 13be50b0de, 2026-09-30)"
-    n_observations: 4
-    reward_delta: 2.705
-  confidence: low
-  llm_gloss: null
-  created_at: "2026-09-30"
+```
+- [E, low, 1 run] approaching_peak weight 3.0 (weeks_before 6): peak WIS 123.71 vs 121.01 baseline (+2.70, worse); peak bias -58.8 -> -6.4; peak coverage_95 0.855 -> 0.808
 ```
 
-A second candidate, not drafted here, is the window outcome: the same shape with `action: {type: set_training_window, weeks: [12, 26, 52]}`, deltas +117.25 / +119.23 / +76.98, and `context.model: [xgboost_direct]`, which is what would let the loop weigh the curated short-window rule against it.
+Merging repeated observations of the same action into one entry with higher confidence needs the end-of-run bank-writer (design doc unit 5), which is not built. The window outcome sits next to the curated window rule, which now recommends the `set_training_window` action, so the loop sees the warning beside the rule.
 
 ## Caveats
 

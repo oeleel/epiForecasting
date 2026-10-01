@@ -54,6 +54,9 @@ python -m agent knowledge validate [--dir <yaml-dir>]                  # lab's a
 python -m agent knowledge rebuild                                      # reload curated YAML into the DB, print counts
 python -m agent knowledge list [--provenance P] [--category C]         # table of stored entries
 python -m agent knowledge query [--phase P] [--model M] [--metric X] [--season-week N]   # print the KNOWN FACTS block
+python -m agent knowledge import-experiment [--log PATH]               # peak-rectification log.jsonl -> experiential entries
+python -m agent improve ... [--no-knowledge]                           # bank off: no KNOWN FACTS block in any prompt, no proposal-step retrieval/citations
+python scripts/demo_knowledge_bank.py [--live] [--json PATH]           # advisor demo; --live runs a 2-iteration improve
 ```
 
 ### Experiment harness (peak rectification)
@@ -90,7 +93,7 @@ python -m src.data_loader update
 
 ### Testing
 ```bash
-.venv/bin/python -m pytest tests/agent/ -q -W error::DeprecationWarning   # 281 tests
+.venv/bin/python -m pytest tests/agent/ -q -W error::DeprecationWarning   # 369 tests
 PYTHONPATH=. .venv/bin/python tests/agent/run_all.py                        # no-pytest fallback
 ```
 Covers: adapter actions (legacy + bank families), config, data quality, feature toggle, orchestrator, prompts, run tracker, sample weights, WIS scoring, model bank (contract/registry/bridge/baselines/runner), model selection, run report, phase segmentation, knowledge bank (schema/intake/store/render/seeds), peak-rectification harness (arms/deltas/reward/summary).
@@ -184,7 +187,7 @@ Both expose an OpenAI-compatible API (`/v1/chat/completions`). Swapping environm
 - All adapter methods implemented: `get_available_actions()`, `apply_action()`, `run_pipeline()`
 - Sample weight support wired through all ensemble types
 - Feature group toggling wired through `FeatureEngineer`
-- 6 constrained actions: `adjust_hyperparameter`, `reweight_training_samples`, `toggle_feature`, `adjust_floor_constraint`, `change_target_transform`, `stop`
+- 7 constrained actions: `adjust_hyperparameter`, `reweight_training_samples`, `toggle_feature`, `adjust_floor_constraint`, `change_target_transform`, `set_training_window`, `stop`
 
 **Data Quality Agent** — COMPLETE
 - `python -m agent check-data` runs pre-training checks (missing weeks, nulls, spikes, zero-reporting, coverage)
@@ -210,9 +213,12 @@ Both expose an OpenAI-compatible API (`/v1/chat/completions`). Swapping environm
 
 **Knowledge bank v1** - LANDED (2026-09-30)
 - Exists: entry schema, SQLite store, curated YAML intake, query, `knowledge` CLI, KNOWN FACTS renderer (`agent/knowledge/`); seeded curated entries in `knowledge/curated/` (advisor's five rectification actions, training-strategy rules, domain context migrated out of `FluForecastAdapter.get_domain_context`, which now serves them from the bank)
-- Curated entries with `recommendation.action: not_yet_available` (rectification entry #4 and the two training-strategy window rules) wait on a `set_training_window` adapter action; the harness sets `data.train_window_weeks` directly
+- The window entries formerly marked `not_yet_available` now recommend `set_training_window` (landed 2026-10-01)
 - Lab intake stub: `knowledge/curated/_training-strategy-by-model-class.yaml` (per-model-class strategies, rename to activate)
-- Deferred: derived refresh jobs, per-iteration injection of retrieved entries into the loop (only the adapter domain context reads the bank today), experiential bank-writer (all in design doc s9)
+- Deferred: derived refresh jobs, the end-of-run experiential bank-writer that merges repeated observations (design doc s9)
+- Unit 4 LANDED (2026-10-01): at every proposal the orchestrator retrieves on weak phase + model + metric (capped at the store's query limit, with experiential entries guaranteed a few slots), shows entries with ids, asks for and records `cited_entries`, drops unretrieved citations (logged), records `supported_by` / `supported_by_params_mismatch` / `retrieved_entry_ids`; the run report shows `cites:`; `improve --no-knowledge` switches off both the per-prompt KNOWN FACTS block and the proposal-step retrieval
+- Unit 5 slice LANDED (2026-10-01): `knowledge import-experiment` writes the sweep's log as experiential entries (confidence low, one observation each)
+- `set_training_window` now exists, so the window entries recommend it (12 / 12 / 52 weeks)
 - Experiment harness `scripts/experiments/peak_rectification.py`: lambda, lambda_calendar, window arms vs baseline; logs (state, action, reward) rows a future summarizer can read
 
 **Milestone 4: Generalization** — PLANNED

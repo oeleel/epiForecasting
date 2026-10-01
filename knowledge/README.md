@@ -7,7 +7,7 @@ free-form notes; every entry is a single validated fact with retrieval keys, and
 cites the entry it acts on but is still free to explore past it (advisor, 2026-09-24).
 
 Design: `documentation/knowledge-bank-design.md`. Code: `agent/knowledge/` (read
-`schema.py` first). CLI: `python -m agent knowledge {validate,rebuild,list,query}`.
+`schema.py` first). CLI: `python -m agent knowledge {validate,rebuild,list,query,import-experiment}`.
 
 ## Three provenances
 
@@ -15,7 +15,7 @@ Design: `documentation/knowledge-bank-design.md`. Code: `agent/knowledge/` (read
 |---|---|---|---|
 | `curated` | a human (this directory, PR-reviewed YAML) | `knowledge/curated/*.yaml` | highest |
 | `derived` | a deterministic job over the CDC data (not in v1) | `knowledge.db` only | middle |
-| `experiential` | the end-of-run bank-writer (not in v1) | `knowledge.db` only | lowest, rises with `n_observations` |
+| `experiential` | code only: `knowledge import-experiment` today, the end-of-run bank-writer later | `knowledge.db` only | lowest, rises with `n_observations` |
 
 `knowledge.db` is gitignored and rebuilt from the YAML files every time the bank opens, so
 there is no compile step and the files here are the source of truth for curated rows.
@@ -67,6 +67,37 @@ Order is provenance trust (curated > derived > experiential), then confidence, t
 `n_observations` (most first), then `updated_at` (newest first), then `id`; the
 `ORDER BY` lives in `agent/knowledge/store.py`. `llm_gloss` is always
 rendered as `[interpretation: ...]`: it is an LLM's reading of an entry, never the fact.
+
+## Experiential entries
+
+`python -m agent knowledge import-experiment [--log PATH]` reads the peak-rectification
+harness log (`outputs/experiments/peak_rectification/log.jsonl` by default) and writes one
+experiential entry per non-baseline config (9 for the first sweep, ids like
+`exp-lambda-3-2025`). It is deterministic: confidence `low`, one observation each. They
+render as `[E, low, 1 run]` lines after the curated ones. The lab never hand-writes
+provenance `experiential`; it is reserved for code. Merging repeated observations of the
+same action into one entry (and raising confidence) is future work: the end-of-run
+bank-writer, design doc unit 5.
+
+## How the loop uses the bank
+
+- **Model-keyed block in every prompt.** The adapter appends the `KNOWN FACTS` block for
+  the active model family to every diagnose/propose prompt.
+- **Phase-keyed block at each proposal.** The orchestrator also queries on the diagnosed
+  weak phase + model family + target metric and renders the matches WITH entry ids. The LLM
+  is asked to list the ids it relied on as `cited_entries`. Ids that were not retrieved are
+  dropped and logged; nothing is ever blocked. A proposal that no retrieved recommendation
+  supports is logged as an advisory override. The block is capped at the store's query
+  limit, and when the matches exceed it a few experiential entries are always kept in
+  (otherwise the curated-first ranking would cut every lesson from past runs).
+- **Run report.** Each action records `cited_entries`, `supported_by` (retrieved entries
+  whose recommendation matches the proposed action), `supported_by_params_mismatch`
+  (supporting entries whose recommended params differ from the proposal) and
+  `retrieved_entry_ids`; the report shows `cites: ...`.
+- **Off switch.** `python -m agent improve ... --no-knowledge` switches the bank off for
+  the run: no `KNOWN FACTS` block in any prompt and no proposal-step retrieval or
+  citations, so prompts and stored actions have the pre-bank shape (an A/B control).
+- **Demo.** `python scripts/demo_knowledge_bank.py [--live] [--json PATH]`.
 
 ## Files in `curated/`
 
