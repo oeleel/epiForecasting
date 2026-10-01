@@ -96,11 +96,11 @@
   context: {phase: [peak, approaching_peak]}
   payload:
     recommendation:
-      action: not_yet_available
-      params: {weeks: [6, 12]}
+      action: set_training_window
+      params: {weeks: 12}
       note: >
-        Planned adapter action `set_training_window`; until it lands the experiment harness
-        sets `data.train_window_weeks` in the pipeline config directly. The "current season
+        6 or 12 weeks; 12 is the safer first move (the minimum is FORECAST_HORIZON + 4 = 8, so
+        6 is not admissible today). Writes `data.train_window_weeks`. The "current season
         diverges from past seasons" trigger is a future derived entry, not yet defined.
     rank: 4
     config_key: data.train_window_weeks

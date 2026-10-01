@@ -16,11 +16,11 @@
   context: {phase: [surge, onset, approaching_peak]}
   payload:
     recommendation:
-      action: not_yet_available
+      action: set_training_window
       params: {weeks: 12}
       note: >
-        Planned adapter action `set_training_window`; the experiment harness sets
-        `data.train_window_weeks` directly (minimum FORECAST_HORIZON + 4 = 8 weeks).
+        Writes `data.train_window_weeks` (minimum FORECAST_HORIZON + 4 = 8 weeks, maximum
+        104); the experiment harness sets the same key directly.
     config_key: data.train_window_weeks
   evidence:
     source: "advisor (A. Adiga), meetings 2026-09-03, 2026-09-09, 2026-09-24"
@@ -40,9 +40,9 @@
   context: {phase: [plateau, off_season]}
   payload:
     recommendation:
-      action: not_yet_available
-      params: {weeks: [52, 104]}
-      note: Planned adapter action `set_training_window`; harness key `data.train_window_weeks`.
+      action: set_training_window
+      params: {weeks: 52}
+      note: 52 or 104 weeks (104 = 2 seasons, the catalog maximum); writes `data.train_window_weeks`.
     config_key: data.train_window_weeks
   evidence:
     source: "advisor (A. Adiga), meetings 2026-09-03, 2026-09-09, 2026-09-24"

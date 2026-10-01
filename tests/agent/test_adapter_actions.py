@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import copy
+import os
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -10,22 +13,23 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from agent.adapters.flu_forecast import FluForecastAdapter
+from agent.adapters.flu_forecast import DEFAULT_MAX_TRAIN_WINDOW_WEEKS, FluForecastAdapter
 from agent.knowledge import DEFAULT_CURATED_DIR, DEFAULT_HEADER, KnowledgeBank
 from src.config import get_default_config
+from src.pipeline import MIN_TRAIN_WINDOW_WEEKS
 
 
 def _adapter():
     return FluForecastAdapter()
 
 
-def test_catalog_has_six_actions():
+def test_catalog_has_seven_actions():
     a = _adapter()
     names = {x["name"] for x in a.get_available_actions()}
     assert names == {
         "adjust_hyperparameter", "reweight_training_samples",
         "toggle_feature", "adjust_floor_constraint",
-        "change_target_transform", "stop",
+        "change_target_transform", "set_training_window", "stop",
     }
 
 
@@ -230,6 +234,136 @@ def test_target_transform_unknown_value_raises():
 
 
 
+# ---- set_training_window (data.train_window_weeks) ----
+
+def test_catalog_set_training_window_guardrail_matches_pipeline():
+    a = _adapter()
+    entry = next(x for x in a.get_available_actions() if x["name"] == "set_training_window")
+    assert entry["guardrails"]["weeks"] == (MIN_TRAIN_WINDOW_WEEKS, DEFAULT_MAX_TRAIN_WINDOW_WEEKS)
+    assert entry["guardrails"]["weeks"] == (8, 104)
+    assert "ROWS" in entry["description"]
+    assert "12 weeks" in entry["description"]
+
+
+def test_apply_set_training_window_writes_weeks():
+    a = _adapter()
+    cfg = get_default_config()
+    new_cfg, desc = a.apply_action(
+        {"name": "set_training_window", "params": {"weeks": 12}}, cfg
+    )
+    assert new_cfg["data"]["train_window_weeks"] == 12
+    assert cfg["data"].get("train_window_weeks") is None  # input unchanged
+    assert desc == "data.train_window_weeks = 12"
+
+
+def test_apply_set_training_window_none_means_all_rows():
+    a = _adapter()
+    cfg = get_default_config()
+    cfg["data"]["train_window_weeks"] = 12
+    new_cfg, desc = a.apply_action(
+        {"name": "set_training_window", "params": {"weeks": None}}, cfg
+    )
+    assert new_cfg["data"]["train_window_weeks"] is None
+    assert cfg["data"]["train_window_weeks"] == 12  # input unchanged
+    assert "None" in desc
+
+
+def test_set_training_window_below_minimum_raises():
+    a = _adapter()
+    try:
+        a.apply_action({"name": "set_training_window", "params": {"weeks": 7}})
+        assert False, "expected rejection"
+    except ValueError as e:
+        assert "weeks=7" in str(e)
+        assert f"minimum {MIN_TRAIN_WINDOW_WEEKS}" in str(e)
+
+
+def test_set_training_window_above_maximum_raises():
+    a = _adapter()
+    try:
+        a.apply_action({"name": "set_training_window", "params": {"weeks": 105}})
+        assert False, "expected rejection"
+    except ValueError as e:
+        assert "weeks=105" in str(e)
+        assert str(DEFAULT_MAX_TRAIN_WINDOW_WEEKS) in str(e)
+
+
+def test_set_training_window_accepts_integer_string():
+    a = _adapter()
+    cfg = get_default_config()
+    new_cfg, desc = a.apply_action(
+        {"name": "set_training_window", "params": {"weeks": "12"}}, cfg
+    )
+    assert new_cfg["data"]["train_window_weeks"] == 12
+    assert type(new_cfg["data"]["train_window_weeks"]) is int
+    assert desc == "data.train_window_weeks = 12"
+
+
+def test_set_training_window_accepts_whole_float():
+    a = _adapter()
+    cfg = get_default_config()
+    new_cfg, desc = a.apply_action(
+        {"name": "set_training_window", "params": {"weeks": 12.0}}, cfg
+    )
+    assert new_cfg["data"]["train_window_weeks"] == 12
+    assert type(new_cfg["data"]["train_window_weeks"]) is int
+    assert desc == "data.train_window_weeks = 12"
+
+
+def test_set_training_window_fractional_float_raises():
+    a = _adapter()
+    try:
+        a.apply_action({"name": "set_training_window", "params": {"weeks": "12.5"}})
+        assert False, "expected rejection"
+    except ValueError as e:
+        assert "whole number" in str(e)
+        assert "12.5" in str(e)
+    try:
+        a.apply_action({"name": "set_training_window", "params": {"weeks": 12.5}})
+        assert False, "expected rejection"
+    except ValueError as e:
+        assert "12.5" in str(e)
+
+
+def test_set_training_window_non_numeric_string_raises():
+    a = _adapter()
+    try:
+        a.apply_action({"name": "set_training_window", "params": {"weeks": "abc"}})
+        assert False, "expected rejection"
+    except ValueError as e:
+        assert "must be an int" in str(e)
+        assert "'abc'" in str(e)
+
+
+def test_set_training_window_bool_raises():
+    a = _adapter()
+    try:
+        a.apply_action({"name": "set_training_window", "params": {"weeks": True}})
+        assert False, "expected rejection"
+    except ValueError as e:
+        assert "must be an int" in str(e)
+        assert "True" in str(e)
+
+
+def test_set_training_window_missing_weeks_raises():
+    a = _adapter()
+    try:
+        a.apply_action({"name": "set_training_window", "params": {}})
+        assert False, "expected rejection"
+    except ValueError as e:
+        assert "weeks" in str(e)
+
+
+def test_set_training_window_rejected_for_bank_family():
+    a = _adapter()
+    cfg = _bank_config("persistence")
+    try:
+        a.apply_action({"name": "set_training_window", "params": {"weeks": 12}}, cfg)
+        assert False, "expected rejection"
+    except ValueError as e:
+        assert "only available for the xgboost_direct family" in str(e)
+
+
 # ---- model-bank families (family-aware catalog + generic hyperparameter action) ----
 
 def _bank_config(family: str = "persistence"):
@@ -250,8 +384,8 @@ def test_catalog_for_bank_family_is_param_space_plus_stop():
 
 def test_catalog_without_config_is_legacy_catalog():
     a = _adapter()
-    assert len(a.get_available_actions()) == 6
-    assert len(a.get_available_actions(get_default_config())) == 6
+    assert len(a.get_available_actions()) == 7
+    assert len(a.get_available_actions(get_default_config())) == 7
 
 
 def test_apply_adjust_hyperparameter_bank_family_writes_model_params():
@@ -303,6 +437,62 @@ def test_stop_is_a_no_op_for_bank_family():
     assert new_cfg == cfg and "stop" in desc
 
 
+def test_get_available_actions_does_not_mutate_class_catalog():
+    before = copy.deepcopy(FluForecastAdapter.ACTION_CATALOG)
+
+    catalog = _adapter().get_available_actions()
+
+    resolved = next(x for x in catalog if x["name"] == "set_training_window")
+    assert resolved["guardrails"]["weeks"] == (MIN_TRAIN_WINDOW_WEEKS, DEFAULT_MAX_TRAIN_WINDOW_WEEKS)
+    assert FluForecastAdapter.ACTION_CATALOG == before
+    class_entry = next(
+        x for x in FluForecastAdapter.ACTION_CATALOG if x["name"] == "set_training_window"
+    )
+    assert class_entry["guardrails"]["weeks"] is None
+
+
+def test_importing_adapter_does_not_load_xgboost():
+    # The adapter keeps src/* lazy so the CLI and the knowledge tooling stay
+    # light (and macOS avoids the libomp clash). A fresh interpreter proves it.
+    code = (
+        "import sys\n"
+        "import agent.adapters.flu_forecast\n"
+        "loaded = sorted(m for m in sys.modules if m == 'xgboost' or m.startswith('xgboost.'))\n"
+        "print(loaded)\n"
+        "sys.exit(1 if loaded else 0)\n"
+    )
+    env = {**os.environ, "PYTHONPATH": str(PROJECT_ROOT)}
+
+    proc = subprocess.run(
+        [sys.executable, "-c", code], cwd=PROJECT_ROOT, env=env, capture_output=True, text=True,
+    )
+
+    assert proc.returncode == 0, f"xgboost loaded on import: {proc.stdout}\n{proc.stderr}"
+    assert proc.stdout.strip() == "[]"
+
+
+def test_knowledge_disabled_returns_model_paragraph_only_and_never_opens_bank():
+    a = FluForecastAdapter(knowledge_enabled=False)
+
+    legacy_ctx = a.get_domain_context()
+    bank_ctx = a.get_domain_context(_bank_config("persistence"))
+
+    assert "XGBoost-based" in legacy_ctx
+    assert "KNOWN FACTS" not in legacy_ctx
+    assert DEFAULT_HEADER not in legacy_ctx
+    assert "'persistence'" in bank_ctx
+    assert "KNOWN FACTS" not in bank_ctx
+    assert a._knowledge_bank is None  # the lazy property was never triggered
+
+
+def test_knowledge_enabled_rejects_non_bool():
+    try:
+        FluForecastAdapter(knowledge_enabled="no")
+        assert False, "expected rejection"
+    except ValueError as e:
+        assert "knowledge_enabled" in str(e)
+
+
 def test_domain_context_describes_active_bank_family():
     # The bank is built in a temp dir from the real curated files so the test
     # never writes knowledge/knowledge.db.
@@ -322,7 +512,7 @@ def test_domain_context_describes_active_bank_family():
         assert DEFAULT_HEADER in legacy_ctx and migrated in legacy_ctx
 
 ALL = [
-    test_catalog_has_six_actions,
+    test_catalog_has_seven_actions,
     test_apply_adjust_hyperparameter,
     test_apply_reweight_phase,
     test_apply_reweight_approaching_peak,
@@ -345,12 +535,28 @@ ALL = [
     test_toggle_unknown_group_raises,
     test_floor_pct_above_guardrail_raises,
     test_target_transform_unknown_value_raises,
+    test_catalog_set_training_window_guardrail_matches_pipeline,
+    test_apply_set_training_window_writes_weeks,
+    test_apply_set_training_window_none_means_all_rows,
+    test_set_training_window_below_minimum_raises,
+    test_set_training_window_above_maximum_raises,
+    test_set_training_window_accepts_integer_string,
+    test_set_training_window_accepts_whole_float,
+    test_set_training_window_fractional_float_raises,
+    test_set_training_window_non_numeric_string_raises,
+    test_set_training_window_bool_raises,
+    test_set_training_window_missing_weeks_raises,
+    test_set_training_window_rejected_for_bank_family,
     test_catalog_for_bank_family_is_param_space_plus_stop,
     test_catalog_without_config_is_legacy_catalog,
     test_apply_adjust_hyperparameter_bank_family_writes_model_params,
     test_apply_adjust_hyperparameter_bank_family_enforces_param_space,
     test_legacy_only_actions_rejected_for_bank_family,
     test_stop_is_a_no_op_for_bank_family,
+    test_get_available_actions_does_not_mutate_class_catalog,
+    test_importing_adapter_does_not_load_xgboost,
+    test_knowledge_disabled_returns_model_paragraph_only_and_never_opens_bank,
+    test_knowledge_enabled_rejects_non_bool,
     test_domain_context_describes_active_bank_family,
 ]
 
