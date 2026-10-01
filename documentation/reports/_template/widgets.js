@@ -108,18 +108,23 @@
     if (typeof v === "string" && !/^[\w.-]+$/.test(v)) return "'" + v + "'";
     return JSON.stringify(v).replace(/^"|"$/g, "");
   }
-  function recText(e) {
-    const r = e.payload && e.payload.recommendation; if (!r) return "";
-    if (r.action === "not_yet_available") return " -> no adapter action yet";
+  // The recommendation suffix of a KNOWN FACTS line, with its semantic class:
+  // an adapter action the loop can take is success, a placeholder is muted.
+  function recPart(e) {
+    const r = e.payload && e.payload.recommendation; if (!r) return null;
+    if (r.action === "not_yet_available") return { text: " -> no adapter action yet", cls: "rec-none" };
     const ps = Object.entries(r.params || {}).map(([k, v]) => k + "=" + fmtParam(v)).join(", ");
-    return " -> try " + r.action + "(" + ps + ")";
+    return { text: " -> try " + r.action + "(" + ps + ")", cls: "rec-action" };
   }
+  function recText(e) { const r = recPart(e); return r ? r.text : ""; }
   function lineFor(e) {
     const n = (e.evidence || {}).n_observations;
     const tag = e.provenance === "experiential"
       ? "[E, " + e.confidence + ", " + n + " run" + (n === 1 ? "" : "s") + "]"
       : "[" + (TAG[e.provenance] || "?") + ", " + e.confidence + "]";
-    return { tag, text: e.statement + recText(e) };
+    const rec = recPart(e);
+    // `text` keeps the full line for callers that want one string; `statement` and `rec` split it for colouring.
+    return { tag, tagClass: "tag tag-" + (TAG[e.provenance] || "c").toLowerCase(), statement: e.statement, rec, text: e.statement + (rec ? rec.text : "") };
   }
   // The orchestrator's representation guarantee, see Orchestrator._retrieve_for_proposal.
   function applyProposalLimit(ranked, limit, slots) {
@@ -179,12 +184,12 @@
       out.appendChild(h("div", { text: "KNOWN FACTS (knowledge bank; [C]=curated [D]=derived [E]=experiential):" }));
       if (!rows.length) out.appendChild(h("div", { text: "(knowledge bank: no matching entries)" }));
       for (const e of rows) {
-        const { tag, text } = lineFor(e);
+        const { tag, tagClass, statement, rec } = lineFor(e);
         const line = h("span", {
           class: "fact-line" + (e.id === state.selectedId ? " is-selected" : ""), role: "listitem button", tabindex: "0",
           onClick: () => { state.selectedId = e.id; render(); detailHost.hidden = false; detailHost.textContent = ""; detailHost.appendChild(card(e.id, [entryDetail(e)], { compact: true, description: "full entry as stored" })); },
           onKeydown: ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); line.click(); } },
-        }, "- ", h("span", { class: "tag", text: tag }), " " + text);
+        }, "- ", h("span", { class: tagClass, text: tag }), " " + statement, rec ? h("span", { class: rec.cls, text: rec.text }) : null);
         out.appendChild(line);
       }
       if (omitted) out.appendChild(h("div", { class: "muted", text: "(" + omitted + " more matching entr" + (omitted === 1 ? "y" : "ies") + " not shown: proposal limit " + DEFAULT_PROPOSAL_FACTS_LIMIT + ", " + DEFAULT_PROPOSAL_EXPERIENTIAL_SLOTS + " experiential slots)" }));
@@ -206,15 +211,27 @@
   }
 
   // ---- loop stepper -----------------------------------------------------------
-  function idChips(ids) {
+  // Chips are coloured by provenance (curated primary, experiential amber, derived sky) unless
+  // a role tone is given: supported_by is success, a params mismatch is warning.
+  function idChips(ids, opts) {
+    const o = opts || {}; const byId = o.byId || {};
     if (!ids || !ids.length) return h("div", { class: "muted text-xs", text: "none" });
-    return h("div", { class: "ids" }, ids.map(i => h("span", { class: "chip " + (String(i).startsWith("exp-") ? "chip-e" : "chip-c"), text: i })));
+    return h("div", { class: "ids" }, ids.map(i => {
+      const prov = (byId[i] || {}).provenance || (String(i).startsWith("exp-") ? "experiential" : "curated");
+      const cls = o.tone ? "chip-" + o.tone : "chip-" + (TAG[prov] || "C").toLowerCase();
+      return h("span", { class: "chip " + cls, text: i });
+    }));
   }
-  function stageCard(eyebrow, headline, bodyNodes) {
-    return h("div", { class: "card" }, h("div", { class: "card-content !p-4 space-y-1.5" },
-      h("div", { class: "text-xs font-medium uppercase tracking-wide muted", text: eyebrow }),
+  function stageCard(eyebrow, headline, bodyNodes, tone) {
+    return h("div", { class: "card" + (tone ? " tone-" + tone : "") }, h("div", { class: "card-content !p-4 space-y-1.5" },
+      h("div", { class: "eyebrow", text: eyebrow }),
       headline ? h("div", { class: "text-sm font-semibold break-words", text: headline }) : null,
       bodyNodes));
+  }
+  function callout(tone, titleText, bodyNodes) {
+    return h("div", { class: "alert callout-" + tone, role: "note" },
+      titleText ? h("h5", { class: "alert-title", text: titleText }) : null,
+      h("div", { class: "alert-description" }, bodyNodes));
   }
   function runStepper(el, run, options, allData) {
     const opts = options || {};
@@ -226,23 +243,25 @@
     const host = h("div", { class: "space-y-4" });
     el.appendChild(host);
 
+    // The outcome explanation as a toned callout: supported = success, with any parameter
+    // mismatch as a warning sentence; an unsupported action = the override case, destructive-soft.
     function explain(a) {
       const cited = a.cited_entries || [], sup = a.supported_by || [], mis = a.supported_by_params_mismatch || [];
-      const parts = [];
+      const nodes = [];
       if (cited.length) {
         const kinds = cited.map(i => (byId[i] || {}).provenance || (String(i).startsWith("exp-") ? "experiential" : "curated"));
-        parts.push("Agent 2 cited " + cited.length + " entr" + (cited.length === 1 ? "y" : "ies") + " (" + [...new Set(kinds)].join(", ") + ").");
-      } else parts.push("Agent 2 cited no entries.");
+        nodes.push("Agent 2 cited " + cited.length + " entr" + (cited.length === 1 ? "y" : "ies") + " (" + [...new Set(kinds)].join(", ") + "). ");
+      } else nodes.push("Agent 2 cited no entries. ");
       if (sup.length) {
-        parts.push("A retrieved curated rule recommends this action, so the proposal is recorded as supported.");
+        nodes.push(h("span", { class: "mark-pos", text: "A retrieved curated rule recommends this action" }), ", so the proposal is recorded as supported.");
         if (mis.length) {
           const rule = byId[mis[0]]; const rp = rule && rule.payload && rule.payload.recommendation && rule.payload.recommendation.params;
-          parts.push("The parameters differ from the rule's" + (rp ? " (rule: " + Object.entries(rp).map(([k, v]) => k + "=" + fmtParam(v)).join(", ") + ")" : "") + ", which is recorded in supported_by_params_mismatch.");
+          nodes.push(" ", h("span", { class: "mark-warn", text: "The parameters differ from the rule's" + (rp ? " (rule: " + Object.entries(rp).map(([k, v]) => k + "=" + fmtParam(v)).join(", ") + ")" : "") }), ", which is recorded in supported_by_params_mismatch.");
         }
-      } else {
-        parts.push("No retrieved rule recommends this action. The loop allows it and logs an advisory override: exploration is permitted, but visible.");
+        return callout("success", "Supported by a curated rule", [h("p", { class: "text-sm" }, nodes)]);
       }
-      return parts.join(" ");
+      nodes.push(h("span", { class: "mark-neg", text: "No retrieved rule recommends this action." }), " The loop allows it and logs an advisory override: exploration is permitted, but visible.");
+      return callout("destructive", "Advisory override", [h("p", { class: "text-sm" }, nodes)]);
     }
 
     function render() {
@@ -264,11 +283,11 @@
           h("p", { class: "text-xs muted", text: "curated first, then experiential; up to " + DEFAULT_PROPOSAL_EXPERIENTIAL_SLOTS + " experiential slots are reserved when the limit truncates" })]),
         stageCard("3. Proposal (agent 2)", (a.name || "") + "(" + params + ")", [h("p", { class: "text-sm", text: a.rationale || "" })]),
         stageCard("4. Citations recorded", null, [
-          h("div", { class: "text-xs muted", text: "cited_entries (what it says it relied on)" }), idChips(a.cited_entries),
-          h("div", { class: "text-xs muted mt-2", text: "supported_by (shown entries recommending this action)" }), idChips(a.supported_by),
-          h("div", { class: "text-xs muted mt-2", text: "supported_by_params_mismatch" }), idChips(a.supported_by_params_mismatch)]),
-        stageCard("5. Outcome", "WIS " + fmtNum(it.wis, 2) + " (unchanged: fake pipeline)", [h("p", { class: "text-sm", text: explain(a) })])));
-      host.appendChild(h("details", { class: "text-sm" }, h("summary", { class: "cursor-pointer muted", text: "retrieved_entry_ids for this iteration" }), idChips(a.retrieved_entry_ids)));
+          h("div", { class: "text-xs muted", text: "cited_entries (what it says it relied on; curated in primary, experiential in amber)" }), idChips(a.cited_entries, { byId }),
+          h("div", { class: "text-xs muted mt-2", text: "supported_by (shown entries recommending this action)" }), idChips(a.supported_by, { byId, tone: "success" }),
+          h("div", { class: "text-xs muted mt-2", text: "supported_by_params_mismatch" }), idChips(a.supported_by_params_mismatch, { byId, tone: "warning" })]),
+        stageCard("5. Outcome", "WIS " + fmtNum(it.wis, 2) + " (unchanged: fake pipeline)", [explain(a)], (a.supported_by || []).length ? "success" : "destructive")));
+      host.appendChild(h("details", { class: "text-sm" }, h("summary", { class: "cursor-pointer muted", text: "retrieved_entry_ids for this iteration" }), idChips(a.retrieved_entry_ids, { byId })));
     }
     render();
   }
@@ -281,7 +300,8 @@
     tip.style.left = (r.left - b.left + r.width / 2) + "px"; tip.style.top = (r.top - b.top) + "px";
   }
   function lineChart(host, series, opts) {
-    const W = 360, H = 230, m = { l: 44, r: 16, t: 12, b: 34 };
+    // right margin leaves room for the direct series labels drawn after the last point
+    const W = 360, H = 230, m = { l: 44, r: 78, t: 12, b: 34 };
     const svg = svgEl("svg", { viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": opts.aria });
     const xs = [...new Set(series.flatMap(s => s.pts.map(p => p.x)))].sort((a, b) => a - b);
     const ys = series.flatMap(s => s.pts.map(p => p.y)).concat(opts.ref != null ? [opts.ref] : []);
@@ -297,11 +317,12 @@
     }
     for (const v of xs) svg.appendChild(svgEl("text", { x: X(v), y: H - m.b + 16, "text-anchor": "middle" }, String(v)));
     svg.appendChild(svgEl("text", { x: (m.l + W - m.r) / 2, y: H - 4, "text-anchor": "middle" }, opts.xlabel));
+    // Reference semantics: the baseline is primary and dashed, the zero line is the foreground.
     if (opts.ref != null) {
-      svg.appendChild(svgEl("line", { x1: m.l, x2: W - m.r, y1: Y(opts.ref), y2: Y(opts.ref), stroke: "hsl(var(--muted-foreground))", "stroke-width": 1.5, "stroke-dasharray": "4 4" }));
+      svg.appendChild(svgEl("line", { x1: m.l, x2: W - m.r, y1: Y(opts.ref), y2: Y(opts.ref), stroke: "hsl(var(--primary))", "stroke-width": 1.5, "stroke-dasharray": "5 4" }));
       svg.appendChild(svgEl("text", { x: W - m.r, y: Y(opts.ref) - 5, "text-anchor": "end", class: "lbl" }, opts.refLabel));
     }
-    if (opts.includeZero) svg.appendChild(svgEl("line", { x1: m.l, x2: W - m.r, y1: Y(0), y2: Y(0), stroke: "hsl(var(--muted-foreground))", "stroke-width": 1 }));
+    if (opts.includeZero) svg.appendChild(svgEl("line", { x1: m.l, x2: W - m.r, y1: Y(0), y2: Y(0), stroke: "hsl(var(--foreground))", "stroke-width": 1.25 }));
     const tip = tooltip();
     series.forEach(s => {
       const d = s.pts.map((p, i) => (i ? "L" : "M") + X(p.x) + "," + Y(p.y)).join(" ");
@@ -318,7 +339,8 @@
     });
     host.appendChild(svg); host.appendChild(tip);
     const legend = h("div", { class: "legend" }, series.map(s => h("span", {}, h("i", { style: "background:" + s.color }), s.name)));
-    if (opts.ref != null) legend.appendChild(h("span", {}, h("i", { class: "ref", style: "background:hsl(var(--muted-foreground))" }), opts.refLabel));
+    if (opts.ref != null) legend.appendChild(h("span", {}, h("i", { class: "ref ref-primary" }), opts.refLabel));
+    if (opts.includeZero) legend.appendChild(h("span", {}, h("i", { class: "ref", style: "background:hsl(var(--foreground))" }), "zero (unbiased)"));
     host.appendChild(legend);
   }
   function barChart(host, rows, opts) {
@@ -368,7 +390,7 @@
       { name: "calendar label", short: "calendar", color: "var(--chart-2)", pts: cal.map(p => ({ x: p.x, y: p.r.peak.wis })) },
     ].filter(s => s.pts.length), { aria: "peak WIS by weight", xlabel: "weight on pre-peak rows", xname: "weight", dec: 1, ref: wisRef, refLabel: "baseline " + wisRef.toFixed(1) });
     const c3 = chartCard("Training window", "peak WIS by rows kept; the baseline uses all history");
-    barChart(c3.host, [{ label: "all history (baseline)", short: "all history", v: base.peak.wis, color: "hsl(var(--muted-foreground))" }]
+    barChart(c3.host, [{ label: "all history (baseline)", short: "all history", v: base.peak.wis, color: "hsl(var(--primary))" }]
       .concat(win.map(p => ({ label: p.x + " weeks", short: p.x + " weeks", v: p.r.peak.wis, color: "var(--chart-3)" }))),
       { aria: "peak WIS by training window", xlabel: "training rows kept before each cutoff", yname: "peak WIS" });
     grid.appendChild(c1.node); grid.appendChild(c2.node); grid.appendChild(c3.node);
@@ -386,29 +408,43 @@
     ].filter(([p]) => get(base, p) != null);
     let path = METRICS[0][0];
     const fmt = (v, p) => /coverage/.test(p) ? v.toFixed(3) : /bias/.test(p) ? v.toFixed(1) : v.toFixed(2);
-    const table = h("table", { class: "table table-compact" });
+    // "Best" per metric: lowest WIS/MAE, bias nearest zero, coverage nearest the nominal 0.95.
+    const score = (v, p) => /bias/.test(p) ? Math.abs(v) : /coverage/.test(p) ? Math.abs(v - 0.95) : v;
+    const bestFor = p => { let best = null; for (const r of sweep) { const s = score(get(r, p), p); if (best == null || s < best) best = s; } return best; };
+    const ALWAYS = [["peak.wis", "peak WIS"], ["overall.wis", "overall WIS"], ["peak.bias", "peak bias"], ["peak.coverage_95", "peak coverage 95"]];
+    const table = h("table", { class: "table table-compact table-dense" });
+    function metricCell(r, p, best) {
+      const v = get(r, p); const isBest = score(v, p) === best;
+      return h("td", { class: "num" + (isBest ? " is-best" : "") }, fmt(v, p), isBest ? h("span", { class: "badge badge-success badge-xs", text: "best" }) : null);
+    }
     function render() {
       const bv = get(base, path); const label = METRICS.find(m => m[0] === path)[1];
+      // The selected metric leads; the always-on columns skip it so nothing is shown twice.
+      const fixed = ALWAYS.filter(([p]) => p !== path);
+      const bestSel = bestFor(path); const bestFixed = fixed.map(([p]) => bestFor(p));
       table.textContent = "";
       table.appendChild(h("thead", {}, h("tr", {}, h("th", { text: "arm" }), h("th", { text: "config" }), h("th", { class: "num", text: label }),
-        h("th", { class: "num", text: "delta vs baseline" }), h("th", { class: "num", text: "peak WIS" }), h("th", { class: "num", text: "overall WIS" }),
-        h("th", { class: "num", text: "peak bias" }), h("th", { class: "num", text: "peak coverage 95" }))));
+        h("th", { class: "num", text: "delta vs baseline" }), fixed.map(([, l]) => h("th", { class: "num", text: l })))));
       const tbody = h("tbody");
       for (const r of sweep) {
         const v = get(r, path); const d = v - bv; const isBase = r.config_id === "baseline";
         const better = isBase ? null : (/bias/.test(path) ? Math.abs(v) < Math.abs(bv) : /coverage/.test(path) ? Math.abs(v - 0.95) < Math.abs(bv - 0.95) : d < 0);
+        // colour = better/worse than the baseline, arrow = direction of the change
+        const deltaClass = isBase ? "" : (d === 0 ? "delta-flat" : (better ? "delta-pos" : "delta-neg") + (d > 0 ? " delta-up" : " delta-down"));
         tbody.appendChild(h("tr", { class: isBase ? "row-highlight" : "" },
-          h("td", { text: r.arm }), h("td", {}, code(r.config_id)), h("td", { class: "num" }, h("b", { text: fmt(v, path) })),
-          h("td", { class: "num " + (better == null ? "" : better ? "delta-good" : "delta-bad"), text: isBase ? "" : (d >= 0 ? "+" : "") + fmt(d, path) }),
-          h("td", { class: "num", text: r.peak.wis.toFixed(2) }), h("td", { class: "num", text: r.overall.wis.toFixed(2) }),
-          h("td", { class: "num", text: r.peak.bias.toFixed(1) }), h("td", { class: "num", text: r.peak.coverage_95.toFixed(3) })));
+          h("td", { text: r.arm }), h("td", {}, code(r.config_id)),
+          metricCell(r, path, bestSel),
+          h("td", { class: "num" }, isBase ? h("span", { class: "muted", text: "reference" }) : h("span", { class: deltaClass, text: (d >= 0 ? "+" : "") + fmt(d, path) })),
+          fixed.map(([p], i) => metricCell(r, p, bestFixed[i]))));
       }
       table.appendChild(tbody);
     }
     el.appendChild(h("div", { class: "space-y-3" },
       h("div", { class: "max-w-xs" }, field("Table metric", select(METRICS, path, ev => { path = ev.target.value; render(); }))),
       h("div", { class: "table-wrap rounded-md border" }, table),
-      h("p", { class: "text-xs muted", text: "Green deltas are improvements for the selected metric (lower WIS and MAE, bias nearer zero, coverage nearer 0.95). The highlighted row is the baseline." })));
+      h("p", { class: "text-xs muted" }, h("span", { class: "delta-pos", text: "green" }), " deltas improve on the baseline for the selected metric (lower WIS and MAE, bias nearer zero, coverage nearer 0.95), ",
+        h("span", { class: "delta-neg", text: "red" }), " deltas do not; the triangle is the direction of the change. The highlighted row is the baseline; ",
+        h("span", { class: "badge badge-success badge-xs !ml-0", text: "best" }), " marks the best value in each metric column.")));
     render();
   }
 
@@ -418,25 +454,25 @@
       text: "Weekly influenza hospitalization counts fetched from the CDC FluSight GitHub repository and cached locally for a week. Everything downstream, including the experiment and the bank's experiential entries, is scored against this series." },
     { id: "pipeline", x: 16, y: 148, label: "Forecast pipeline", sub: "src/pipeline.py", path: "src/pipeline.py, src/direct_forecast.py",
       text: "Feature engineering plus the XGBoost direct ensemble (or any registered model family). It takes a config dict and returns a forecast CSV; the two new knobs (approaching-peak sample weights, post-feature training window) live here and are what the seventh action set_training_window drives." },
-    { id: "curated", x: 300, y: 24, label: "Curated YAML", sub: "knowledge/curated/*.yaml", path: "knowledge/curated/, agent/knowledge/curated.py",
+    { id: "curated", x: 308, y: 24, label: "Curated YAML", sub: "knowledge/curated/*.yaml", path: "knowledge/curated/, agent/knowledge/curated.py",
       text: "Human-authored guardrails: the five rectification actions, training-strategy rules and the migrated domain context (18 entries). Each file is validated against the schema; a pull request is the review step. The store rebuilds these rows from YAML every time it opens, so the YAML is the source of truth." },
-    { id: "db", x: 300, y: 148, label: "knowledge.db", sub: "agent/knowledge/store.py", path: "knowledge/knowledge.db, agent/knowledge/store.py",
+    { id: "db", x: 308, y: 148, label: "knowledge.db", sub: "agent/knowledge/store.py", path: "knowledge/knowledge.db, agent/knowledge/store.py",
       text: "SQLite store with one row per entry. Curated rows are replaced on every open; experiential rows persist. Retrieval is a context match (an entry matches when its context lacks the key or lists the value) ordered by provenance trust, confidence, n_observations and id, capped at 30." },
-    { id: "explog", x: 584, y: 24, label: "Experiment log", sub: "outputs/experiments/.../log.jsonl", path: "scripts/experiments/peak_rectification.py, agent/knowledge/experiment_import.py",
+    { id: "explog", x: 600, y: 24, label: "Experiment log", sub: "outputs/experiments/.../log.jsonl", path: "scripts/experiments/peak_rectification.py, agent/knowledge/experiment_import.py",
       text: "One JSON line per configuration from the controlled sweep (10 configs x 9 cutoffs). `knowledge import-experiment` turns each outcome into an experiential entry: statement, reward delta against the baseline, bias and coverage before and after, confidence low with one observation." },
-    { id: "loop", x: 300, y: 272, label: "Improve loop", sub: "agent/orchestrator.py", path: "agent/orchestrator.py, agent/prompt_templates.py",
+    { id: "loop", x: 308, y: 272, label: "Improve loop", sub: "agent/orchestrator.py", path: "agent/orchestrator.py, agent/prompt_templates.py",
       text: "Evaluate, diagnose (agent 1), propose (agent 2), validate, apply, retrain. Before every proposal the loop queries the bank with the diagnosed phase and renders a KNOWN FACTS block with entry ids. The proposal must cite what it relied on; the loop records cited_entries, supported_by and a params mismatch, and logs an advisory override when no retrieved rule backs the action." },
-    { id: "runs", x: 584, y: 272, label: "runs.db + report", sub: "outputs/agent_runs/", path: "agent/run_tracker.py, agent/run_report.py",
+    { id: "runs", x: 600, y: 272, label: "runs.db + report", sub: "outputs/agent_runs/", path: "agent/run_tracker.py, agent/run_report.py",
       text: "Every iteration, with its action, metrics, citations and retrieved ids, goes into SQLite. The end-of-run report (report.md and report.json) prints a cites: line per iteration so a reviewer can trace each move back to a bank entry." },
   ];
-  const NODE_W = 196, NODE_H = 56;
+  const NODE_W = 184, NODE_H = 56;
   const ARCH_EDGES = [
     { from: "data", to: "pipeline", label: "" },
     { from: "curated", to: "db", label: "rebuild on open" },
     { from: "explog", to: "db", label: "import-experiment" },
-    { from: "db", to: "loop", label: "KNOWN FACTS in prompts" },
+    { from: "db", to: "loop", label: "KNOWN FACTS block" },
     { from: "pipeline", to: "loop", label: "retrain, re-evaluate", both: true },
-    { from: "loop", to: "runs", label: "cited_entries, report" },
+    { from: "loop", to: "runs", label: "cited_entries" },
   ];
   function nodeCenter(n) { return { cx: n.x + NODE_W / 2, cy: n.y + NODE_H / 2 }; }
   function edgePath(a, b) {
@@ -523,7 +559,8 @@
     const flow = h("div", { class: "flow" });
     LIFECYCLE.forEach((s, i) => {
       if (i) flow.appendChild(h("span", { class: "flow-arrow", "aria-hidden": "true", text: "->" }));
-      const b = h("button", { type: "button", class: "btn btn-outline btn-sm", "aria-pressed": "false", onClick: () => show(s.id) }, s.label);
+      // Remove is the one destructive stage; the active stage otherwise takes primary via aria-pressed.
+      const b = h("button", { type: "button", class: "btn btn-sm " + (s.id === "remove" ? "btn-destructive-soft" : "btn-outline"), "aria-pressed": "false", onClick: () => show(s.id) }, s.label);
       buttons[s.id] = b; flow.appendChild(b);
     });
     el.appendChild(h("div", { class: "space-y-4" }, h("p", { class: "text-sm muted", text: "The five things that can happen to an entry. Click a stage for the rule and the command." }), flow, panel));
@@ -550,11 +587,17 @@
     ["MIN_SEASON_WEEKS", String(MIN_SEASON_WEEKS), "src/direct_forecast.py", "a season needs this many weeks before its peak counts for approaching-peak weights"],
     ["DEFAULT_APPROACHING_PEAK_WEEKS", String(DEFAULT_APPROACHING_PEAK_WEEKS), "src/direct_forecast.py", "K: weeks before each eligible season's peak labelled approaching-peak"],
   ];
+  // "a | b | c" in the type column is an enumeration: render each value as an outline badge.
+  function enumOrText(cell) {
+    if (typeof cell !== "string" || !/ \| /.test(cell)) return cell;
+    return h("span", { class: "flex flex-wrap gap-1" }, cell.split(" | ").map(v => h("span", { class: "badge badge-outline mono", text: v })));
+  }
   function simpleTable(headers, rows) {
     return h("div", { class: "table-wrap rounded-md border" }, h("table", { class: "table table-compact" },
       h("thead", {}, h("tr", {}, headers.map(t => h("th", { text: t })))),
-      h("tbody", {}, rows.map(r => h("tr", {}, r.map((cell, i) => h("td", {}, i === 0 ? code(cell) : (typeof cell === "string" ? cell : cell))))))));
+      h("tbody", {}, rows.map(r => h("tr", {}, r.map((cell, i) => h("td", {}, i === 0 ? code(cell) : i === 1 ? enumOrText(cell) : cell)))))));
   }
+  const PROVENANCE_BADGE = { curated: "badge", derived: "badge badge-info", experiential: "badge badge-warning" };
   function schemaReference(el, entries, options) {
     const opts = options || {};
     const exampleIds = opts.examples || ["rectify-peak-loss-weight-approaching-peak", "exp-lambda-3-2025"];
@@ -564,7 +607,7 @@
       if (!e) return card(id, [h("p", { class: "text-sm muted", text: "not present in the embedded data" })], { compact: true });
       const header = h("div", { class: "card-header !p-4 !pb-2" },
         h("div", { class: "flex flex-wrap items-center gap-2" }, h("h4", { class: "card-title-sm break-all", text: e.id }),
-          h("span", { class: "badge " + (e.provenance === "curated" ? "" : "badge-secondary"), text: e.provenance }),
+          h("span", { class: PROVENANCE_BADGE[e.provenance] || "badge badge-secondary", text: e.provenance }),
           h("span", { class: "badge badge-outline", text: e.confidence })),
         h("p", { class: "card-description", text: e.statement }));
       return h("div", { class: "card" }, header, h("div", { class: "card-content !p-4 !pt-0" }, pre(JSON.stringify(e, null, 2))));

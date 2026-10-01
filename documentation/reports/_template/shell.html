@@ -59,6 +59,10 @@
           primary: { DEFAULT: "hsl(var(--primary))", foreground: "hsl(var(--primary-foreground))" },
           secondary: { DEFAULT: "hsl(var(--secondary))", foreground: "hsl(var(--secondary-foreground))" },
           destructive: { DEFAULT: "hsl(var(--destructive))", foreground: "hsl(var(--destructive-foreground))" },
+          // semantic layer (tokens.css); tokens.css also ships .ink-* classes so the page works without the CDN
+          success: "hsl(var(--success))",
+          warning: "hsl(var(--warning))",
+          info: "hsl(var(--info))",
           muted: { DEFAULT: "hsl(var(--muted))", foreground: "hsl(var(--muted-foreground))" },
           accent: { DEFAULT: "hsl(var(--accent))", foreground: "hsl(var(--accent-foreground))" },
           popover: { DEFAULT: "hsl(var(--popover))", foreground: "hsl(var(--popover-foreground))" },
@@ -76,7 +80,7 @@
 <body class="min-h-screen bg-background font-sans text-foreground antialiased">
 
 <header class="site-header sticky top-0 z-20">
-  <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+  <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
     <div class="flex min-w-0 items-center gap-3">
       <a href="{{HOME_HREF}}" class="truncate text-sm font-semibold tracking-tight">epiForecasting reports</a>
       <span class="badge badge-outline hidden sm:inline-flex">{{DATE}}</span>
@@ -90,7 +94,7 @@
   </div>
 </header>
 
-<div class="mx-auto max-w-6xl px-4 py-8 lg:py-10">
+<div class="mx-auto max-w-7xl px-4 py-8 lg:py-10">
   <div class="mb-8 lg:mb-10">
     <div class="mb-2 sm:hidden"><span class="badge badge-outline">{{DATE}}</span></div>
     <h1 class="text-3xl font-semibold tracking-tight lg:text-4xl">{{TITLE}}</h1>

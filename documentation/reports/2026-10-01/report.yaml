@@ -22,9 +22,9 @@ sections:
           The five rectification actions from the 2026-09-27 Teams follow-up are seeded as
           curated entries. A controlled experiment on XGBoost's worst phase (peak) swept the
           loss weight and the training window over 9 cutoffs; its 9 outcomes were imported
-          back into the bank as experiential entries. Result: the approaching-peak weight moves
-          peak bias from -58.8 to about zero without improving peak WIS, and short windows hurt
-          at every phase.
+          back into the bank as experiential entries. Result: [[*the approaching-peak weight moves
+          peak bias from -58.8 to about zero without improving peak WIS]], and [[-short windows hurt
+          at every phase]].
       - kind: stats
         stats:
           - value: "27"
@@ -35,11 +35,13 @@ sections:
             label: constrained actions the loop can take
           - value: "369"
             label: tests passing
+            tone: success
 
   - id: asked
     heading: What was asked
     kind: cards
     columns: 3
+    tone: info
     cards:
       - title: Knowledge bank as human-authored guardrails first
         badge: 2026-09-24 sync
@@ -71,39 +73,63 @@ sections:
     kind: stack
     blocks:
       - kind: table
-        columns: [Ask, Delivered, Where]
+        columns:
+          - Ask
+          - Delivered
+          - label: Status
+            format: badge
+            tones: { done: success, partial: warning, "not done": warning }
+          - Where
         rows:
           - - Knowledge bank v1
             - "Schema, SQLite store, YAML intake rebuilt on open, trust-ranked retrieval, a **KNOWN FACTS** block in every prompt, CLI `validate` / `rebuild` / `list` / `query` / `import-experiment` / `remove`"
+            - done
             - "`agent/knowledge/`, `knowledge/`"
           - - Guardrails first
             - Five rectification actions seeded as curated entries, plus training-strategy rules and the migrated domain context (18 entries)
+            - done
             - "`knowledge/curated/`"
           - - Agent cites what it acted on, still explores
             - "The loop retrieves facts per proposal keyed on the diagnosed phase, records `cited_entries` / `supported_by` / `retrieved_entry_ids`, keeps an advisory override log, and the run report shows a `cites:` line"
+            - done
             - "`agent/orchestrator.py`"
           - - Learned knowledge
             - Experiment outcomes imported as 9 experiential entries, one per configuration
+            - done
             - "`knowledge import-experiment`"
           - - Loss weight and window as real knobs
             - "Two knobs (approaching-peak sample weights with a season-eligibility rule; post-feature training-row window) and a seventh action `set_training_window`"
+            - done
             - "`src/`, adapter"
           - - Controlled experiment
             - "Sweep run: 10 configs x 9 cutoffs, five identical baselines confirm determinism"
+            - done
             - "`scripts/experiments/`, `documentation/experiments/`"
           - - Show it working
             - Demo script that walks the bank, a retrieval and a cited proposal
+            - done
             - "`scripts/demo_knowledge_bank.py`"
           - - Per-model-class strategies
             - Intake stub ready for the lab to fill
+            - partial
             - "`knowledge/curated/_training-strategy-by-model-class.yaml`"
-      - kind: callout
-        title: Not done
-        body: |-
-          - oversampling and SMOTE arms of the experiment
-          - derived-knowledge jobs (the `derived` provenance has no producer yet)
-          - a bank-writer that merges repeated observations into one entry with higher confidence
-          - the log summarizer agent
+          - - Oversampling and SMOTE arms of the experiment
+            - "Seeded as curated entries whose recommendation is `not_yet_available`; neither arm was run"
+            - not done
+            - "`knowledge/curated/`"
+          - - Derived-knowledge jobs
+            - "The `derived` provenance has no producer yet"
+            - not done
+            - "-"
+          - - Bank-writer
+            - A writer that merges repeated observations into one entry with higher confidence
+            - not done
+            - "-"
+          - - Log summarizer agent
+            - Summarize the best strategy from the experiment logs
+            - not done
+            - "-"
+        note: "Status: [[+done]] landed this week; [[!partial]] exists but needs the lab's input; [[!not done]] is carried to next steps."
 
   - id: proof
     heading: Proof of concept
@@ -128,10 +154,22 @@ sections:
           - kind: markdown
             body: >-
               Run `20261001-084414-7d97`, cutoff 2025-12-06, with a fake pipeline so WIS never
-              moves. **Iteration 1** cited an experiential entry and was supported by a curated rule,
-              with a parameter mismatch (the rule weights approaching-peak rows; the agent weighted the
-              calendar peak phase). **Iteration 2** chose an action no retrieved rule recommends; it
-              was allowed and logged as an advisory override.
+              moves.
+          - kind: stack
+            blocks:
+              - kind: callout
+                tone: success
+                title: Iteration 1 - supported
+                body: >-
+                  Cited an experiential entry and [[+was supported by a curated rule]], with a
+                  [[!parameter mismatch]] (the rule weights approaching-peak rows; the agent weighted the
+                  calendar peak phase).
+              - kind: callout
+                tone: warning
+                title: Iteration 2 - advisory override
+                body: >-
+                  Chose an action [[!no retrieved rule recommends]]; it was allowed and logged as an
+                  advisory override. Exploration is permitted, but visible.
           - kind: widget
             name: runStepper
             data: data/live_run.json
@@ -154,11 +192,11 @@ sections:
         label: Bank design
         blocks:
           - kind: markdown
-            body: "**Where the bank sits.** Click a box for what it is and where it lives."
+            body: "**Where the bank sits.** Data flows down the left, knowledge down the middle, and the improve loop joins the two."
           - kind: widget
             name: architectureDiagram
           - kind: markdown
-            body: "**Lifecycle of an entry.** Add, rebuild, retrieve, cite, remove."
+            body: "**Lifecycle of an entry.** What the store and the CLI do at each stage."
           - kind: widget
             name: bankLifecycle
           - kind: markdown
@@ -178,22 +216,36 @@ sections:
           Baseline peak WIS **121.01**, bias **-58.8**, coverage **0.855**.
 
           - **Loss weight on approaching-peak rows.** Peak WIS 123.5-123.9 at every lambda (about +2.5,
-            no improvement). Bias moves -35.7 / -17.9 / -6.4 / +7.9 for lambda 1.5 / 2 / 3 / 5. Coverage
-            falls to 0.769 at lambda 5.
+            [[-no improvement]]). [[+Bias moves -35.7 / -17.9 / -6.4 / +7.9]] for lambda 1.5 / 2 / 3 / 5.
+            [[!Coverage falls to 0.769 at lambda 5]].
           - **Calendar label instead of the curve label.** Matches at matched bias: lambda 3 gives 122.66
             with bias -6.2.
-          - **Training window 12 / 26 / 52 weeks.** Peak WIS 238.26 / 240.24 / 197.99, worse at every phase.
+          - **Training window 12 / 26 / 52 weeks.** Peak WIS 238.26 / 240.24 / 197.99,
+            [[-worse at every phase]].
 
-          **Interpretation.** The weight fixes the level, not the score: the median moves up but the
-          intervals do not widen with it, so WIS does not improve and coverage drops. The short-window
-          rule is a per-series statistical-model rule and does not transfer to pooled XGBoost, which is
-          the per-model-class point behind the new intake stub. Five baselines are identical, and the
-          harness lands within 1.4 WIS of the 09-02 selection run.
-
-          **Caveats.** One split and one seed; calendar phases for scoring; K = 6 assumed; the weight acts
+          **Interpretation.** [[*The weight fixes the level, not the score]]: the median moves up but the
+          intervals do not widen with it, so WIS does not improve and coverage drops.
+          [[*Short windows hurt every phase]]: the short-window rule is a per-series statistical-model
+          rule and does not transfer to pooled XGBoost, which is the per-model-class point behind the new
+          intake stub. [[+Five baselines are identical]], and the harness lands within 1.4 WIS of the
+          09-02 selection run.
+      - kind: callout
+        tone: warning
+        title: Caveats
+        body: >-
+          One split and one seed; calendar phases for scoring; K = 6 assumed; the weight acts
           on `sample_weight` only.
       - kind: table
-        columns: [Configuration, Peak WIS, Peak bias, Peak coverage 95, Overall WIS]
+        intro: >-
+          Colour compares each row with the highlighted baseline: [[+green]] is better (lower WIS,
+          bias nearer zero, higher coverage), [[-red]] is worse; the triangle is the direction of the
+          number.
+        columns:
+          - Configuration
+          - { label: Peak WIS, format: delta, baseline: 0 }
+          - { label: Peak bias, format: delta, baseline: 0, better: zero }
+          - { label: Peak coverage 95, format: delta, baseline: 0, better: higher }
+          - { label: Overall WIS, format: delta, baseline: 0 }
         rows:
           - ["baseline", "121.01", "-58.8", "0.855", "50.05"]
           - ["lambda 1.5 (approaching-peak label)", "123.74", "-35.7", "0.835", "50.92"]
@@ -239,6 +291,7 @@ sections:
     heading: Next steps
     kind: cards
     columns: 3
+    tone: info
     cards:
       - title: Make the weight act on the intervals
         badge: experiment

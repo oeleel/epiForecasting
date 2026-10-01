@@ -24,22 +24,38 @@ CONTRACT
         summary:  str      one or two sentences under the title and on the index
         sections: list of blocks, each with `id` and `heading`
 
+    A section additionally takes `label:` (short eyebrow text above the heading;
+    defaults to the two-digit section number).
+
     A block has a `kind`. Kinds and their fields:
         markdown   body (the small subset: paragraphs, "- " bullets, **bold**,
-                   `code`, [text](url))
-        table      columns [str], rows [[cell, ...]] (cells are inline markdown)
-        cards      cards [{title, badge?, body}] (body is markdown)
-        stats      stats [{value, label}]
-        callout    title?, body (markdown)
+                   `code`, [text](url), and the semantic marks [[+good]]
+                   [[-bad]] [[!caution]] [[*key phrase]])
+        table      columns [str | {label, format?, better?, baseline?, tones?}],
+                   rows [[cell, ...]] (cells are inline markdown; a column with
+                   `format: num` right-aligns tabular numbers, `format: delta`
+                   additionally colours them: lower is better unless
+                   `better: higher`; with `baseline: <row index>` the colour
+                   and arrow compare against that row's value instead of zero,
+                   and `better: zero` (nearer zero wins) becomes available;
+                   `format: badge` renders the cell as a Badge coloured by
+                   `tones: {text: tone}`, unlisted text as an outline badge)
+        cards      cards [{title, badge?, body, tone?}], tone? (body is markdown;
+                   a block-level tone applies to every card, a card's own wins)
+        stats      stats [{value, label, tone?}]
+        callout    title?, body (markdown), tone?
         code       code (verbatim text, escaped)
         accordion  items [{title, body}]
         widget     name (a ReportWidgets function), data? (path relative to the
                    report folder), options? (map passed to the widget)
         tabs       tabs [{id, label, blocks: [block, ...]}]
         stack      blocks [block, ...]
-    Unknown kinds, missing data files, missing required fields and em dashes
-    (U+2014) anywhere in the content fail loudly: a half-built report is worse
-    than no report.
+    `tone` is one of info | success | warning | destructive and maps onto the
+    semantic classes in tokens.css (callout-<tone>, card.tone-<tone>,
+    badge-<tone>, ink-<tone>). Colour carries meaning, never decoration.
+    Unknown kinds, unknown tones, missing data files, missing required fields,
+    non-numeric cells in numeric columns and em dashes (U+2014) anywhere in the
+    content fail loudly: a half-built report is worse than no report.
 
 USAGE
     python scripts/reports/build_report.py documentation/reports/2026-10-01
@@ -78,7 +94,7 @@ TEMPLATE_DIR_NAME = "_template"
 REPORT_SPEC_NAME = "report.yaml"
 OUTPUT_NAME = "index.html"
 REPORT_FOLDER_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
-EM_DASH = "—"
+EM_DASH = "\u2014"  # written as an escape so this file itself passes the rule
 PLACEHOLDER_PATTERN = re.compile(r"\{\{[A-Z_]+\}\}")
 # Pages URL prefix for the README and the index subtitle.
 PAGES_BASE_URL = "https://oeleel.github.io/epiForecasting/documentation/reports/"
@@ -138,10 +154,30 @@ _INLINE_CODE = re.compile(r"`([^`]+)`")
 _BOLD = re.compile(r"\*\*(.+?)\*\*")
 _LINK = re.compile(r"\[([^\]]+)\]\(([^)\s]+)\)")
 _SAFE_HREF = re.compile(r"^(https?://|\.{1,2}/|/|#|[\w./-]+$)")
+# Semantic marks: [[+good]] [[-bad]] [[!caution]] [[*key phrase]]. Applied to the
+# already-escaped text, before links and bold, so the inner text may still use
+# **bold** but cannot carry a `code` span (code is split out first).
+_MARK = re.compile(r"\[\[([+\-!*])(.+?)\]\]")
+MARK_CLASSES: Dict[str, str] = {
+    "+": "mark-pos",
+    "-": "mark-neg",
+    "!": "mark-warn",
+    "*": "mark-key",
+}
+TONES = ("info", "success", "warning", "destructive")
+
+
+def _check_tone(tone: Any, where: str) -> str | None:
+    """Validate an optional `tone:` field. None means untoned."""
+    if tone is None:
+        return None
+    if tone not in TONES:
+        raise ReportError(f"{where}: tone {tone!r} must be one of {list(TONES)}")
+    return str(tone)
 
 
 def render_inline(text: str) -> str:
-    """Escape, then apply inline code, bold and links. Code wins over bold."""
+    """Escape, then apply inline code, marks, bold and links. Code wins over bold."""
     escaped = html.escape(str(text), quote=True)
     pieces: List[str] = []
     last = 0
@@ -160,7 +196,11 @@ def _bold_and_links(escaped: str) -> str:
             raise ReportError(f"link target {href!r} is not an http(s), relative or anchor URL")
         return f'<a href="{href}">{label}</a>'
 
-    out = _LINK.sub(link, escaped)
+    def mark(match: "re.Match[str]") -> str:
+        return f'<span class="{MARK_CLASSES[match.group(1)]}">{match.group(2)}</span>'
+
+    out = _MARK.sub(mark, escaped)
+    out = _LINK.sub(link, out)
     return _BOLD.sub(r"<strong>\1</strong>", out)
 
 
@@ -244,15 +284,113 @@ def _render_markdown_block(block: Dict[str, Any], ctx: _Context, where: str) -> 
     return f'<div class="prose">{render_markdown(_require(block, "body", where))}</div>'
 
 
+TABLE_FORMATS = ("text", "num", "delta", "badge")
+TABLE_BETTER = ("lower", "higher", "zero")
+_NUMBER = re.compile(r"^[+-]?(\d+\.?\d*|\.\d+)$")
+
+
+class _Column:
+    """One parsed table column spec: `"label"` or `{label, format?, better?, baseline?, tones?}`.
+
+    format text   inline markdown (the default)
+    format num    right-aligned tabular number
+    format delta  num, coloured: better/worse than zero (or than row `baseline`)
+    format badge  the cell text as a Badge; `tones: {text: tone}` picks the colour,
+                  anything unlisted renders as an outline badge
+    """
+
+    def __init__(self, spec: Any, where: str) -> None:
+        if isinstance(spec, str):
+            spec = {"label": spec}
+        if not isinstance(spec, dict) or "label" not in spec:
+            raise ReportError(f"{where}: a column is a string or a mapping with 'label', got {spec!r}")
+        self.label = str(spec["label"])
+        self.format = str(spec.get("format", "text"))
+        if self.format not in TABLE_FORMATS:
+            raise ReportError(f"{where}: column {self.label!r} format {self.format!r} must be one of {list(TABLE_FORMATS)}")
+        self.better = str(spec.get("better", "lower"))
+        if self.better not in TABLE_BETTER:
+            raise ReportError(f"{where}: column {self.label!r} better {self.better!r} must be one of {list(TABLE_BETTER)}")
+        self.baseline = spec.get("baseline")
+        if self.baseline is not None and not isinstance(self.baseline, int):
+            raise ReportError(f"{where}: column {self.label!r} baseline must be a row index, got {self.baseline!r}")
+        if self.better == "zero" and self.baseline is None:
+            raise ReportError(f"{where}: column {self.label!r}: better: zero needs a baseline row to compare against")
+        if self.format != "delta" and ("better" in spec or "baseline" in spec):
+            raise ReportError(f"{where}: column {self.label!r}: better/baseline only apply to format: delta")
+        tones = spec.get("tones") or {}
+        if tones and self.format != "badge":
+            raise ReportError(f"{where}: column {self.label!r}: tones only apply to format: badge")
+        if not isinstance(tones, dict):
+            raise ReportError(f"{where}: column {self.label!r}: tones must be a mapping of cell text to tone")
+        self.tones: Dict[str, str] = {str(k): _check_tone(v, f"{where} column {self.label!r}") or "" for k, v in tones.items()}
+
+    @property
+    def numeric(self) -> bool:
+        return self.format in ("num", "delta")
+
+
+def _parse_number(cell: Any, column: _Column, where: str) -> float:
+    text = str(cell).strip().replace(",", "")
+    if not _NUMBER.match(text):
+        raise ReportError(f"{where}: column {column.label!r} is {column.format} but cell {cell!r} is not a number")
+    return float(text)
+
+
+def _delta_class(value: float, column: _Column, reference: float) -> str:
+    """Colour = better/worse than the reference, arrow = direction of the number."""
+    diff = value - reference
+    if diff == 0:
+        return "delta-flat"
+    if column.better == "zero":
+        good = abs(value) < abs(reference)
+    elif column.better == "higher":
+        good = diff > 0
+    else:
+        good = diff < 0
+    arrow = "delta-up" if diff > 0 else "delta-down"
+    return f"{'delta-pos' if good else 'delta-neg'} {arrow}"
+
+
+def _render_cell(cell: Any, column: _Column, row_index: int, col_index: int, rows: List[Any], where: str) -> str:
+    """One <td>. Text columns take inline markdown; numeric columns take a plain number."""
+    if column.format == "badge":
+        tone = column.tones.get(str(cell).strip())
+        badge_class = f"badge-{tone}" if tone else "badge-outline"
+        return f'<td><span class="badge {badge_class}">{render_inline(str(cell).strip())}</span></td>'
+    if not column.numeric:
+        return f"<td>{render_inline(cell)}</td>"
+    value = _parse_number(cell, column, where)
+    text = html.escape(str(cell).strip(), quote=True)
+    if column.format == "num":
+        return f'<td class="num">{text}</td>'
+    if column.baseline is None:
+        return f'<td class="num"><span class="{_delta_class(value, column, 0.0)}">{text}</span></td>'
+    if column.baseline < 0 or column.baseline >= len(rows):
+        raise ReportError(f"{where}: column {column.label!r} baseline row {column.baseline} is out of range")
+    if row_index == column.baseline:
+        return f'<td class="num">{text}</td>'
+    reference = _parse_number(rows[column.baseline][col_index], column, where)
+    return f'<td class="num"><span class="{_delta_class(value, column, reference)}">{text}</span></td>'
+
+
 def _render_table_block(block: Dict[str, Any], ctx: _Context, where: str) -> str:
-    columns = _require(block, "columns", where)
+    columns = [_Column(c, where) for c in _require(block, "columns", where)]
     rows = _require(block, "rows", where)
-    head = "".join(f"<th>{render_inline(c)}</th>" for c in columns)
+    head = "".join(
+        f'<th class="num">{render_inline(c.label)}</th>' if c.numeric else f"<th>{render_inline(c.label)}</th>"
+        for c in columns
+    )
+    highlight_rows = {c.baseline for c in columns if c.baseline is not None}
     body_rows = []
-    for row in rows:
+    for r, row in enumerate(rows):
         if len(row) != len(columns):
             raise ReportError(f"{where}: table row {row!r} has {len(row)} cells, expected {len(columns)}")
-        body_rows.append("<tr>" + "".join(f"<td>{render_inline(c)}</td>" for c in row) + "</tr>")
+        cells = []
+        for col_index, (cell, column) in enumerate(zip(row, columns)):
+            cells.append(_render_cell(cell, column, r, col_index, rows, where))
+        row_class = ' class="row-highlight"' if r in highlight_rows else ""
+        body_rows.append(f"<tr{row_class}>" + "".join(cells) + "</tr>")
     return (
         '<div class="table-wrap rounded-md border"><table class="table">'
         f"<thead><tr>{head}</tr></thead><tbody>{''.join(body_rows)}</tbody></table></div>"
@@ -265,14 +403,18 @@ def _render_cards_block(block: Dict[str, Any], ctx: _Context, where: str) -> str
     grid_class = {1: "grid gap-4", 2: "grid gap-4 md:grid-cols-2", 3: "grid gap-4 md:grid-cols-2 xl:grid-cols-3"}.get(columns)
     if grid_class is None:
         raise ReportError(f"{where}: cards.columns must be 1, 2 or 3, got {columns}")
+    block_tone = _check_tone(block.get("tone"), where)
     out = []
-    for card in cards:
+    for i, card in enumerate(cards):
         title = render_inline(_require(card, "title", where))
+        tone = _check_tone(card.get("tone"), f"{where} > card {i}") or block_tone
         badge = card.get("badge")
-        badge_html = f'<span class="badge badge-secondary">{render_inline(badge)}</span>' if badge else ""
+        badge_class = f"badge-{tone}" if tone else "badge-secondary"
+        badge_html = f'<span class="badge {badge_class}">{render_inline(badge)}</span>' if badge else ""
         body = render_markdown(_require(card, "body", where))
+        card_class = f"card tone-{tone}" if tone else "card"
         out.append(
-            '<div class="card"><div class="card-header !p-5 !pb-3">'
+            f'<div class="{card_class}"><div class="card-header !p-5 !pb-3">'
             f'<div class="flex flex-wrap items-start justify-between gap-2"><h3 class="card-title-sm">{title}</h3>{badge_html}</div>'
             f'</div><div class="card-content !p-5 !pt-0 prose text-sm">{body}</div></div>'
         )
@@ -281,20 +423,26 @@ def _render_cards_block(block: Dict[str, Any], ctx: _Context, where: str) -> str
 
 def _render_stats_block(block: Dict[str, Any], ctx: _Context, where: str) -> str:
     stats = _require(block, "stats", where)
-    tiles = "".join(
-        '<div class="card"><div class="card-content !p-5">'
-        f'<div class="stat-value">{render_inline(_require(s, "value", where))}</div>'
-        f'<div class="stat-label">{render_inline(_require(s, "label", where))}</div></div></div>'
-        for s in stats
-    )
-    return f'<div class="grid gap-4 grid-cols-2 lg:grid-cols-4">{tiles}</div>'
+    tiles = []
+    for i, s in enumerate(stats):
+        tone = _check_tone(s.get("tone"), f"{where} > stat {i}")
+        value_class = f"kpi-value ink-{tone}" if tone else "kpi-value"
+        card_class = f"card tone-{tone}" if tone else "card"
+        tiles.append(
+            f'<div class="{card_class}"><div class="card-content !p-5">'
+            f'<div class="{value_class}">{render_inline(_require(s, "value", where))}</div>'
+            f'<div class="stat-label">{render_inline(_require(s, "label", where))}</div></div></div>'
+        )
+    return f'<div class="grid gap-4 grid-cols-2 lg:grid-cols-4">{"".join(tiles)}</div>'
 
 
 def _render_callout_block(block: Dict[str, Any], ctx: _Context, where: str) -> str:
     title = block.get("title")
+    tone = _check_tone(block.get("tone"), where)
     title_html = f'<h5 class="alert-title">{render_inline(title)}</h5>' if title else ""
     body = render_markdown(_require(block, "body", where))
-    return f'<div class="alert" role="note">{title_html}<div class="alert-description prose">{body}</div></div>'
+    alert_class = f"alert callout-{tone}" if tone else "alert"
+    return f'<div class="{alert_class}" role="note">{title_html}<div class="alert-description prose">{body}</div></div>'
 
 
 def _render_code_block(block: Dict[str, Any], ctx: _Context, where: str) -> str:
@@ -412,10 +560,14 @@ def _render_section(section: Dict[str, Any], ctx: _Context, index: int) -> str:
     if not re.match(r"^[a-z][a-z0-9-]*$", str(section_id)):
         raise ReportError(f"{where}: id {section_id!r} must be lower-case letters, digits and dashes")
     heading = render_inline(_require(section, "heading", where))
+    # Eyebrow: a short label from report.yaml, else the two-digit section number.
+    label = section.get("label")
+    eyebrow = render_inline(label) if label else f"{index + 1:02d}"
     body = render_block(section, ctx, f"{where} ({section_id})")
     return (
         f'<section id="{section_id}" class="scroll-mt-24">'
-        f'<h2 class="section-title">{heading}<a class="section-anchor" href="#{section_id}" aria-label="Link to this section">#</a></h2>'
+        f'<div class="section-head"><div class="eyebrow">{eyebrow}</div>'
+        f'<h2 class="section-title">{heading}<a class="section-anchor" href="#{section_id}" aria-label="Link to this section">#</a></h2></div>'
         f"{body}</section>"
     )
 
@@ -507,7 +659,8 @@ def render_index(reports_dir: Path, template_dir: Path | None = None) -> str:
     else:
         body = f'<div class="grid gap-4">{"".join(cards)}</div>'
     sections_html = (
-        '<section id="reports" class="scroll-mt-24"><h2 class="section-title">All weeks</h2>'
+        '<section id="reports" class="scroll-mt-24"><div class="section-head"><div class="eyebrow">Index</div>'
+        '<h2 class="section-title">All weeks</h2></div>'
         f"{body}</section>"
     )
     return _fill_shell(template_dir, {
