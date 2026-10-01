@@ -15,12 +15,15 @@ Commands:
                  `validate` is the lab's authoring check for the curated YAML
                  files, `rebuild` reloads them into the SQLite bank, `list`
                  tabulates the stored entries, `query` prints the KNOWN FACTS
-                 block the loop would see for a retrieval context. Every action
-                 except `validate` re-reads the repo's curated dir into the
-                 repo DB first, so the bank can never be stale relative to the
-                 YAML. `--dir` belongs to `validate` only: the other actions
-                 always reflect `knowledge/curated/`, so a stray directory can
-                 never be loaded into the repo DB.
+                 block the loop would see for a retrieval context,
+                 `import-experiment` writes the peak-rectification harness log
+                 into the bank as experiential entries (design section 5, no
+                 LLM involved). Every action except `validate` re-reads the
+                 repo's curated dir into the repo DB first, so the bank can
+                 never be stale relative to the YAML. `--dir` belongs to
+                 `validate` only: the other actions always reflect
+                 `knowledge/curated/`, so a stray directory can never be
+                 loaded into the repo DB.
 
 Usage examples:
     python -m agent check-data --cutoff-date 2024-11-02 --dry-run
@@ -39,6 +42,7 @@ Usage examples:
     python -m agent knowledge rebuild
     python -m agent knowledge list --provenance curated --category model_characteristics
     python -m agent knowledge query --phase peak --model xgboost_direct
+    python -m agent knowledge import-experiment --log outputs/experiments/peak_rectification/log.jsonl
 """
 
 from __future__ import annotations
@@ -52,10 +56,12 @@ from agent.adapters.flu_forecast import FluForecastAdapter
 from agent.knowledge import (
     CATEGORIES,
     DEFAULT_CURATED_DIR,
+    DEFAULT_EXPERIMENT_LOG,
     KNOWN_PHASES,
     PROVENANCES,
     KnowledgeBank,
     RetrievalContext,
+    import_experiment_log,
     list_curated_files,
     load_curated_dir,
     render_known_facts,
@@ -314,9 +320,24 @@ def cmd_improve(args) -> None:
         interactive_confirmer,
     )
 
-    adapter = FluForecastAdapter(exclude_locations=args.exclude_locations)
+    # One bank per process: the adapter's domain context and the proposal
+    # step's cited known-facts read the same rows. --no-knowledge switches off
+    # both: the adapter's per-prompt KNOWN FACTS block and the proposal-step
+    # retrieval + citations, so the run reads no bank at all (an A/B control
+    # against the bank-aware default; the adapter never opens the bank).
+    knowledge_bank = None if args.no_knowledge else _open_bank()
+    adapter = FluForecastAdapter(
+        exclude_locations=args.exclude_locations,
+        knowledge_bank=knowledge_bank,
+        knowledge_enabled=not args.no_knowledge,
+    )
     tracker = RunTracker()
 
+    if knowledge_bank is None:
+        print("[--no-knowledge] bank off: no KNOWN FACTS block in any prompt, "
+              "no proposal-step retrieval or citations")
+    else:
+        print(f"[knowledge bank: {knowledge_bank.count()} entries; proposals cite retrieved facts]")
     if args.exclude_locations:
         print(f"[excluding locations: {', '.join(args.exclude_locations)}]")
 
@@ -358,6 +379,7 @@ def cmd_improve(args) -> None:
         max_iterations=args.max_iterations,
         no_improvement_threshold=args.no_improvement_threshold,
         verbose=True,
+        knowledge_bank=knowledge_bank,
     )
 
     initial_config = None
@@ -727,10 +749,10 @@ def cmd_report(args) -> None:
 
 
 # ----------------------------------------------------------------------------
-# Knowledge bank: validate / rebuild / list / query
+# Knowledge bank: validate / rebuild / list / query / import-experiment
 # ----------------------------------------------------------------------------
 
-KNOWLEDGE_ACTIONS = ("validate", "rebuild", "list", "query")
+KNOWLEDGE_ACTIONS = ("validate", "rebuild", "list", "query", "import-experiment")
 
 # Which flags each action reads. Anything else passed with that action is a
 # user mistake and is rejected up front rather than silently ignored.
@@ -739,8 +761,11 @@ KNOWLEDGE_FLAGS_BY_ACTION = {
     "rebuild": (),
     "list": ("provenance", "category"),
     "query": ("phase", "model", "metric", "season_week"),
+    "import-experiment": ("log",),
 }
-_KNOWLEDGE_ALL_FLAGS = ("dir", "provenance", "category", "phase", "model", "metric", "season_week")
+_KNOWLEDGE_ALL_FLAGS = (
+    "dir", "provenance", "category", "phase", "model", "metric", "season_week", "log",
+)
 
 # `knowledge list` column widths. Statements are truncated to fit one line so
 # the table stays scannable; `query` prints statements in full.
@@ -871,6 +896,35 @@ def _knowledge_query(
     print(render_known_facts(entries, omitted=omitted))
 
 
+def _knowledge_import_experiment(log_path: str | Path) -> None:
+    """Write the harness log into the bank as experiential entries; print ids and counts.
+
+    `created_at` is today's date: the import module itself never reads the
+    clock, so the CLI is the one place the date enters.
+    """
+    from datetime import date
+
+    bank = _open_bank()
+    try:
+        result = import_experiment_log(log_path, bank, created_at=date.today().isoformat())
+    except ValueError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"\nimported experiment log: {log_path}")
+    print(f"db: {bank.db_path}")
+    print(f"\n{'entry id':<{KNOWLEDGE_LIST_ID_WIDTH}}")
+    print("-" * KNOWLEDGE_LIST_ID_WIDTH)
+    for entry_id in result.ids:
+        print(entry_id)
+    print("-" * KNOWLEDGE_LIST_ID_WIDTH)
+    print(
+        f"{result.n_rows} log rows -> {result.n_entries} experiential entries upserted "
+        f"({result.n_rows - result.n_entries} baseline row(s) skipped); "
+        f"bank now holds {bank.count('experiential')} experiential entries"
+    )
+
+
 def cmd_knowledge(args: argparse.Namespace) -> None:
     """Dispatch `knowledge <action>`; reject flags the action does not read."""
     allowed = KNOWLEDGE_FLAGS_BY_ACTION[args.action]
@@ -895,6 +949,8 @@ def cmd_knowledge(args: argparse.Namespace) -> None:
         _knowledge_list(args.provenance, args.category)
     elif args.action == "query":
         _knowledge_query(args.phase, args.model, args.metric, args.season_week)
+    elif args.action == "import-experiment":
+        _knowledge_import_experiment(args.log if args.log is not None else DEFAULT_EXPERIMENT_LOG)
     else:
         print(f"Unknown knowledge action: {args.action}", file=sys.stderr)
         sys.exit(1)
@@ -1051,6 +1107,12 @@ def main():
         "--report", default=None,
         help="Also write the run report here (it is always written to the run dir)",
     )
+    improve_parser.add_argument(
+        "--no-knowledge", action="store_true",
+        help="Switch the knowledge bank off for this run: no KNOWN FACTS block in any "
+             "prompt, no proposal-step retrieval, no cited_entries; for A/B runs against "
+             "the bank-aware default",
+    )
 
     # ---- history subcommand ------------------------------------------------
     history_parser = subparsers.add_parser(
@@ -1155,14 +1217,16 @@ def main():
     # ---- knowledge subcommand ----------------------------------------------
     knowledge_parser = subparsers.add_parser(
         "knowledge",
-        help="Knowledge bank: validate curated YAML, rebuild the DB, list or query entries",
+        help="Knowledge bank: validate curated YAML, rebuild the DB, list or query entries, "
+             "import an experiment log",
     )
     knowledge_parser.add_argument(
         "action", choices=KNOWLEDGE_ACTIONS,
         help="validate: parse the curated YAML files (the lab's authoring check); "
              "rebuild: reload them into the SQLite bank and print counts; "
              "list: table of stored entries; "
-             "query: print the KNOWN FACTS block for a retrieval context",
+             "query: print the KNOWN FACTS block for a retrieval context; "
+             "import-experiment: write the peak-rectification log as experiential entries",
     )
     knowledge_parser.add_argument(
         "--dir", default=None,
@@ -1192,6 +1256,10 @@ def main():
     knowledge_parser.add_argument(
         "--season-week", dest="season_week", type=int, default=None,
         help="query: the current season week (1-53)",
+    )
+    knowledge_parser.add_argument(
+        "--log", default=None,
+        help=f"import-experiment: harness JSONL log to import (default: {DEFAULT_EXPERIMENT_LOG})",
     )
 
     args = parser.parse_args()

@@ -30,6 +30,12 @@ Design notes
   verbatim. Crediting them with a delta would invent an improvement that no
   retrain produced, so they get `delta_vs_prev=None`, `became_best=False`, and a
   marker in the table.
+- **Citations are carried, not judged.** `cited_entries` (what the agent said
+  it relied on, after the orchestrator dropped ids that were never shown) and
+  `supported_by` (retrieved entries whose recommendation names the proposed
+  action) ride along on each line and in `report.json`, and the tried table
+  shows `cites: ...`. That is the advisor's validation mechanism (meeting
+  2026-09-24): cited reasoning, inspectable after the fact, not hard blocks.
 - **Best-iteration is recomputed here, from the lines.** `RunTracker.
   get_best_iteration` only supports four metrics while `improve --target-metric`
   allows six, and the tracker persists no `action_status`. Computing it locally
@@ -126,6 +132,9 @@ class IterationLine:
     became_best: bool
     carry_forward: bool
     error: str | None  # set when the iteration recorded {"error": ...}
+    # Knowledge-bank citations (design unit 4). Empty for runs without a bank.
+    cited_entries: list[str] = field(default_factory=list)
+    supported_by: list[str] = field(default_factory=list)
     metrics: dict[str, Any] = field(default_factory=dict, repr=False)
 
     def action_label(self) -> str:
@@ -136,6 +145,13 @@ class IterationLine:
             return self.action_name
         params = ", ".join(f"{k}={v}" for k, v in self.action_params.items())
         return f"{self.action_name}({params})"
+
+    def action_cell(self) -> str:
+        """`action_label()` plus ` (cites: id, ...)` when the action cited bank entries."""
+        label = self.action_label()
+        if not self.cited_entries:
+            return label
+        return f"{label} (cites: {', '.join(self.cited_entries)})"
 
 
 @dataclass(frozen=True, slots=True)
@@ -384,6 +400,8 @@ def _build_lines(raws: list[dict[str, Any]], target_metric: str) -> list[Iterati
             change_desc=raw["change_desc"],
             rationale=(action.get("rationale") or None),
             expected_effect=(action.get("expected_effect") or None),
+            cited_entries=_string_list(action.get("cited_entries")),
+            supported_by=_string_list(action.get("supported_by")),
             diagnosis_summary=((diagnosis.get("summary") or "").strip() or None),
             suggested_focus=(diagnosis.get("suggested_focus") or None),
             target_value=target,
@@ -401,6 +419,13 @@ def _build_lines(raws: list[dict[str, Any]], target_metric: str) -> list[Iterati
                 best_before = target
 
     return lines
+
+
+def _string_list(value: Any) -> list[str]:
+    """Entry-id list from an action dict; anything that is not a list of strings reads as []."""
+    if not isinstance(value, list):
+        return []
+    return [v for v in value if isinstance(v, str)]
 
 
 def _best_index(lines: list[IterationLine], target_metric: str) -> int | None:
@@ -637,7 +662,7 @@ def _tried_table(report: RunReport) -> list[str]:
         if ln.became_best and ln.delta_vs_best_before is not None:
             status = f"{status} (new best)"
         rows.append(
-            f"| {ln.iteration} | {ln.action_label()} | {status} "
+            f"| {ln.iteration} | {ln.action_cell()} | {status} "
             f"| {_metric_num(ln.target_value, metric)} "
             f"| {_pct(ln.delta_vs_prev)} | {_pct(ln.delta_vs_best_before)} |"
         )

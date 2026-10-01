@@ -350,6 +350,92 @@ def test_write_report_creates_markdown_and_json():
         assert len(payload["lines"]) == 2
 
 
+def _cited_action(cited, supported):
+    return {
+        "name": "adjust_hyperparameter",
+        "params": {"name": "max_depth", "value": 5},
+        "rationale": "known fact says deeper trees help at peak",
+        "expected_effect": "lower peak wis",
+        "cited_entries": cited,
+        "retrieved_entry_ids": ["peak-depth-v1", "peak-reweight-v1"],
+        "supported_by": supported,
+    }
+
+
+def test_tried_table_shows_cited_entries_on_the_action_line():
+    records = [
+        _rec(0, 100.0, status="baseline"),
+        _rec(1, 90.0, action=_cited_action(
+            ["peak-depth-v1", "peak-reweight-v1"], ["peak-depth-v1"],
+        )),
+    ]
+    result = RunResult(
+        run_id="r1", iterations=records, best_iteration=1,
+        best_forecast_path="iter_1.csv", stop_reason="max_iterations", target_metric="wis",
+    )
+    report = build_report(result)
+    md = render_markdown(report)
+
+    line = report.lines[1]
+    assert line.cited_entries == ["peak-depth-v1", "peak-reweight-v1"]
+    assert line.supported_by == ["peak-depth-v1"]
+    expected_cell = (
+        "| 1 | adjust_hyperparameter(name=max_depth, value=5) "
+        "(cites: peak-depth-v1, peak-reweight-v1) |"
+    )
+    assert expected_cell in md
+
+
+def test_tried_table_omits_cites_when_action_cited_nothing():
+    records = [_rec(0, 100.0, status="baseline"), _rec(1, 90.0, action=_cited_action([], []))]
+    result = RunResult(
+        run_id="r1", iterations=records, best_iteration=1,
+        best_forecast_path="iter_1.csv", stop_reason="max_iterations", target_metric="wis",
+    )
+    md = render_markdown(build_report(result))
+
+    assert "cites:" not in md
+    assert "| 1 | adjust_hyperparameter(name=max_depth, value=5) |" in md
+
+
+def test_lines_without_citation_keys_default_to_empty_lists():
+    report = build_report(_result([101.67, 90.0]))
+
+    assert report.lines[0].cited_entries == []
+    assert report.lines[0].supported_by == []
+    assert report.lines[1].cited_entries == []
+    assert report.lines[1].supported_by == []
+
+
+def test_report_json_carries_cited_entries_and_supported_by():
+    records = [
+        _rec(0, 100.0, status="baseline"),
+        _rec(1, 90.0, action=_cited_action(["peak-depth-v1"], ["peak-depth-v1"])),
+    ]
+    result = RunResult(
+        run_id="r1", iterations=records, best_iteration=1,
+        best_forecast_path="iter_1.csv", stop_reason="max_iterations", target_metric="wis",
+    )
+    payload = json.loads(json.dumps(build_report(result).to_json()))
+
+    assert payload["lines"][1]["cited_entries"] == ["peak-depth-v1"]
+    assert payload["lines"][1]["supported_by"] == ["peak-depth-v1"]
+    assert payload["lines"][0]["cited_entries"] == []
+
+
+def test_malformed_citation_values_read_as_empty():
+    action = _cited_action("not-a-list", None)
+    records = [_rec(0, 100.0, status="baseline"), _rec(1, 90.0, action=action)]
+    result = RunResult(
+        run_id="r1", iterations=records, best_iteration=1,
+        best_forecast_path="iter_1.csv", stop_reason="max_iterations", target_metric="wis",
+    )
+    report = build_report(result)
+
+    assert report.lines[1].cited_entries == []
+    assert report.lines[1].supported_by == []
+
+
 ALL = [fn for name, fn in sorted(globals().items()) if name.startswith("test_") and callable(fn)]
 
 

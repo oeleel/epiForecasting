@@ -14,14 +14,37 @@ Two prompt families:
                                   This is the structured handoff that
                                   Agent 2 (the Engineer) consumes.
 
+    ACTION_PROPOSAL_PROMPT     - Milestone 2 (Agent 2, the Engineer):
+                                  diagnosis + history + action catalog +
+                                  the knowledge bank's KNOWN FACTS for this
+                                  diagnosis (design unit 4, injection point
+                                  B). The agent is asked to CITE the entry
+                                  ids it acted on in `cited_entries`, and
+                                  stays free to propose an unsupported
+                                  action if the rationale says why (advisor
+                                  09-24). With no bank (`known_facts=None`)
+                                  the known-facts section and every mention
+                                  of `cited_entries` are left out, so the
+                                  prompt is byte-identical to the pre-bank
+                                  one.
+
 Validation helpers (`validate_diagnosis`, `extract_json_from_response`)
 live alongside the templates so the orchestrator can repair malformed
 LLM output without pulling in extra dependencies.
+
+Known-facts rendering: `format_known_facts_block` prefixes every line of the
+shared `render_entry_line` format with the entry id (`- [<id>] [C, high] ...`)
+because the id is what the LLM has to echo back in `cited_entries`; a
+citation the orchestrator cannot map to a shown id is dropped as a
+hallucination, so ids must be visible verbatim in the prompt.
 """
 
 import json
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, Iterable, List, Optional
+
+from agent.knowledge.render import render_entry_line
+from agent.knowledge.schema import KnowledgeEntry
 
 
 # ----------------------------------------------------------------------------
@@ -476,7 +499,7 @@ improve the target metric on the next iteration.
 ## Diagnosis from Agent 1
 
 {diagnosis_block}
-
+{known_facts_section}
 ## Iteration History (most recent last)
 
 {history_block}
@@ -512,7 +535,7 @@ weak segment in the diagnosis. Consider:
 - Stay within the guardrail ranges. The system will reject out-of-range
   values and force a retry.
 - If you believe no further action is likely to improve the metric, emit
-  the `stop` action.
+  the `stop` action.{cited_entries_task_bullet}
 
 Output a single JSON object (no surrounding prose, no markdown fences):
 
@@ -520,16 +543,89 @@ Output a single JSON object (no surrounding prose, no markdown fences):
   "name": "<one of: {action_names}>",
   "params": {{ ... action-specific params ... }},
   "rationale": "<one sentence: why this action and why now>",
-  "expected_effect": "<one sentence: what you expect to happen to {target_metric}>"
+  "expected_effect": "<one sentence: what you expect to happen to {target_metric}>"{cited_entries_schema_line}
 }}
-
+{cited_entries_guidance}
 Output ONLY the JSON object. No code fences, no commentary.
+"""
+
+
+# The three fragments spliced into ACTION_PROPOSAL_PROMPT when a knowledge bank
+# is consulted (`known_facts` is not None). Each carries its own surrounding
+# newlines so that, with every fragment empty, the rendered prompt is
+# byte-identical to the pre-bank template: a `--no-knowledge` run must be a
+# true control, not "the same prompt with an empty facts section".
+KNOWN_FACTS_SECTION_TEMPLATE = """
+## Known facts for this diagnosis
+
+Entries retrieved from the knowledge bank for the diagnosed phase, the
+active model family and the target metric. Each line starts with its entry
+id in square brackets; cite those ids in `cited_entries`.
+
+{known_facts_block}
+"""
+
+CITED_ENTRIES_TASK_BULLET = """
+- Known facts are advisory, not orders. When your action follows one or
+  more of them, list their ids in `cited_entries`. You may propose an action
+  that no known fact supports, but then say why in `rationale`."""
+
+CITED_ENTRIES_SCHEMA_LINE = """,
+  "cited_entries": ["<entry id>", ...]"""
+
+CITED_ENTRIES_GUIDANCE = """
+`cited_entries` is optional: the ids of the known-fact entries your action
+relies on, exactly as shown in square brackets above (empty list if none).
 """
 
 
 # Validation rules for Agent 2's output. Like the diagnosis schema, this is
 # a hand-rolled validator — no jsonschema dependency.
 REQUIRED_ACTION_KEYS: List[str] = ["name", "params", "rationale", "expected_effect"]
+# Optional key: the ids of the known-fact entries the action relies on.
+CITED_ENTRIES_KEY = "cited_entries"
+
+# What the known-facts section says when a bank was consulted and nothing
+# matched. Never an empty string: once a bank is in play the section must
+# visibly exist so the LLM is not left guessing whether facts were withheld.
+# (With no bank at all the section is left out entirely; see
+# `format_action_proposal_prompt`.)
+NO_KNOWN_FACTS_TEXT = "(none retrieved)"
+
+# `render_entry_line` yields "- [tag] statement..."; the id goes between the
+# bullet and the tag so a line reads "- [<id>] [C, high] statement".
+_ENTRY_LINE_BULLET = "- "
+
+
+def format_known_facts_block(entries: Iterable[KnowledgeEntry], *, omitted: int = 0) -> str:
+    """Render retrieved entries as `- [<id>] <shared entry line>` lines.
+
+    Reuses `agent.knowledge.render.render_entry_line` for everything after the
+    id so the proposal prompt and the adapter's KNOWN FACTS block describe an
+    entry identically; only the id prefix is added here, because citing by id
+    is what this prompt asks the LLM to do. `omitted` > 0 appends an explicit
+    count line, like `render_known_facts`. Returns `NO_KNOWN_FACTS_TEXT` when
+    there are no entries.
+    """
+    if not isinstance(omitted, int) or isinstance(omitted, bool) or omitted < 0:
+        raise ValueError(
+            f"format_known_facts_block: omitted must be an integer >= 0, got {omitted!r}"
+        )
+    lines: List[str] = []
+    for entry in entries:
+        rendered = render_entry_line(entry)
+        if not rendered.startswith(_ENTRY_LINE_BULLET):
+            raise ValueError(
+                f"render_entry_line changed its bullet; expected {_ENTRY_LINE_BULLET!r} prefix, "
+                f"got {rendered[:20]!r}"
+            )
+        lines.append(f"{_ENTRY_LINE_BULLET}[{entry.id}] {rendered[len(_ENTRY_LINE_BULLET):]}")
+    if not lines:
+        return NO_KNOWN_FACTS_TEXT
+    if omitted > 0:
+        noun = "entry" if omitted == 1 else "entries"
+        lines.append(f"- ({omitted} more matching {noun} omitted; narrow the retrieval context)")
+    return "\n".join(lines)
 
 
 def format_action_proposal_prompt(
@@ -539,6 +635,7 @@ def format_action_proposal_prompt(
     domain_context: str,
     target_metric: str = "wis",
     current_config: Dict[str, Any] = None,
+    known_facts: Optional[str] = None,
 ) -> str:
     """Build Agent 2's action-proposal prompt.
 
@@ -552,6 +649,12 @@ def format_action_proposal_prompt(
         target_metric: Name of the metric being optimized (for the prompt).
         current_config: Optional pipeline config dict. If provided, key
             values are shown so the LLM avoids no-op proposals.
+        known_facts: Pre-rendered known-facts block for this diagnosis
+            (`format_known_facts_block`), or None when no knowledge bank is
+            consulted. None leaves out the "Known facts" section and every
+            mention of `cited_entries`, so the prompt is byte-identical to
+            the pre-bank prompt; a bank that matched nothing passes
+            NO_KNOWN_FACTS_TEXT instead, which keeps the section.
 
     Returns:
         Fully formatted prompt string.
@@ -692,6 +795,18 @@ def format_action_proposal_prompt(
     # legacy-only actions it cannot take.
     action_names = " | ".join(a["name"] for a in action_catalog)
 
+    # ---- Knowledge-bank fragments (all empty when no bank is consulted) ------
+    if known_facts is None:
+        known_facts_section = ""
+        cited_entries_task_bullet = ""
+        cited_entries_schema_line = ""
+        cited_entries_guidance = ""
+    else:
+        known_facts_section = KNOWN_FACTS_SECTION_TEMPLATE.format(known_facts_block=known_facts)
+        cited_entries_task_bullet = CITED_ENTRIES_TASK_BULLET
+        cited_entries_schema_line = CITED_ENTRIES_SCHEMA_LINE
+        cited_entries_guidance = CITED_ENTRIES_GUIDANCE
+
     return ACTION_PROPOSAL_PROMPT.format(
         action_names=action_names,
         domain_context=domain_context,
@@ -699,6 +814,10 @@ def format_action_proposal_prompt(
         history_block=history_block,
         action_catalog_block=action_catalog_block,
         current_config_block=current_config_block,
+        known_facts_section=known_facts_section,
+        cited_entries_task_bullet=cited_entries_task_bullet,
+        cited_entries_schema_line=cited_entries_schema_line,
+        cited_entries_guidance=cited_entries_guidance,
         target_metric=target_metric,
     )
 
@@ -743,4 +862,13 @@ def validate_action_proposal(
 
     if not isinstance(obj["expected_effect"], str) or not obj["expected_effect"].strip():
         raise ValueError("Action 'expected_effect' must be a non-empty string")
+
+    # Optional: absent means "cites nothing". Present means a list of entry
+    # ids; whether each id was actually shown is the orchestrator's check.
+    if CITED_ENTRIES_KEY in obj:
+        cited = obj[CITED_ENTRIES_KEY]
+        if not isinstance(cited, list) or not all(isinstance(c, str) for c in cited):
+            raise ValueError(
+                f"Action '{CITED_ENTRIES_KEY}' must be a list of entry-id strings, got {cited!r}"
+            )
 

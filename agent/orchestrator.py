@@ -30,14 +30,53 @@ Why plain Python and not LangGraph:
     swap to LangGraph is mechanical.
 
 The `Orchestrator` constructor accepts injectable dependencies (LLM client,
-pipeline runner, run tracker, action confirmer). This is the seam the
-fake-harness in tests/agent/fakes.py plugs into.
+pipeline runner, run tracker, action confirmer, knowledge bank). This is the
+seam the fake-harness in tests/agent/fakes.py plugs into.
+
+Knowledge bank at the proposal step (design unit 4, injection point B):
+
+    When a `knowledge_bank` is given, every `_propose` call derives a
+    `RetrievalContext` from what the loop knows (diagnosed phase = the first
+    `weak_segments` entry with dimension "phase", the active model family,
+    the target metric), queries the bank, and hands the retrieved entries
+    to Agent 2 as a "Known facts" block with the entry ids visible. The
+    validated proposal is then annotated in place:
+
+        action["retrieved_entry_ids"]           what Agent 2 was shown
+        action["cited_entries"]                 what it says it relied on,
+                                                restricted to ids that were
+                                                actually shown
+        action["supported_by"]                  retrieved entries whose
+                                                recommendation names the
+                                                proposed action
+        action["supported_by_params_mismatch"]  the subset of supported_by
+                                                whose recommended params
+                                                disagree with the proposal
+                                                on a shared key
+
+    What is shown (`_retrieve_for_proposal`): the bank's ranking is curated >
+    derived > experiential, so a plain `LIMIT n` cuts the experiential tail
+    first and the loop would never see its own past runs. The proposal limit
+    is therefore pinned to the store's `DEFAULT_QUERY_LIMIT`, and when the
+    matches still exceed it, up to `DEFAULT_PROPOSAL_EXPERIENTIAL_SLOTS`
+    experiential entries are guaranteed a place by trimming the lowest-ranked
+    curated/derived entries instead.
+
+    Guardrails are advisory with an override log (design doc section 6,
+    advisor 2026-09-24): a citation of an id that was never shown is dropped
+    with a warning, an action that no retrieved recommendation supports is
+    logged, a supporting recommendation whose params differ is logged, and
+    nothing is ever blocked. With `knowledge_bank=None` the proposal path
+    behaves exactly as before the bank existed: no retrieval, no annotation,
+    the prompt carries no known-facts section, and a `cited_entries` key the
+    LLM emits anyway is dropped so stored actions keep the pre-bank shape.
 """
 
 from __future__ import annotations
 
 import copy
 import json
+import logging
 import shutil
 import time
 from dataclasses import dataclass, field
@@ -46,16 +85,58 @@ from typing import Any, Callable, Dict, List, Optional, Protocol
 
 from agent.adapters.flu_forecast import FluForecastAdapter
 from agent.domain_adapter import DomainAdapter
+from agent.knowledge import (
+    DEFAULT_QUERY_LIMIT,
+    KNOWN_PHASES,
+    PROVENANCES,
+    KnowledgeEntry,
+    RetrievalContext,
+)
 from agent.llm_client import LLMClient
 from agent.prompt_templates import (
+    CITED_ENTRIES_KEY,
     extract_json_from_response,
     format_action_proposal_prompt,
+    format_known_facts_block,
     format_structured_diagnosis_prompt,
     validate_action_proposal,
     validate_diagnosis,
 )
 from agent.run_tracker import RunTracker
 from src.config import get_default_config
+
+_log_module = logging.getLogger(__name__)
+
+# How many bank entries the proposal prompt shows per step. Pinned to the
+# store's own query limit and it must never be smaller: the store ranks
+# curated > derived > experiential, so a smaller proposal limit cuts the
+# experiential tail first and Agent 2 never sees the loop's own past runs
+# (observed 2026-10-01: 22 matches at peak, 12 shown, all 9 experiential cut).
+# The block states how many were omitted when the matches exceed the limit.
+DEFAULT_PROPOSAL_FACTS_LIMIT = DEFAULT_QUERY_LIMIT
+
+# Representation guarantee when the limit truncates: up to this many
+# experiential entries are always shown, displacing the lowest-ranked
+# curated/derived entries, however large the curated layer grows.
+DEFAULT_PROPOSAL_EXPERIENTIAL_SLOTS = 6
+assert 0 < DEFAULT_PROPOSAL_EXPERIENTIAL_SLOTS < DEFAULT_PROPOSAL_FACTS_LIMIT, (
+    "experiential slots must leave room for curated entries"
+)
+
+# The provenance the representation guarantee protects (store trust rank 1).
+EXPERIENTIAL_PROVENANCE = "experiential"
+assert EXPERIENTIAL_PROVENANCE in PROVENANCES, "provenance name drifted from the schema"
+
+# Model family assumed when the config carries none: the legacy pipeline.
+DEFAULT_MODEL_FAMILY = "xgboost_direct"
+
+# Keys the orchestrator writes onto a validated proposal when a bank is set.
+RETRIEVED_ENTRY_IDS_KEY = "retrieved_entry_ids"
+SUPPORTED_BY_KEY = "supported_by"
+SUPPORTED_BY_PARAMS_MISMATCH_KEY = "supported_by_params_mismatch"
+
+# Characters stripped from a cited id before matching it against the shown ids.
+_CITATION_BRACKETS = "[]"
 
 
 # ----------------------------------------------------------------------------
@@ -74,6 +155,12 @@ class PipelineRunner(Protocol):
         output_path: Optional[str] = None,
         verbose: bool = False,
     ) -> str: ...
+
+
+class KnowledgeBankLike(Protocol):
+    """The two reads the proposal step needs; `agent.knowledge.KnowledgeBank` satisfies it."""
+    def query(self, ctx: RetrievalContext, *, limit: int) -> List[KnowledgeEntry]: ...
+    def count_matching(self, ctx: RetrievalContext) -> int: ...
 
 
 class ActionConfirmer(Protocol):
@@ -247,6 +334,7 @@ class Orchestrator:
         no_improvement_threshold: float = 0.01,
         run_dir: Optional[Path] = None,
         verbose: bool = True,
+        knowledge_bank: Optional[KnowledgeBankLike] = None,
     ):
         self.adapter = adapter
         self.llm = llm
@@ -258,6 +346,7 @@ class Orchestrator:
         self.no_improvement_threshold = no_improvement_threshold
         self.run_dir = run_dir
         self.verbose = verbose
+        self.knowledge_bank = knowledge_bank
 
     # ---------- public entry ------------------------------------------------
 
@@ -648,6 +737,18 @@ class Orchestrator:
             }
             for it in iterations
         ]
+        retrieved: Optional[List[KnowledgeEntry]] = None
+        known_facts: Optional[str] = None
+        if self.knowledge_bank is not None:
+            ctx = self._retrieval_context(diagnosis, current_config)
+            retrieved, omitted = self._retrieve_for_proposal(ctx)
+            known_facts = format_known_facts_block(retrieved, omitted=omitted)
+            _log_module.debug("proposal known-facts block:\n%s", known_facts)
+            self._log(
+                f"  knowledge: {len(retrieved)} fact(s) retrieved for phase={ctx.phase} "
+                f"model={ctx.model} metric={ctx.metric}"
+                + (f" ({omitted} omitted)" if omitted > 0 else "")
+            )
         prompt = format_action_proposal_prompt(
             diagnosis=diagnosis,
             history=history,
@@ -655,12 +756,12 @@ class Orchestrator:
             domain_context=self.adapter.get_domain_context(current_config),
             target_metric=self.target_metric,
             current_config=current_config,
+            known_facts=known_facts,
         )
         response = self.llm.invoke(prompt)
         try:
             obj = extract_json_from_response(response)
             validate_action_proposal(obj, catalog)
-            return obj
         except ValueError as e:
             self._log(
                 f"  ! Agent 2 output didn't validate ({e}). "
@@ -676,7 +777,145 @@ class Orchestrator:
             response = self.llm.invoke(repair)
             obj = extract_json_from_response(response)
             validate_action_proposal(obj, catalog)
-            return obj
+        if retrieved is not None:
+            self._annotate_citations(obj, retrieved)
+        elif CITED_ENTRIES_KEY in obj:
+            # No bank: the prompt never mentioned citations, so anything the
+            # LLM emits here is noise. Dropping it keeps stored actions in
+            # no-bank runs byte-for-byte in the pre-bank shape (A/B control).
+            self._log(
+                f"  knowledge: no bank wired, dropping stray {CITED_ENTRIES_KEY!r} "
+                f"{obj[CITED_ENTRIES_KEY]!r} from the proposal"
+            )
+            del obj[CITED_ENTRIES_KEY]
+        return obj
+
+    def _retrieve_for_proposal(self, ctx: RetrievalContext) -> tuple[List[KnowledgeEntry], int]:
+        """Entries to show Agent 2 for `ctx`, and how many matches were left out.
+
+        Rule: query with `DEFAULT_PROPOSAL_FACTS_LIMIT`. If nothing was cut,
+        show exactly the store's ranking. If matches were cut, re-query for
+        all of them and rebuild the shown list as the highest-ranked
+        curated/derived entries plus up to
+        `DEFAULT_PROPOSAL_EXPERIENTIAL_SLOTS` experiential entries (in store
+        order), trimming the lowest-ranked curated/derived entries so the
+        list stays within the limit. Slots the experiential side cannot
+        fill go back to curated/derived and vice versa, so the list is as
+        long as the limit allows. Order is curated/derived first, then
+        experiential: the store's own trust order.
+        """
+        assert self.knowledge_bank is not None
+        limit = DEFAULT_PROPOSAL_FACTS_LIMIT
+        ranked = self.knowledge_bank.query(ctx, limit=limit)
+        total = self.knowledge_bank.count_matching(ctx)
+        omitted = max(total - len(ranked), 0)
+        if omitted == 0:
+            return ranked, 0
+
+        everything = self.knowledge_bank.query(ctx, limit=limit + omitted)
+        experiential = [e for e in everything if e.provenance == EXPERIENTIAL_PROVENANCE]
+        if not experiential:
+            return ranked, omitted
+        others = [e for e in everything if e.provenance != EXPERIENTIAL_PROVENANCE]
+        n_experiential = min(len(experiential), DEFAULT_PROPOSAL_EXPERIENTIAL_SLOTS)
+        n_others = min(len(others), limit - n_experiential)
+        n_experiential = min(len(experiential), limit - n_others)
+        shown = others[:n_others] + experiential[:n_experiential]
+        return shown, total - len(shown)
+
+    def _retrieval_context(
+        self, diagnosis: Dict[str, Any], current_config: Optional[Dict[str, Any]],
+    ) -> RetrievalContext:
+        """What the loop knows at proposal time, as the bank's retrieval keys.
+
+        Phase comes from Agent 1's first phase-dimension weak segment. The
+        value is LLM output, so an unknown spelling degrades to "no phase
+        constraint" with a log line rather than aborting the iteration.
+        """
+        phase: Optional[str] = None
+        for seg in diagnosis.get("weak_segments") or []:
+            if seg.get("dimension") != "phase":
+                continue
+            candidate = str(seg.get("value", "")).strip().lower()
+            if candidate in KNOWN_PHASES:
+                phase = candidate
+            else:
+                self._log(
+                    f"  knowledge: diagnosed phase {seg.get('value')!r} is not a known phase "
+                    f"{list(KNOWN_PHASES)}; retrieving without a phase constraint"
+                )
+            break
+        model_cfg = (current_config or {}).get("model") or {}
+        model = model_cfg.get("family") or DEFAULT_MODEL_FAMILY
+        return RetrievalContext(phase=phase, model=model, metric=self.target_metric)
+
+    def _annotate_citations(self, action: Dict[str, Any], retrieved: List[KnowledgeEntry]) -> None:
+        """Record what was shown, what was cited, and what supports the action (in place).
+
+        Advisory guardrails only (design doc section 6): a cited id that was
+        never shown is a hallucination and is dropped with a warning; an
+        action no retrieved recommendation supports is logged as an override;
+        a supporting recommendation whose params disagree with the proposal
+        on a shared key is listed under `supported_by_params_mismatch` and
+        logged (it still counts as support for the action name). The action
+        itself is never changed or blocked.
+        """
+        retrieved_ids = [entry.id for entry in retrieved]
+        shown = set(retrieved_ids)
+        cited: List[str] = []
+        for raw in action.get(CITED_ENTRIES_KEY) or []:
+            # The prompt shows ids as "[id]"; qwen3:8b echoes the brackets back
+            # about half the time, which is a formatting slip, not a hallucination.
+            entry_id = raw.strip().strip(_CITATION_BRACKETS).strip()
+            if not entry_id or entry_id in cited:
+                continue
+            if entry_id not in shown:
+                msg = (
+                    f"Agent 2 cited knowledge entry {entry_id!r} which was not in the "
+                    f"retrieved set {retrieved_ids}; dropping the citation (hallucinated)"
+                )
+                _log_module.warning(msg)
+                self._log(f"  ! warning: {msg}")
+                continue
+            cited.append(entry_id)
+
+        name = action.get("name")
+        supported_by = [
+            entry.id
+            for entry in retrieved
+            if entry.recommendation is not None and entry.recommendation.get("action") == name
+        ]
+        recommended_ids = [entry.id for entry in retrieved if entry.recommendation is not None]
+        if recommended_ids and not supported_by and name != "stop":
+            self._log(
+                f"  knowledge: override - {name!r} is not recommended by any retrieved entry "
+                f"{recommended_ids}; advisory only, continuing"
+            )
+
+        # Same action name, different params (e.g. the entry says max_depth=6,
+        # the proposal says 5): still support for the action, but worth a
+        # record, because "followed the rule" and "followed the rule's value"
+        # are different claims in the run report. Only keys both sides set are
+        # compared; a key the recommendation leaves open is not a disagreement.
+        proposed_params = action.get("params") or {}
+        params_mismatch: List[str] = []
+        for entry in retrieved:
+            if entry.id not in supported_by:
+                continue
+            recommended_params = entry.recommendation.get("params") or {}
+            shared_keys = set(recommended_params) & set(proposed_params)
+            if any(recommended_params[k] != proposed_params[k] for k in shared_keys):
+                params_mismatch.append(entry.id)
+        if params_mismatch:
+            self._log(
+                f"  knowledge: {name!r} is recommended by {params_mismatch} but with different "
+                f"params than proposed ({proposed_params}); advisory only, continuing"
+            )
+
+        action[CITED_ENTRIES_KEY] = cited
+        action[RETRIEVED_ENTRY_IDS_KEY] = retrieved_ids
+        action[SUPPORTED_BY_KEY] = supported_by
+        action[SUPPORTED_BY_PARAMS_MISMATCH_KEY] = params_mismatch
 
     def _retrain(self, iteration: int, config: Dict[str, Any]) -> str:
         """Run the pipeline with the new config; return the new forecast path."""
