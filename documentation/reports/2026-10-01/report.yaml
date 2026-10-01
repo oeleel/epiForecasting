@@ -33,7 +33,7 @@ sections:
             label: experiment configurations x cutoffs, deterministic
           - value: "7"
             label: constrained actions the loop can take
-          - value: "369"
+          - value: "409"
             label: tests passing
             tone: success
 
