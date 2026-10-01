@@ -4,7 +4,7 @@ These are *examples*, not the point. The lab we work with has its own
 in-house models; Nixtla is here because (a) it validates that the contract
 handles three very different model kinds - classical statistical, gradient
 boosted with lags, and neural - with one thin wrapper each, and (b) the
-advisor wants a cheap, uniform bank of competitors to select against.
+lab wants a cheap, uniform bank of competitors to select against.
 
 Each wrapper is deliberately minimal. Every one:
     - builds the Nixtla object from `self.params`

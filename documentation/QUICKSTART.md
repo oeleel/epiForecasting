@@ -108,8 +108,8 @@ python -m agent improve --cutoff-date 2024-11-02 --auto-apply --fake-pipeline \
 ```
 
 Options:
-- `--max-iterations N` — limit iterations (default: 5)
-- `--target-metric wis` — metric to optimize (wis, mape, mae, rmse, coverage_95, bias)
+- `--max-iterations N` - limit iterations (default: 5)
+- `--target-metric wis` - metric to optimize (wis, mape, mae, rmse, coverage_95, bias)
 
 ### 3. Review results
 
@@ -152,7 +152,7 @@ The improvement loop has two LLM agents:
 | `change_target_transform` | Switch between log/raw/sqrt target transforms |
 | `stop` | Declare convergence |
 
-All actions have guardrails — the LLM cannot set values outside safe ranges.
+All actions have guardrails - the LLM cannot set values outside safe ranges.
 The pipeline-specific actions (reweight, feature toggle, floor, target
 transform) apply to the legacy XGBoost family; other families get
 `adjust_hyperparameter` + `stop`, generated from their own declared knobs.

@@ -4,8 +4,8 @@
 
 The project has two layers:
 
-1. **Forecasting pipeline** (`src/`) — an XGBoost Direct Forecast Ensemble that predicts weekly hospital admissions for all US states using CDC FluSight data.
-2. **Agent framework** (`agent/`) — a domain-agnostic orchestration layer plus a flu-forecasting adapter that wraps the pipeline. Two cooperating LLM agents (Analyst + Engineer) read structured metrics, propose constrained improvement actions, retrain the model, and loop until convergence.
+1. **Forecasting pipeline** (`src/`) - an XGBoost Direct Forecast Ensemble that predicts weekly hospital admissions for all US states using CDC FluSight data.
+2. **Agent framework** (`agent/`) - a domain-agnostic orchestration layer plus a flu-forecasting adapter that wraps the pipeline. Two cooperating LLM agents (Analyst + Engineer) read structured metrics, propose constrained improvement actions, retrain the model, and loop until convergence.
 
 ---
 
@@ -13,14 +13,14 @@ The project has two layers:
 
 1. [What you'll be able to do after setup](#what-youll-be-able-to-do-after-setup)
 2. [Prerequisites](#prerequisites)
-3. [Step 1 — Clone the repository](#step-1--clone-the-repository)
-4. [Step 2 — Create a Python environment](#step-2--create-a-python-environment)
-5. [Step 3 — Install Python dependencies](#step-3--install-python-dependencies)
-6. [Step 4 — Install and run Ollama (the local LLM server)](#step-4--install-and-run-ollama-the-local-llm-server)
-7. [Step 5 — Pull the language model](#step-5--pull-the-language-model)
-8. [Step 6 — Get the forecast and ground-truth data](#step-6--get-the-forecast-and-ground-truth-data)
-9. [Step 7 — Run Milestone 1 (single-shot LLM report)](#step-7--run-milestone-1-single-shot-llm-report)
-10. [Step 8 — Run Milestone 2 (the two-agent improvement loop)](#step-8--run-milestone-2-the-two-agent-improvement-loop)
+3. [Step 1 - Clone the repository](#step-1--clone-the-repository)
+4. [Step 2 - Create a Python environment](#step-2--create-a-python-environment)
+5. [Step 3 - Install Python dependencies](#step-3--install-python-dependencies)
+6. [Step 4 - Install and run Ollama (the local LLM server)](#step-4--install-and-run-ollama-the-local-llm-server)
+7. [Step 5 - Pull the language model](#step-5--pull-the-language-model)
+8. [Step 6 - Get the forecast and ground-truth data](#step-6--get-the-forecast-and-ground-truth-data)
+9. [Step 7 - Run Milestone 1 (single-shot LLM report)](#step-7--run-milestone-1-single-shot-llm-report)
+10. [Step 8 - Run Milestone 2 (the two-agent improvement loop)](#step-8--run-milestone-2-the-two-agent-improvement-loop)
 11. [Inspecting past runs](#inspecting-past-runs)
 12. [Running the tests](#running-the-tests)
 13. [Configuration via environment variables](#configuration-via-environment-variables)
@@ -31,7 +31,7 @@ The project has two layers:
 
 ## What you'll be able to do after setup
 
-- Compute phase-aware evaluation metrics (overall, per horizon, per epidemic phase, per state) on any forecast CSV — including **WIS** and 95% interval coverage when quantile forecasts are provided.
+- Compute phase-aware evaluation metrics (overall, per horizon, per epidemic phase, per state) on any forecast CSV - including **WIS** and 95% interval coverage when quantile forecasts are provided.
 - Generate a natural-language diagnostic report from a local LLM that interprets those metrics (Milestone 1).
 - Run the **two-agent improvement loop**: Agent 1 (Analyst) diagnoses model weaknesses, Agent 2 (Engineer) picks an action from a constrained catalog, the system applies it, retrains, re-evaluates, and iterates (Milestone 2).
 - Browse and compare past improvement runs from a SQLite tracker.
@@ -50,7 +50,7 @@ The project has two layers:
 | **Python** | 3.11 | Other 3.x versions may work but are untested |
 | **Disk space** | ~10 GB | ~5 GB for the LLM model, ~1 GB for Python deps, the rest for data |
 | **RAM** | 16 GB recommended | The 8B LLM uses ~6 GB while running |
-| **GPU** | Built-in | Ollama uses the Apple Silicon GPU automatically — no setup needed |
+| **GPU** | Built-in | Ollama uses the Apple Silicon GPU automatically - no setup needed |
 | **Git** | Any recent version | Comes with Xcode Command Line Tools |
 | **Homebrew** | Latest | The easiest way to install Ollama and Python on macOS |
 
@@ -68,7 +68,7 @@ brew install python@3.11
 
 ---
 
-## Step 1 — Clone the repository
+## Step 1 - Clone the repository
 
 ```bash
 git clone https://github.com/<your-org>/epiForecasting.git
@@ -79,18 +79,18 @@ cd epiForecasting
 
 ---
 
-## Step 2 — Create a Python environment
+## Step 2 - Create a Python environment
 
-We strongly recommend using a virtual environment so the project's dependencies don't conflict with your system Python.
+A virtual environment is strongly recommended so the project's dependencies don't conflict with your system Python.
 
-**Option A — `venv` (built into Python):**
+**Option A - `venv` (built into Python):**
 
 ```bash
 python3.11 -m venv .venv
 source .venv/bin/activate
 ```
 
-**Option B — `conda`:**
+**Option B - `conda`:**
 
 ```bash
 conda create -n epiforecast python=3.11 -y
@@ -101,7 +101,7 @@ After activation your shell prompt should show `(.venv)` or `(epiforecast)`.
 
 ---
 
-## Step 3 — Install Python dependencies
+## Step 3 - Install Python dependencies
 
 The project has two dependency groups:
 
@@ -131,9 +131,9 @@ You should see `OK`.
 
 ---
 
-## Step 4 — Install and run Ollama (the local LLM server)
+## Step 4 - Install and run Ollama (the local LLM server)
 
-Ollama is a small native server that runs open-source language models locally and exposes an OpenAI-compatible HTTP API. We use it so the framework can stay completely offline and free.
+Ollama is a small native server that runs open-source language models locally and exposes an OpenAI-compatible HTTP API. It is used so the framework can stay completely offline and free.
 
 ### Install Ollama
 
@@ -167,7 +167,7 @@ You should get a JSON response (likely an empty model list until step 5).
 
 ---
 
-## Step 5 — Pull the language model
+## Step 5 - Pull the language model
 
 With `ollama serve` running, open a **second** terminal and pull the Qwen 3 8B model:
 
@@ -193,12 +193,12 @@ If you get a coherent reply, the LLM side is working.
 
 ---
 
-## Step 6 — Get the forecast and ground-truth data
+## Step 6 - Get the forecast and ground-truth data
 
 The agent framework reads two things:
 
-1. **A forecast CSV** — the model's predictions
-2. **The CDC ground-truth file** — actual hospital admissions
+1. **A forecast CSV** - the model's predictions
+2. **The CDC ground-truth file** - actual hospital admissions
 
 ### 6a. Ground-truth data
 
@@ -235,11 +235,11 @@ The output CSV will be saved under `outputs/`.
 
 ---
 
-## Step 7 — Run Milestone 1 (single-shot LLM report)
+## Step 7 - Run Milestone 1 (single-shot LLM report)
 
 Milestone 1 is a single LLM pass: load a forecast, compute metrics, send them to the model, get back a natural-language diagnostic report. Useful as a quick sanity check that everything is wired up.
 
-### Option A — The Milestone 1 demo script (recommended for first-time users)
+### Option A - The Milestone 1 demo script (recommended for first-time users)
 
 ```bash
 python scripts/demo_milestone1.py
@@ -257,7 +257,7 @@ To see the metrics without calling the LLM (no Ollama needed):
 python scripts/demo_milestone1.py --no-llm
 ```
 
-### Option B — The `summarize` CLI command
+### Option B - The `summarize` CLI command
 
 ```bash
 # Metrics only — no LLM needed
@@ -289,7 +289,7 @@ If everything is wired up correctly you'll see:
 
 ---
 
-## Step 8 — Run Milestone 2 (the two-agent improvement loop)
+## Step 8 - Run Milestone 2 (the two-agent improvement loop)
 
 Milestone 2 is the headline feature. Each iteration runs two LLM calls and one model retrain:
 
@@ -299,9 +299,9 @@ Milestone 2 is the headline feature. Each iteration runs two LLM calls and one m
 4. The pipeline retrains XGBoost with the mutated config and writes a new forecast CSV.
 5. The system re-evaluates, logs the iteration to SQLite, and decides whether to loop or stop.
 
-The LLM is in the **reasoning role only**. Python computes metrics, validates JSON, and applies actions with hard guardrails. The LLM cannot push `max_depth=50` even if it wants to — that gets rejected before retraining.
+The LLM is in the **reasoning role only**. Python computes metrics, validates JSON, and applies actions with hard guardrails. The LLM cannot push `max_depth=50` even if it wants to - that gets rejected before retraining.
 
-### Option A — The Milestone 2 demo script (recommended)
+### Option A - The Milestone 2 demo script (recommended)
 
 ```bash
 # Real LLM, fake pipeline (file copy instead of XGBoost retrain). Fast, ~30-60s total.
@@ -319,7 +319,7 @@ python scripts/demo_milestone2.py --auto-apply --cutoff-date 2024-12-21
 
 The demo prints each iteration's full reasoning trace: Agent 1's diagnosis (summary, focus, weak segments, hypotheses), then Agent 2's action with its rationale and expected effect.
 
-### Option B — The `improve` CLI command
+### Option B - The `improve` CLI command
 
 ```bash
 # Default: regenerates baseline at the cutoff, runs 3 iterations, optimizes WIS
@@ -396,7 +396,7 @@ The loop halts on **any** of:
 - Improvement falls below `--no-improvement-threshold` (default 1%) for two consecutive iterations
 - A pipeline / LLM error in the current iteration
 
-The **best** forecast across all iterations is always retained — never the latest. It's stamped as `best_forecast.csv` in the run directory.
+The **best** forecast across all iterations is always retained - never the latest. It's stamped as `best_forecast.csv` in the run directory.
 
 ### Run output layout
 
@@ -448,7 +448,7 @@ run_id                  started_at              iters  best_wis  status
 
 ## Running the tests
 
-The agent framework has a complete unit + integration test suite that runs in under one second. **No LLM, no Ollama, no XGBoost retraining required** — the orchestrator is tested with a fake LLM client and a scripted pipeline runner.
+The agent framework has a complete unit + integration test suite that runs in under one second. **No LLM, no Ollama, no XGBoost retraining required** - the orchestrator is tested with a fake LLM client and a scripted pipeline runner.
 
 ```bash
 # Run all 77 tests
@@ -557,7 +557,6 @@ epiForecasting/
 ├── analysis/                       # SHAP and dashboard scripts
 ├── documentation/
 │   ├── requirements.txt            # Python dependencies
-│   ├── meeting-notes/              # Research meeting summaries
 │   └── *.md                        # Design docs
 └── README.md                       # This file
 ```
@@ -607,7 +606,7 @@ python -m agent improve --cutoff-date 2024-11-02 --model <one-of-yours> --auto-a
 
 ### `! Agent 1 output didn't validate (...). Retrying with error feedback`
 
-Not actually an error — you're seeing the orchestrator's repair logic. Qwen3 8B occasionally returns prose without JSON. The system appends the error to the prompt and re-invokes the LLM once. If the retry succeeds (it almost always does), the iteration continues normally. Two consecutive failures abort the iteration cleanly.
+Not actually an error - you're seeing the orchestrator's repair logic. Qwen3 8B occasionally returns prose without JSON. The system appends the error to the prompt and re-invokes the LLM once. If the retry succeeds (it almost always does), the iteration continues normally. Two consecutive failures abort the iteration cleanly.
 
 If you see this on every iteration, consider:
 - A bigger model: `--model qwen3:14b` or larger
@@ -625,7 +624,7 @@ The pre-computed forecast batch is missing. Either pull it from the repo with `g
 python scripts/generate_forecasts_nov_apr.py
 ```
 
-This is slow (it trains the ensemble multiple times across the season). Note that for Milestone 2 you don't actually *need* a pre-existing baseline CSV — `agent improve --cutoff-date <date>` will regenerate one as iteration 0.
+This is slow (it trains the ensemble multiple times across the season). Note that for Milestone 2 you don't actually *need* a pre-existing baseline CSV - `agent improve --cutoff-date <date>` will regenerate one as iteration 0.
 
 ### `FileNotFoundError: ... flusight_hospital_admissions.csv`
 
@@ -662,8 +661,8 @@ Any OpenAI-compatible endpoint works. Set `LLM_BASE_URL` to your provider's URL 
 
 ## Where to go next
 
-- Read [`documentation/agentic_framework_design.md`](documentation/agentic_framework_design.md) for the framework's architectural rationale.
-- Read [`documentation/agent_framework_report.md`](documentation/agent_framework_report.md) for a deeper look at Milestone 1.
+- Read [`documentation/knowledge-bank-design.md`](documentation/knowledge-bank-design.md) for the current direction (lab-authored guardrails first) and `the meeting syncs` for the decisions behind it.
+- The March 2026 framing docs ([`documentation/archive/agentic_framework_design.md`](documentation/archive/agentic_framework_design.md), [`documentation/archive/agent_framework_report.md`](documentation/archive/agent_framework_report.md)) are superseded (2026-08-27: exploration tool, not real-time) and kept for history only.
 - See [`.claude/CLAUDE.md`](.claude/CLAUDE.md) for the development guide and milestone roadmap.
-- See `agent/orchestrator.py` and `agent/adapters/flu_forecast.py` for the Milestone 2 implementation. The action catalog at the top of `flu_forecast.py` is the easiest entry point — adding a new action is one entry there plus a clause in `apply_action`.
+- See `agent/orchestrator.py` and `agent/adapters/flu_forecast.py` for the Milestone 2 implementation. The action catalog at the top of `flu_forecast.py` is the easiest entry point - adding a new action is one entry there plus a clause in `apply_action`.
 - Run `python -m agent --help` to see all CLI commands at a glance.

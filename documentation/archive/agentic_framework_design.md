@@ -1,3 +1,5 @@
+> **Superseded 2026-08-27** (exploration tool, not real-time); see `documentation/knowledge-bank-design.md` and `documentation/fall-2026-roadmap.md`. Kept in `documentation/archive/` for the March 2026 framing only.
+
 # Agentic Forecasting Framework — Conceptual Design
 
 > Prepared for Friday meeting discussion | March 2026

@@ -1,0 +1,53 @@
+# Template for a curated knowledge entry. Copy this file to a name WITHOUT the
+# leading underscore (files starting with "_" are skipped by the loader), fill
+# in every field, then run:  python -m agent knowledge validate
+#
+# A file is a YAML LIST of entries. Every key below is validated by
+# agent/knowledge/schema.py; unknown keys are an error (a typo must be loud).
+# Do not use em dashes anywhere; use "-".
+
+- id: example-entry-slug-v1              # required. Lowercase slug [a-z0-9-], unique across
+                                    #   ALL files. Version the slug (-v2) when the
+                                    #   meaning changes; edit in place for typos.
+  provenance: curated               # required. Always `curated` in these files.
+                                    #   `derived` / `experiential` rows are written by code.
+  category: domain_dynamics         # required. One of: model_characteristics (which models
+                                    #   do well where, with what settings) | input_data
+                                    #   (data source properties) | forecasts (properties of
+                                    #   past forecasts and their errors) | domain_dynamics
+                                    #   (epidemiological regularities).
+  # statement: required. ONE sentence, human-readable; this exact text is what the
+  #   LLM sees. A folded `>` scalar may span lines (no blank line inside it), and
+  #   inside the block a "#" is text, not a comment.
+  statement: >
+    Season onset = 3 consecutive weeks of increase above threshold T.
+  entities:                         # optional. Typed references (graph-ready). Keys:
+    phase: onset                    #   model, phase, data_source, season, metric.
+                                    #   `phase` must be one of: onset, peak, decline,
+                                    #   surge, plateau, approaching_peak, off_season.
+  context:                          # optional. WHEN the entry is relevant = retrieval
+    phase: [onset]                  #   keys. Omit a key to mean "applies always".
+    # model: [xgboost_direct]       #   phase/model/metric are LISTS (never bare strings,
+    # metric: [wis]                 #   never empty). model/metric are free strings.
+    season_week: [38, 46]           #   Inclusive epi-week-of-year window, 1 <= lo <= hi <= 53
+                                    #   (week 40 is early October). Cannot wrap the year.
+  payload:                          # optional. Free JSON for structured data. One
+    rule: {consecutive_weeks: 3}    #   validated convention for "what to do" entries:
+    # recommendation:               #   action = an adapter action name (the `name`s in
+    #   action: reweight_training_samples        #   agent/adapters/flu_forecast.py
+    #   params: {dimension: approaching_peak}    #   get_available_actions) or the literal
+    #   note: free text, not shown to the LLM    #   `not_yet_available`. `params` is
+                                    #   required (use {} when there are none).
+  evidence:                         # required. Only these three keys are allowed.
+    source: "A. Adiga, meeting 2026-09-24"   # required, non-empty: who said it,
+                                    #   which meeting/paper/job. Put extra notes in
+                                    #   payload, not here.
+    n_observations: null            # experiential only: runs behind the claim. null here.
+    reward_delta: null              # experiential only: mean metric delta. null here.
+  confidence: medium                # required. high | medium | low. `high` = stated more
+                                    #   than once or a definition; `medium` = stated once
+                                    #   or has an open parameter; `low` = a hunch.
+  llm_gloss: null                   # leave null. Reserved for an LLM's one-line
+                                    #   interpretation; always rendered as
+                                    #   "[interpretation: ...]", never a retrieval key.
+  created_at: 2026-09-30            # required. ISO date you wrote the entry.

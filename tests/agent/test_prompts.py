@@ -11,16 +11,16 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from agent.adapters.flu_forecast import FluForecastAdapter
-from agent.model_selection import VALID_METRICS, VALID_PHASES
 from agent.prompt_templates import (
+    NO_KNOWN_FACTS_TEXT,
     extract_json_from_response,
     format_action_proposal_prompt,
-    format_goal_parse_prompt,
+    format_known_facts_block,
     format_structured_diagnosis_prompt,
     validate_action_proposal,
     validate_diagnosis,
-    validate_goal,
 )
+from tests.agent.fakes import fake_entry
 
 
 # ---- fixtures --------------------------------------------------------------
@@ -239,27 +239,141 @@ def test_validate_action_params_must_be_dict():
         pass
 
 
-def test_validate_goal_rejects_missing_keys():
-    try:
-        validate_goal({"metric": "wis"}, VALID_METRICS, VALID_PHASES)
-        assert False, "should have raised"
-    except ValueError as e:
-        assert "phase" in str(e)
-    validate_goal(
-        {"metric": "wis", "phase": "peak", "rationale": "the sentence said peak"},
-        VALID_METRICS,
-        VALID_PHASES,
+# ---- known facts block + cited_entries (design unit 4) ---------------------
+
+def test_action_prompt_without_bank_omits_known_facts_section_and_cited_entries():
+    # known_facts=None means "no bank consulted": the prompt must be the
+    # pre-bank prompt, byte for byte, so a --no-knowledge run is a true control.
+    catalog = FluForecastAdapter().get_available_actions()
+    prompt = format_action_proposal_prompt(
+        diagnosis=_valid_diagnosis(),
+        history=[],
+        action_catalog=catalog,
+        domain_context="ctx",
+        target_metric="wis",
     )
+    assert "## Known facts for this diagnosis" not in prompt
+    assert NO_KNOWN_FACTS_TEXT not in prompt
+    assert "cited_entries" not in prompt
+    assert "Known facts are advisory" not in prompt
+    # The spliced fragments collapse without leaving extra blank lines behind.
+    assert "Log compression at peak.\n\n## Iteration History (most recent last)\n" in prompt
+    assert "\n\n\n" not in prompt
+    assert (
+        '"expected_effect": "<one sentence: what you expect to happen to wis>"\n}\n\n'
+        "Output ONLY the JSON object. No code fences, no commentary.\n"
+    ) in prompt
 
 
-def test_format_goal_parse_prompt_lists_legal_values():
-    prompt = format_goal_parse_prompt("best at the peak", VALID_METRICS, VALID_PHASES)
-    for metric in VALID_METRICS:
-        assert metric in prompt
-    for phase in VALID_PHASES:
-        assert phase in prompt
-    assert "Output ONLY the JSON object" in prompt
-    assert "off_season" not in prompt
+def test_action_prompt_with_bank_but_no_matches_keeps_section_and_schema_line():
+    catalog = FluForecastAdapter().get_available_actions()
+    prompt = format_action_proposal_prompt(
+        diagnosis=_valid_diagnosis(),
+        history=[],
+        action_catalog=catalog,
+        domain_context="ctx",
+        target_metric="wis",
+        known_facts=format_known_facts_block([]),
+    )
+    assert "## Known facts for this diagnosis" in prompt
+    assert NO_KNOWN_FACTS_TEXT in prompt
+    assert '"cited_entries": ["<entry id>", ...]' in prompt
+    assert "`cited_entries` is optional" in prompt
+    assert "Known facts are advisory" in prompt
+    assert "\n\n\n" not in prompt
+
+
+def test_action_prompt_known_facts_block_sits_between_diagnosis_and_history():
+    catalog = FluForecastAdapter().get_available_actions()
+    entry = fake_entry("peak-depth-v1", statement="Deeper trees help at peak.")
+    block = format_known_facts_block([entry])
+    prompt = format_action_proposal_prompt(
+        diagnosis=_valid_diagnosis(),
+        history=[],
+        action_catalog=catalog,
+        domain_context="ctx",
+        target_metric="wis",
+        known_facts=block,
+    )
+    i_diag = prompt.index("## Diagnosis from Agent 1")
+    i_facts = prompt.index("## Known facts for this diagnosis")
+    i_hist = prompt.index("## Iteration History")
+    assert i_diag < i_facts < i_hist
+    assert "- [peak-depth-v1] [C, high] Deeper trees help at peak." in prompt
+    assert NO_KNOWN_FACTS_TEXT not in prompt
+    assert '"cited_entries": ["<entry id>", ...]' in prompt
+    assert "`cited_entries` is optional" in prompt
+
+
+def test_format_known_facts_block_shows_id_tag_recommendation_and_omitted():
+    entries = [
+        fake_entry(
+            "peak-reweight-v1",
+            statement="Up-weight peak rows.",
+            action="reweight_training_samples",
+            params={"dimension": "phase", "value": "peak", "weight": 2.0},
+        ),
+        fake_entry("peak-plain-v1", statement="Peak is under-predicted.", confidence="medium"),
+    ]
+    block = format_known_facts_block(entries, omitted=3)
+    lines = block.split("\n")
+    assert lines[0] == (
+        "- [peak-reweight-v1] [C, high] Up-weight peak rows. "
+        "-> try reweight_training_samples(dimension=phase, value=peak, weight=2.0)"
+    )
+    assert lines[1] == "- [peak-plain-v1] [C, medium] Peak is under-predicted."
+    assert lines[2] == "- (3 more matching entries omitted; narrow the retrieval context)"
+    assert len(lines) == 3
+
+
+def test_format_known_facts_block_empty_is_none_retrieved():
+    assert format_known_facts_block([]) == NO_KNOWN_FACTS_TEXT
+
+
+def test_format_known_facts_block_negative_omitted_raises():
+    try:
+        format_known_facts_block([], omitted=-1)
+        assert False
+    except ValueError as e:
+        assert "omitted" in str(e)
+
+
+def test_validate_action_cited_entries_absent_passes():
+    catalog = FluForecastAdapter().get_available_actions()
+    action = _valid_action()
+    assert "cited_entries" not in action
+    validate_action_proposal(action, catalog)
+
+
+def test_validate_action_cited_entries_list_of_strings_passes():
+    catalog = FluForecastAdapter().get_available_actions()
+    action = _valid_action()
+    action["cited_entries"] = ["peak-depth-v1", "peak-reweight-v1"]
+    validate_action_proposal(action, catalog)
+    action["cited_entries"] = []
+    validate_action_proposal(action, catalog)
+
+
+def test_validate_action_cited_entries_not_a_list_raises():
+    catalog = FluForecastAdapter().get_available_actions()
+    action = _valid_action()
+    action["cited_entries"] = "peak-depth-v1"
+    try:
+        validate_action_proposal(action, catalog)
+        assert False
+    except ValueError as e:
+        assert "cited_entries" in str(e)
+
+
+def test_validate_action_cited_entries_non_string_item_raises():
+    catalog = FluForecastAdapter().get_available_actions()
+    action = _valid_action()
+    action["cited_entries"] = ["peak-depth-v1", 7]
+    try:
+        validate_action_proposal(action, catalog)
+        assert False
+    except ValueError as e:
+        assert "cited_entries" in str(e)
 
 
 ALL = [
@@ -281,8 +395,16 @@ ALL = [
     test_validate_action_empty_rationale_raises,
     test_validate_action_params_must_be_dict,
     test_extract_json_qwen3_think_tags,  # was defined but never registered (drift fix)
-    test_validate_goal_rejects_missing_keys,
-    test_format_goal_parse_prompt_lists_legal_values,
+    test_action_prompt_without_bank_omits_known_facts_section_and_cited_entries,
+    test_action_prompt_with_bank_but_no_matches_keeps_section_and_schema_line,
+    test_action_prompt_known_facts_block_sits_between_diagnosis_and_history,
+    test_format_known_facts_block_shows_id_tag_recommendation_and_omitted,
+    test_format_known_facts_block_empty_is_none_retrieved,
+    test_format_known_facts_block_negative_omitted_raises,
+    test_validate_action_cited_entries_absent_passes,
+    test_validate_action_cited_entries_list_of_strings_passes,
+    test_validate_action_cited_entries_not_a_list_raises,
+    test_validate_action_cited_entries_non_string_item_raises,
 ]
 
 

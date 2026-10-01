@@ -31,7 +31,10 @@ MODULES = [
     "tests.agent.test_model_selection",
     "tests.agent.test_run_report",
     "tests.agent.test_phase_segmentation",
-    "tests.agent.test_goal_parser",
+    "tests.agent.test_knowledge_bank",
+    "tests.agent.test_experiment_import",
+    "tests.agent.test_peak_rectification",
+    "tests.agent.test_demo_knowledge_bank",
 ]
 
 

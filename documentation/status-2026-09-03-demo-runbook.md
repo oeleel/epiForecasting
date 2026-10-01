@@ -8,11 +8,11 @@ works" was executed, not read from docs. Companion to
 > (revert-on-regression), 2.3 (goal parser) and 6.1 (run report) have landed
 > on `main`; `improve` now writes `report.md` next to the run and `agent
 > report <run_id>` regenerates it. The "runs.db empty" claim below was true of
-> the desktop only - `outputs/agent_runs/` is gitignored and per-machine; the
-> MacBook holds 15 live runs from the 09-09 review. Items 1-2 and the 6.1 half
+> one machine only - `outputs/agent_runs/` is gitignored and per-machine; another
+> machine holds 15 live runs from the 09-09 review. Items 1-2 and the 6.1 half
 > of item 6 in "What still needs implementing" are done. Priorities were reset
-> by the advisor on 09-10: knowledge bank first
-> (`meeting-notes/2026-09-10-knowledge-bank-first.md`).
+> by A. Adiga on 09-10: knowledge bank first
+> (sync of 2026-09-09).
 
 ## What works (verified)
 
@@ -45,13 +45,13 @@ works" was executed, not read from docs. Companion to
   ~180 spikes plus gaps and zero-reporting.
 - **Milestones 2-3 (improvement loop + tracking):** code, tests, and the
   `history` / `status` / `compare` CLI are in place. NOT exercised live on
-  2026-09-03: no LLM reachable (no Ollama on the desktop, `runs.db` empty).
+  2026-09-03: no LLM reachable (no Ollama on the verification machine, `runs.db` empty).
   This is the one path without fresh end-to-end evidence.
 
 ## Demo runbook for the researcher
 
 Order it as the loop the lab runs by hand: is the data clean -> which model
-do I start from -> refine it -> what did we learn. Steps 1-4 need no LLM.
+to start from -> refine it -> what was learned. Steps 1-4 need no LLM.
 
 ```bash
 cd ~/repos/epiForecasting && source .venv/bin/activate
@@ -59,13 +59,13 @@ cd ~/repos/epiForecasting && source .venv/bin/activate
 # 1. Is the data trustworthy?  (~10 s)
 python -m agent check-data --cutoff-date 2026-01-24 --dry-run
 
-# 2. Which model do I start from?  Quick smoke live (~15 s); cite the full run
+# 2. Which model to start from?  Quick smoke live (~15 s); cite the full run
 python scripts/demo_stage1.py
 python -m agent select-model --stride-weeks 4 --exclude-locations US \
     --json outputs/model_selection/thursday.json \
     --report outputs/model_selection/thursday.md        # ~10 min, run the night before
 
-# 3. "The goal is a parameter" (advisor's explicit ask) - same warm-up, no refit
+# 3. "The goal is a parameter" (Adiga's explicit ask) - same warm-up, no refit
 python -m agent select-model --stride-weeks 4 --exclude-locations US --metric wis --phase peak
 
 # 4. Plugging in a lab model = two methods, no registration
@@ -81,7 +81,7 @@ python -m agent history
 python -m agent status <run_id>
 ```
 
-Talking points mapped to the 09-02 decisions:
+Points mapped to the 09-02 decisions:
 - Nixtla as the template -> step 2.
 - Templates over code generation -> step 5: Agent 2 can only tune what the
   family's `param_space()` declares.
@@ -108,8 +108,9 @@ Roadmap order. Items 0.3, 0.4, and Workstream 1 are done and ticked in
 `fall-2026-roadmap.md`.
 
 1. ~~**3.1 Revert-on-regression.**~~ Done 2026-09-03 (`f327adc`).
-2. ~~**2.3 Natural-language goal.**~~ Done 2026-09-09 (`agent/goal_parser.py`);
-   advisor 09-10 demoted the English layer to low priority.
+2. ~~**2.3 Natural-language goal.**~~ Done 2026-09-09; Adiga 09-10 rated the
+   English layer cosmetic; **demoted 2026-09-30 to `scrap/goal_parser/`**. The
+   structured `SelectionGoal` + `--metric/--phase` remain.
 3. **3.2 Case retrieval over `runs.db`.** Nothing in the prompts consults past
    runs.
 4. **Workstream 4, warm start (paper centerpiece).** `get_state` / `set_state`
@@ -117,6 +118,6 @@ Roadmap order. Items 0.3, 0.4, and Workstream 1 are done and ticked in
    `retrain_from_scratch` action, no regime-change flag, no experiment harness.
 5. **Workstream 5, knowledge bank.** No heuristics file, no prompt injection.
 6. **Workstream 6, run reporting.** 6.1 done 2026-09-09 (`agent/run_report.py`,
-   per-run `report.md`). 6.2 cross-run view still open. Advisor called this
+   per-run `report.md`). 6.2 cross-run view still open. Adiga called this
    the most important output.
 7. **Workstream 7, paper.** Outline by November, results freeze December.

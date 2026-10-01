@@ -14,14 +14,37 @@ Two prompt families:
                                   This is the structured handoff that
                                   Agent 2 (the Engineer) consumes.
 
+    ACTION_PROPOSAL_PROMPT     - Milestone 2 (Agent 2, the Engineer):
+                                  diagnosis + history + action catalog +
+                                  the knowledge bank's KNOWN FACTS for this
+                                  diagnosis (design unit 4, injection point
+                                  B). The agent is asked to CITE the entry
+                                  ids it acted on in `cited_entries`, and
+                                  stays free to propose an unsupported
+                                  action if the rationale says why (A. Adiga,
+                                  2026-09-24). With no bank (`known_facts=None`)
+                                  the known-facts section and every mention
+                                  of `cited_entries` are left out, so the
+                                  prompt is byte-identical to the pre-bank
+                                  one.
+
 Validation helpers (`validate_diagnosis`, `extract_json_from_response`)
 live alongside the templates so the orchestrator can repair malformed
 LLM output without pulling in extra dependencies.
+
+Known-facts rendering: `format_known_facts_block` prefixes every line of the
+shared `render_entry_line` format with the entry id (`- [<id>] [C, high] ...`)
+because the id is what the LLM has to echo back in `cited_entries`; a
+citation the orchestrator cannot map to a shown id is dropped as a
+hallucination, so ids must be visible verbatim in the prompt.
 """
 
 import json
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, Iterable, List, Optional
+
+from agent.knowledge.render import render_entry_line
+from agent.knowledge.schema import KnowledgeEntry
 
 
 # ----------------------------------------------------------------------------
@@ -476,7 +499,7 @@ improve the target metric on the next iteration.
 ## Diagnosis from Agent 1
 
 {diagnosis_block}
-
+{known_facts_section}
 ## Iteration History (most recent last)
 
 {history_block}
@@ -512,7 +535,7 @@ weak segment in the diagnosis. Consider:
 - Stay within the guardrail ranges. The system will reject out-of-range
   values and force a retry.
 - If you believe no further action is likely to improve the metric, emit
-  the `stop` action.
+  the `stop` action.{cited_entries_task_bullet}
 
 Output a single JSON object (no surrounding prose, no markdown fences):
 
@@ -520,16 +543,89 @@ Output a single JSON object (no surrounding prose, no markdown fences):
   "name": "<one of: {action_names}>",
   "params": {{ ... action-specific params ... }},
   "rationale": "<one sentence: why this action and why now>",
-  "expected_effect": "<one sentence: what you expect to happen to {target_metric}>"
+  "expected_effect": "<one sentence: what you expect to happen to {target_metric}>"{cited_entries_schema_line}
 }}
-
+{cited_entries_guidance}
 Output ONLY the JSON object. No code fences, no commentary.
+"""
+
+
+# The three fragments spliced into ACTION_PROPOSAL_PROMPT when a knowledge bank
+# is consulted (`known_facts` is not None). Each carries its own surrounding
+# newlines so that, with every fragment empty, the rendered prompt is
+# byte-identical to the pre-bank template: a `--no-knowledge` run must be a
+# true control, not "the same prompt with an empty facts section".
+KNOWN_FACTS_SECTION_TEMPLATE = """
+## Known facts for this diagnosis
+
+Entries retrieved from the knowledge bank for the diagnosed phase, the
+active model family and the target metric. Each line starts with its entry
+id in square brackets; cite those ids in `cited_entries`.
+
+{known_facts_block}
+"""
+
+CITED_ENTRIES_TASK_BULLET = """
+- Known facts are advisory, not orders. When your action follows one or
+  more of them, list their ids in `cited_entries`. You may propose an action
+  that no known fact supports, but then say why in `rationale`."""
+
+CITED_ENTRIES_SCHEMA_LINE = """,
+  "cited_entries": ["<entry id>", ...]"""
+
+CITED_ENTRIES_GUIDANCE = """
+`cited_entries` is optional: the ids of the known-fact entries your action
+relies on, exactly as shown in square brackets above (empty list if none).
 """
 
 
 # Validation rules for Agent 2's output. Like the diagnosis schema, this is
 # a hand-rolled validator — no jsonschema dependency.
 REQUIRED_ACTION_KEYS: List[str] = ["name", "params", "rationale", "expected_effect"]
+# Optional key: the ids of the known-fact entries the action relies on.
+CITED_ENTRIES_KEY = "cited_entries"
+
+# What the known-facts section says when a bank was consulted and nothing
+# matched. Never an empty string: once a bank is in play the section must
+# visibly exist so the LLM is not left guessing whether facts were withheld.
+# (With no bank at all the section is left out entirely; see
+# `format_action_proposal_prompt`.)
+NO_KNOWN_FACTS_TEXT = "(none retrieved)"
+
+# `render_entry_line` yields "- [tag] statement..."; the id goes between the
+# bullet and the tag so a line reads "- [<id>] [C, high] statement".
+_ENTRY_LINE_BULLET = "- "
+
+
+def format_known_facts_block(entries: Iterable[KnowledgeEntry], *, omitted: int = 0) -> str:
+    """Render retrieved entries as `- [<id>] <shared entry line>` lines.
+
+    Reuses `agent.knowledge.render.render_entry_line` for everything after the
+    id so the proposal prompt and the adapter's KNOWN FACTS block describe an
+    entry identically; only the id prefix is added here, because citing by id
+    is what this prompt asks the LLM to do. `omitted` > 0 appends an explicit
+    count line, like `render_known_facts`. Returns `NO_KNOWN_FACTS_TEXT` when
+    there are no entries.
+    """
+    if not isinstance(omitted, int) or isinstance(omitted, bool) or omitted < 0:
+        raise ValueError(
+            f"format_known_facts_block: omitted must be an integer >= 0, got {omitted!r}"
+        )
+    lines: List[str] = []
+    for entry in entries:
+        rendered = render_entry_line(entry)
+        if not rendered.startswith(_ENTRY_LINE_BULLET):
+            raise ValueError(
+                f"render_entry_line changed its bullet; expected {_ENTRY_LINE_BULLET!r} prefix, "
+                f"got {rendered[:20]!r}"
+            )
+        lines.append(f"{_ENTRY_LINE_BULLET}[{entry.id}] {rendered[len(_ENTRY_LINE_BULLET):]}")
+    if not lines:
+        return NO_KNOWN_FACTS_TEXT
+    if omitted > 0:
+        noun = "entry" if omitted == 1 else "entries"
+        lines.append(f"- ({omitted} more matching {noun} omitted; narrow the retrieval context)")
+    return "\n".join(lines)
 
 
 def format_action_proposal_prompt(
@@ -539,6 +635,7 @@ def format_action_proposal_prompt(
     domain_context: str,
     target_metric: str = "wis",
     current_config: Dict[str, Any] = None,
+    known_facts: Optional[str] = None,
 ) -> str:
     """Build Agent 2's action-proposal prompt.
 
@@ -552,6 +649,12 @@ def format_action_proposal_prompt(
         target_metric: Name of the metric being optimized (for the prompt).
         current_config: Optional pipeline config dict. If provided, key
             values are shown so the LLM avoids no-op proposals.
+        known_facts: Pre-rendered known-facts block for this diagnosis
+            (`format_known_facts_block`), or None when no knowledge bank is
+            consulted. None leaves out the "Known facts" section and every
+            mention of `cited_entries`, so the prompt is byte-identical to
+            the pre-bank prompt; a bank that matched nothing passes
+            NO_KNOWN_FACTS_TEXT instead, which keeps the section.
 
     Returns:
         Fully formatted prompt string.
@@ -692,6 +795,18 @@ def format_action_proposal_prompt(
     # legacy-only actions it cannot take.
     action_names = " | ".join(a["name"] for a in action_catalog)
 
+    # ---- Knowledge-bank fragments (all empty when no bank is consulted) ------
+    if known_facts is None:
+        known_facts_section = ""
+        cited_entries_task_bullet = ""
+        cited_entries_schema_line = ""
+        cited_entries_guidance = ""
+    else:
+        known_facts_section = KNOWN_FACTS_SECTION_TEMPLATE.format(known_facts_block=known_facts)
+        cited_entries_task_bullet = CITED_ENTRIES_TASK_BULLET
+        cited_entries_schema_line = CITED_ENTRIES_SCHEMA_LINE
+        cited_entries_guidance = CITED_ENTRIES_GUIDANCE
+
     return ACTION_PROPOSAL_PROMPT.format(
         action_names=action_names,
         domain_context=domain_context,
@@ -699,6 +814,10 @@ def format_action_proposal_prompt(
         history_block=history_block,
         action_catalog_block=action_catalog_block,
         current_config_block=current_config_block,
+        known_facts_section=known_facts_section,
+        cited_entries_task_bullet=cited_entries_task_bullet,
+        cited_entries_schema_line=cited_entries_schema_line,
+        cited_entries_guidance=cited_entries_guidance,
         target_metric=target_metric,
     )
 
@@ -744,116 +863,12 @@ def validate_action_proposal(
     if not isinstance(obj["expected_effect"], str) or not obj["expected_effect"].strip():
         raise ValueError("Action 'expected_effect' must be a non-empty string")
 
+    # Optional: absent means "cites nothing". Present means a list of entry
+    # ids; whether each id was actually shown is the orchestrator's check.
+    if CITED_ENTRIES_KEY in obj:
+        cited = obj[CITED_ENTRIES_KEY]
+        if not isinstance(cited, list) or not all(isinstance(c, str) for c in cited):
+            raise ValueError(
+                f"Action '{CITED_ENTRIES_KEY}' must be a list of entry-id strings, got {cited!r}"
+            )
 
-# ============================================================================
-# Goal parsing (Stage 1 natural-language front end)
-# ============================================================================
-#
-# `agent select-model --goal "which model is best at the peak"` maps one
-# English sentence onto a SelectionGoal(metric, phase). The deterministic
-# keyword table in agent.goal_parser runs first; this prompt is only reached
-# when the keywords leave a field unresolved.
-#
-# The legal metric/phase sets are passed IN rather than imported, so this
-# module keeps its zero-import property (agent.model_selection pulls pandas).
-
-REQUIRED_GOAL_KEYS: List[str] = ["metric", "phase", "rationale"]
-
-# Deliberately short. LLMClient caps max_tokens at 4096 *including* qwen3
-# reasoning tokens, so a long <think> block truncates the JSON into an
-# unrecoverable parse failure. Every line here has to earn its place.
-GOAL_PARSE_PROMPT = """\
-You map one English sentence about forecast quality onto a machine-readable goal.
-
-## The sentence
-
-{goal_text}
-
-## Legal metrics (pick exactly one)
-
-{metric_block}
-
-Direction: wis, mape, mae and rmse are better when lower. coverage_95 targets
-0.95 exactly (not higher, not lower). bias targets 0 (signed over/under-prediction).
-
-## Legal phases (pick exactly one)
-
-{phase_block}
-
-Phases are calendar segments of the flu season: Onset is Oct-Nov, Peak is
-Dec-Jan, Decline is Feb-Apr. "all" means the whole scored window at once.
-The May-Sep off-season is NOT a legal phase and is never scored — if the
-sentence asks for summer or the off-season, choose "all" and say so in the
-rationale.
-
-Note: rmse is computed only overall. If the sentence asks for rmse, phase
-must be "all".
-
-## Output schema
-
-{{"metric": "...", "phase": "...", "rationale": "<one sentence, plain English>"}}
-
-The rationale is shown to the user before a multi-minute warm-up starts, so
-say which words in the sentence drove the mapping.
-
-Do not think out loud. Output ONLY the JSON object. No code fences, no commentary, no preamble.
-"""
-
-
-def format_goal_parse_prompt(
-    text: str,
-    valid_metrics: List[str],
-    valid_phases: List[str],
-) -> str:
-    """Build the goal-parsing prompt for one English sentence.
-
-    Args:
-        text: The user's raw sentence, verbatim.
-        valid_metrics: The metric names the caller will accept.
-        valid_phases: The phase names the caller will accept.
-
-    Returns:
-        Fully formatted prompt string.
-    """
-    if not isinstance(text, str) or not text.strip():
-        raise ValueError(f"goal text must be a non-empty string, got {text!r}")
-    if not valid_metrics:
-        raise ValueError("valid_metrics must be a non-empty sequence")
-    if not valid_phases:
-        raise ValueError("valid_phases must be a non-empty sequence")
-
-    metric_block = "\n".join(f"  - {m}" for m in valid_metrics)
-    phase_block = "\n".join(f"  - {p}" for p in valid_phases)
-    return GOAL_PARSE_PROMPT.format(
-        goal_text=text.strip(),
-        metric_block=metric_block,
-        phase_block=phase_block,
-    )
-
-
-def validate_goal(obj: Any, valid_metrics: List[str], valid_phases: List[str]) -> None:
-    """Validate a parsed goal dict against REQUIRED_GOAL_KEYS + the legal enums.
-
-    Raises ValueError with a field-level message on the first violation, echoing
-    the offending value so the repair retry can quote it back to the model.
-    Returns None on success.
-    """
-    if not isinstance(obj, dict):
-        raise ValueError(f"Goal must be a JSON object, got {type(obj).__name__}")
-
-    missing = [k for k in REQUIRED_GOAL_KEYS if k not in obj]
-    if missing:
-        raise ValueError(f"Goal missing required keys: {missing}")
-
-    if obj["metric"] not in valid_metrics:
-        raise ValueError(
-            f"goal 'metric' must be one of {list(valid_metrics)}, got {obj['metric']!r}"
-        )
-
-    if obj["phase"] not in valid_phases:
-        raise ValueError(
-            f"goal 'phase' must be one of {list(valid_phases)}, got {obj['phase']!r}"
-        )
-
-    if not isinstance(obj["rationale"], str) or not obj["rationale"].strip():
-        raise ValueError("Goal 'rationale' must be a non-empty string")

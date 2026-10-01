@@ -11,6 +11,7 @@ Run with:
 from __future__ import annotations
 
 import json
+import logging
 import sys
 import tempfile
 from pathlib import Path
@@ -21,14 +22,18 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from agent.orchestrator import (
+    DEFAULT_PROPOSAL_EXPERIENTIAL_SLOTS,
+    DEFAULT_PROPOSAL_FACTS_LIMIT,
     Orchestrator,
     auto_apply_confirmer,
 )
 from agent.run_tracker import RunTracker
 from tests.agent.fakes import (
     FakeAdapter,
+    FakeKnowledgeBank,
     FakeLLM,
     ScriptedPipeline,
+    fake_entry,
     valid_action,
     valid_diagnosis,
 )
@@ -385,6 +390,404 @@ def test_run_writes_report_into_run_dir():
         assert md_path.read_text().startswith("# ")
 
 
+# ---------------------------------------------------------------------------
+# Knowledge bank at the proposal step (design unit 4)
+# ---------------------------------------------------------------------------
+
+def _peak_bank() -> FakeKnowledgeBank:
+    """Two peak facts (one recommending adjust_hyperparameter) and one decline fact."""
+    return FakeKnowledgeBank([
+        fake_entry(
+            "peak-depth-v1", statement="Deeper trees help at peak.", phase="peak",
+            action="adjust_hyperparameter", params={"name": "max_depth", "value": 6},
+        ),
+        fake_entry(
+            "peak-reweight-v1", statement="Up-weight peak rows.", phase="peak",
+            action="reweight_training_samples",
+            params={"dimension": "phase", "value": "peak", "weight": 2.0},
+        ),
+        fake_entry("decline-floor-v1", statement="Relax the floor in decline.", phase="decline"),
+    ])
+
+
+def _llm_citing(cited, action_name="adjust_hyperparameter", params=None) -> FakeLLM:
+    """One (diagnose, propose) pair whose proposal cites `cited`."""
+    params = params or {"name": "max_depth", "value": 5}
+    return FakeLLM([
+        json.dumps(valid_diagnosis()),  # weak segment: phase=peak
+        json.dumps(valid_action(name=action_name, params=params, cited_entries=cited)),
+    ])
+
+
+class _WarningCapture(logging.Handler):
+    def __init__(self):
+        super().__init__(level=logging.WARNING)
+        self.messages = []
+
+    def emit(self, record):
+        self.messages.append(record.getMessage())
+
+
+def test_knowledge_bank_retrieval_uses_diagnosed_phase_and_shows_ids():
+    """The retrieval context is phase=peak/model/metric; the prompt shows only the peak ids."""
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_dir = Path(tmp)
+        baseline = _seed_baseline_csv(tmp_dir)
+        bank = _peak_bank()
+        llm = _llm_citing(["peak-depth-v1"])
+        orch = _make_orch(tmp_dir, llm, [200.0, 180.0], max_iterations=1, knowledge_bank=bank)
+
+        result = orch.run(
+            initial_forecast=str(baseline), cutoff_date="2024-11-02", regenerate_baseline=False,
+        )
+
+        assert len(bank.queries) == 1
+        ctx = bank.queries[0]
+        assert ctx.phase == "peak"
+        assert ctx.model == "xgboost_direct"
+        assert ctx.metric == "wis"
+
+        proposal_prompt = llm.calls[1]
+        assert "## Known facts for this diagnosis" in proposal_prompt
+        assert "- [peak-depth-v1] [C, high] Deeper trees help at peak." in proposal_prompt
+        assert "[peak-reweight-v1]" in proposal_prompt
+        assert "decline-floor-v1" not in proposal_prompt
+
+        action = result.iterations[1].action
+        assert action["retrieved_entry_ids"] == ["peak-depth-v1", "peak-reweight-v1"]
+        assert action["cited_entries"] == ["peak-depth-v1"]
+        assert result.iterations[1].action_status == "applied"
+
+
+def test_knowledge_bank_supported_by_matches_recommended_action():
+    """supported_by lists the retrieved entries whose recommendation names the proposed action."""
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_dir = Path(tmp)
+        baseline = _seed_baseline_csv(tmp_dir)
+        orch = _make_orch(
+            tmp_dir, _llm_citing([]), [200.0, 180.0], max_iterations=1, knowledge_bank=_peak_bank(),
+        )
+
+        result = orch.run(
+            initial_forecast=str(baseline), cutoff_date="2024-11-02", regenerate_baseline=False,
+        )
+
+        action = result.iterations[1].action
+        assert action["supported_by"] == ["peak-depth-v1"]
+        assert action["cited_entries"] == []
+        # The entry recommends max_depth=6, the proposal says 5: same action,
+        # different value, so the mismatch list names it too.
+        assert action["supported_by_params_mismatch"] == ["peak-depth-v1"]
+
+
+def test_knowledge_bank_params_mismatch_empty_when_proposal_matches_recommended_value():
+    """supported_by_params_mismatch is [] when the proposal uses the recommended params."""
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_dir = Path(tmp)
+        baseline = _seed_baseline_csv(tmp_dir)
+        llm = _llm_citing(["peak-depth-v1"], params={"name": "max_depth", "value": 6})
+        orch = _make_orch(
+            tmp_dir, llm, [200.0, 180.0], max_iterations=1, knowledge_bank=_peak_bank(),
+        )
+
+        result = orch.run(
+            initial_forecast=str(baseline), cutoff_date="2024-11-02", regenerate_baseline=False,
+        )
+
+        action = result.iterations[1].action
+        assert action["params"] == {"name": "max_depth", "value": 6}
+        assert action["supported_by"] == ["peak-depth-v1"]
+        assert action["supported_by_params_mismatch"] == []
+
+
+def test_knowledge_bank_params_mismatch_lists_supporting_entry_with_other_value():
+    """An entry recommending the same action with a different value is recorded as a mismatch."""
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_dir = Path(tmp)
+        baseline = _seed_baseline_csv(tmp_dir)
+        bank = FakeKnowledgeBank([
+            fake_entry(
+                "peak-depth-six", statement="Depth 6 at peak.", phase="peak",
+                action="adjust_hyperparameter", params={"name": "max_depth", "value": 6},
+            ),
+            fake_entry(
+                "peak-depth-any", statement="Deeper trees at peak.", phase="peak",
+                action="adjust_hyperparameter", params={"name": "max_depth"},
+            ),
+        ])
+        llm = _llm_citing([], params={"name": "max_depth", "value": 7})
+        orch = _make_orch(tmp_dir, llm, [200.0, 180.0], max_iterations=1, knowledge_bank=bank)
+
+        result = orch.run(
+            initial_forecast=str(baseline), cutoff_date="2024-11-02", regenerate_baseline=False,
+        )
+
+        action = result.iterations[1].action
+        assert action["supported_by"] == ["peak-depth-any", "peak-depth-six"]  # store order: id asc
+        # peak-depth-any leaves `value` open, so it does not disagree.
+        assert action["supported_by_params_mismatch"] == ["peak-depth-six"]
+        assert result.iterations[1].action_status == "applied"
+
+
+def test_knowledge_bank_supported_by_empty_when_no_recommendation_matches():
+    """An action no retrieved entry recommends is still applied; supported_by is empty."""
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_dir = Path(tmp)
+        baseline = _seed_baseline_csv(tmp_dir)
+        llm = _llm_citing([], action_name="adjust_floor_constraint", params={"floor_pct": 0.4})
+        orch = _make_orch(
+            tmp_dir, llm, [200.0, 180.0], max_iterations=1, knowledge_bank=_peak_bank(),
+        )
+
+        result = orch.run(
+            initial_forecast=str(baseline), cutoff_date="2024-11-02", regenerate_baseline=False,
+        )
+
+        action = result.iterations[1].action
+        assert action["name"] == "adjust_floor_constraint"
+        assert action["supported_by"] == []
+        assert result.iterations[1].action_status == "applied"
+
+
+def test_knowledge_bank_hallucinated_citation_dropped_with_warning():
+    """A cited id that was never shown is dropped and warned about; the action still applies."""
+    capture = _WarningCapture()
+    logger = logging.getLogger("agent.orchestrator")
+    logger.addHandler(capture)
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_dir = Path(tmp)
+            baseline = _seed_baseline_csv(tmp_dir)
+            llm = _llm_citing(["made-up-id", "peak-depth-v1", "peak-depth-v1"])
+            orch = _make_orch(
+                tmp_dir, llm, [200.0, 180.0], max_iterations=1, knowledge_bank=_peak_bank(),
+            )
+
+            result = orch.run(
+                initial_forecast=str(baseline), cutoff_date="2024-11-02", regenerate_baseline=False,
+            )
+    finally:
+        logger.removeHandler(capture)
+
+    action = result.iterations[1].action
+    assert action["cited_entries"] == ["peak-depth-v1"], action["cited_entries"]
+    assert result.iterations[1].action_status == "applied"
+    assert len(capture.messages) == 1, capture.messages
+    assert "made-up-id" in capture.messages[0]
+    assert "hallucinated" in capture.messages[0]
+
+
+def test_knowledge_bank_bracketed_citation_is_normalised_not_dropped():
+    """qwen3:8b echoes ids as "[id]" (seen live 2026-10-01); brackets are stripped, not penalised."""
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_dir = Path(tmp)
+        baseline = _seed_baseline_csv(tmp_dir)
+        llm = _llm_citing(["[peak-depth-v1]", " [peak-reweight-v1] "])
+        orch = _make_orch(
+            tmp_dir, llm, [200.0, 180.0], max_iterations=1, knowledge_bank=_peak_bank(),
+        )
+
+        result = orch.run(
+            initial_forecast=str(baseline), cutoff_date="2024-11-02", regenerate_baseline=False,
+        )
+
+        action = result.iterations[1].action
+        assert action["cited_entries"] == ["peak-depth-v1", "peak-reweight-v1"]
+
+
+def test_knowledge_bank_citations_persist_to_tracker_and_report():
+    """cited_entries survive the SQLite round trip and show up in report.md."""
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_dir = Path(tmp)
+        baseline = _seed_baseline_csv(tmp_dir)
+        orch = _make_orch(
+            tmp_dir, _llm_citing(["peak-depth-v1"]), [200.0, 180.0],
+            max_iterations=1, knowledge_bank=_peak_bank(),
+        )
+
+        result = orch.run(
+            initial_forecast=str(baseline), cutoff_date="2024-11-02", regenerate_baseline=False,
+        )
+
+        run = orch.tracker.get_run(result.run_id)
+        stored = run["iterations"][1]["action"]
+        assert stored["cited_entries"] == ["peak-depth-v1"]
+        assert stored["supported_by"] == ["peak-depth-v1"]
+
+        md = (tmp_dir / "run" / "report.md").read_text()
+        assert "cites: peak-depth-v1" in md
+        payload = json.loads((tmp_dir / "run" / "report.json").read_text())
+        assert payload["lines"][1]["cited_entries"] == ["peak-depth-v1"]
+
+
+def test_knowledge_bank_unknown_phase_retrieves_without_phase_constraint():
+    """A phase spelling the bank does not know degrades to phase=None, not a crash."""
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_dir = Path(tmp)
+        baseline = _seed_baseline_csv(tmp_dir)
+        bank = _peak_bank()
+        diag = valid_diagnosis(weak_segments=[{
+            "dimension": "phase", "value": "Winter Surge", "metric": "mape",
+            "delta_vs_overall": 0.4, "severity": "high",
+        }])
+        llm = FakeLLM([json.dumps(diag), json.dumps(valid_action(cited_entries=[]))])
+        orch = _make_orch(tmp_dir, llm, [200.0, 180.0], max_iterations=1, knowledge_bank=bank)
+
+        result = orch.run(
+            initial_forecast=str(baseline), cutoff_date="2024-11-02", regenerate_baseline=False,
+        )
+
+        assert bank.queries[0].phase is None
+        assert bank.queries[0].model == "xgboost_direct"
+        # No phase constraint: every entry matches, including the decline one,
+        # in store order (same trust/confidence tier, so id asc).
+        assert result.iterations[1].action["retrieved_entry_ids"] == [
+            "decline-floor-v1", "peak-depth-v1", "peak-reweight-v1",
+        ]
+
+
+def test_knowledge_bank_experiential_entries_survive_the_proposal_limit():
+    """Many curated matches never crowd out the experiential ones (finding: 12-limit cut all [E])."""
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_dir = Path(tmp)
+        baseline = _seed_baseline_csv(tmp_dir)
+        n_curated = DEFAULT_PROPOSAL_FACTS_LIMIT + 10
+        curated = [
+            fake_entry(f"peak-curated-{i:02d}", statement=f"Curated fact {i}.", phase="peak")
+            for i in range(n_curated)
+        ]
+        experiential = [
+            fake_entry(
+                f"exp-run-{i}", statement=f"Run {i} at peak.", phase="peak",
+                provenance="experiential", confidence="low", n_observations=1,
+            )
+            for i in range(3)
+        ]
+        bank = FakeKnowledgeBank(curated + experiential)
+        llm = _llm_citing(["exp-run-0"])
+        orch = _make_orch(tmp_dir, llm, [200.0, 180.0], max_iterations=1, knowledge_bank=bank)
+
+        result = orch.run(
+            initial_forecast=str(baseline), cutoff_date="2024-11-02", regenerate_baseline=False,
+        )
+
+        facts = llm.calls[1]
+        block = facts[facts.index("## Known facts for this diagnosis"):facts.index("## Iteration History")]
+        assert "[exp-run-0]" in block and "[exp-run-1]" in block and "[exp-run-2]" in block
+        shown = result.iterations[1].action["retrieved_entry_ids"]
+        assert len(shown) == DEFAULT_PROPOSAL_FACTS_LIMIT
+        assert shown[-3:] == ["exp-run-0", "exp-run-1", "exp-run-2"]
+        # The lowest-ranked curated entries made room (store order within a
+        # trust/confidence tier is id asc, so the highest ids are the ones cut).
+        n_curated_shown = DEFAULT_PROPOSAL_FACTS_LIMIT - 3
+        assert shown[:n_curated_shown] == [f"peak-curated-{i:02d}" for i in range(n_curated_shown)]
+        assert f"peak-curated-{n_curated_shown:02d}" not in block
+        omitted = n_curated + 3 - DEFAULT_PROPOSAL_FACTS_LIMIT
+        assert f"- ({omitted} more matching entries omitted" in block
+        assert result.iterations[1].action["cited_entries"] == ["exp-run-0"]
+        assert 3 <= DEFAULT_PROPOSAL_EXPERIENTIAL_SLOTS
+
+
+def test_knowledge_bank_experiential_slots_are_capped():
+    """More experiential matches than slots: exactly the slot count is shown, in store order."""
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_dir = Path(tmp)
+        baseline = _seed_baseline_csv(tmp_dir)
+        curated = [
+            fake_entry(f"peak-curated-{i:02d}", phase="peak")
+            for i in range(DEFAULT_PROPOSAL_FACTS_LIMIT)
+        ]
+        n_exp = DEFAULT_PROPOSAL_EXPERIENTIAL_SLOTS + 4
+        experiential = [
+            fake_entry(
+                f"exp-run-{i:02d}", phase="peak", provenance="experiential",
+                confidence="low", n_observations=1,
+            )
+            for i in range(n_exp)
+        ]
+        bank = FakeKnowledgeBank(curated + experiential)
+        orch = _make_orch(
+            tmp_dir, _llm_citing([]), [200.0, 180.0], max_iterations=1, knowledge_bank=bank,
+        )
+
+        result = orch.run(
+            initial_forecast=str(baseline), cutoff_date="2024-11-02", regenerate_baseline=False,
+        )
+
+        shown = result.iterations[1].action["retrieved_entry_ids"]
+        assert len(shown) == DEFAULT_PROPOSAL_FACTS_LIMIT
+        shown_exp = [i for i in shown if i.startswith("exp-")]
+        assert shown_exp == [f"exp-run-{i:02d}" for i in range(DEFAULT_PROPOSAL_EXPERIENTIAL_SLOTS)]
+        n_curated_shown = DEFAULT_PROPOSAL_FACTS_LIMIT - DEFAULT_PROPOSAL_EXPERIENTIAL_SLOTS
+        assert shown[:n_curated_shown] == [f"peak-curated-{i:02d}" for i in range(n_curated_shown)]
+
+
+def test_knowledge_bank_under_limit_shows_store_order_unchanged():
+    """When nothing is cut, the shown list is exactly the store's ranking (one query, no reshuffle)."""
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_dir = Path(tmp)
+        baseline = _seed_baseline_csv(tmp_dir)
+        bank = FakeKnowledgeBank([
+            fake_entry("exp-run-0", phase="peak", provenance="experiential", confidence="low"),
+            fake_entry("peak-b", phase="peak", confidence="medium"),
+            fake_entry("peak-a", phase="peak"),
+        ])
+        orch = _make_orch(
+            tmp_dir, _llm_citing([]), [200.0, 180.0], max_iterations=1, knowledge_bank=bank,
+        )
+
+        result = orch.run(
+            initial_forecast=str(baseline), cutoff_date="2024-11-02", regenerate_baseline=False,
+        )
+
+        assert len(bank.queries) == 1
+        assert result.iterations[1].action["retrieved_entry_ids"] == ["peak-a", "peak-b", "exp-run-0"]
+
+
+def test_no_knowledge_bank_leaves_proposal_untouched():
+    """Without a bank the prompt has no known-facts section and the action carries no bank keys."""
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_dir = Path(tmp)
+        baseline = _seed_baseline_csv(tmp_dir)
+        llm = _build_llm(1)
+        orch = _make_orch(tmp_dir, llm, [200.0, 180.0], max_iterations=1)
+
+        result = orch.run(
+            initial_forecast=str(baseline), cutoff_date="2024-11-02", regenerate_baseline=False,
+        )
+
+        assert orch.knowledge_bank is None
+        proposal_prompt = llm.calls[1]
+        assert "Known facts" not in proposal_prompt
+        assert "(none retrieved)" not in proposal_prompt
+        assert "cited_entries" not in proposal_prompt
+        action = result.iterations[1].action
+        assert "cited_entries" not in action
+        assert "retrieved_entry_ids" not in action
+        assert "supported_by" not in action
+        assert set(action) == {"name", "params", "rationale", "expected_effect"}
+
+
+def test_no_knowledge_bank_drops_stray_cited_entries_from_stored_action():
+    """An LLM that emits cited_entries anyway, with no bank wired, stores the pre-bank 4-key action."""
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_dir = Path(tmp)
+        baseline = _seed_baseline_csv(tmp_dir)
+        llm = _llm_citing(["peak-depth-v1"])
+        orch = _make_orch(tmp_dir, llm, [200.0, 180.0], max_iterations=1)
+
+        result = orch.run(
+            initial_forecast=str(baseline), cutoff_date="2024-11-02", regenerate_baseline=False,
+        )
+
+        assert orch.knowledge_bank is None
+        action = result.iterations[1].action
+        assert set(action) == {"name", "params", "rationale", "expected_effect"}
+        stored = orch.tracker.get_run(result.run_id)["iterations"][1]["action"]
+        assert set(stored) == {"name", "params", "rationale", "expected_effect"}
+        assert result.iterations[1].action_status == "applied"
+
+
 ALL_TESTS = [
     test_loop_refines_a_bank_family_through_model_params,
     test_run_writes_report_into_run_dir,
@@ -396,6 +799,20 @@ ALL_TESTS = [
     test_shadow_mode_skip,
     test_tracker_persists_full_state,
     test_invalid_llm_response_repair,
+    test_knowledge_bank_retrieval_uses_diagnosed_phase_and_shows_ids,
+    test_knowledge_bank_supported_by_matches_recommended_action,
+    test_knowledge_bank_params_mismatch_empty_when_proposal_matches_recommended_value,
+    test_knowledge_bank_params_mismatch_lists_supporting_entry_with_other_value,
+    test_knowledge_bank_supported_by_empty_when_no_recommendation_matches,
+    test_knowledge_bank_hallucinated_citation_dropped_with_warning,
+    test_knowledge_bank_bracketed_citation_is_normalised_not_dropped,
+    test_knowledge_bank_citations_persist_to_tracker_and_report,
+    test_knowledge_bank_unknown_phase_retrieves_without_phase_constraint,
+    test_knowledge_bank_experiential_entries_survive_the_proposal_limit,
+    test_knowledge_bank_experiential_slots_are_capped,
+    test_knowledge_bank_under_limit_shows_store_order_unchanged,
+    test_no_knowledge_bank_leaves_proposal_untouched,
+    test_no_knowledge_bank_drops_stray_cited_entries_from_stored_action,
 ]
 
 

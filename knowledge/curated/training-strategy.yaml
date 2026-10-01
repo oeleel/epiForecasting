@@ -1,0 +1,127 @@
+# Training-strategy rules A. Adiga has stated at least twice across the
+# 09-03, 09-09 and 09-24 meetings (A. Adiga). These are the
+# lab's guardrails on HOW to fit, independent of the peak-rectification actions.
+# The loop should cite the rule it follows and is still allowed to explore past
+# it ("12 weeks is not always right when seasonality is strong" is a valid
+# conclusion). Per-model-class refinements of these rules are the content the
+# lab will author; they land in _training-strategy-by-model-class.yaml.
+
+- id: train-short-window-on-takeoff
+  provenance: curated
+  category: model_characteristics
+  statement: >
+    In a sharp takeoff (entering a growth phase), fit on a short window of roughly the last
+    12 weeks instead of relying on 52-week seasonality; short windows keep the model agile.
+  entities: {phase: surge}
+  context: {phase: [surge, onset, approaching_peak]}
+  payload:
+    recommendation:
+      action: set_training_window
+      params: {weeks: 12}
+      note: >
+        Writes `data.train_window_weeks` (minimum FORECAST_HORIZON + 4 = 8 weeks, maximum
+        104); the experiment harness sets the same key directly.
+    config_key: data.train_window_weeks
+  evidence:
+    source: "A. Adiga, meetings 2026-09-03, 2026-09-09, 2026-09-24"
+    n_observations: null
+    reward_delta: null
+  confidence: high
+  llm_gloss: null
+  created_at: 2026-09-30
+
+- id: train-long-window-in-lull
+  provenance: curated
+  category: model_characteristics
+  statement: >
+    In a lull (plateau or off-season) use a long fit window of 52 or 104 weeks so the model
+    can draw on seasonal history rather than a flat recent stretch.
+  entities: {phase: plateau}
+  context: {phase: [plateau, off_season]}
+  payload:
+    recommendation:
+      action: set_training_window
+      params: {weeks: 52}
+      note: 52 or 104 weeks (104 = 2 seasons, the catalog maximum); writes `data.train_window_weeks`.
+    config_key: data.train_window_weeks
+  evidence:
+    source: "A. Adiga, meetings 2026-09-03, 2026-09-09, 2026-09-24"
+    n_observations: null
+    reward_delta: null
+  confidence: high
+  llm_gloss: null
+  created_at: 2026-09-30
+
+- id: window-length-is-a-search-dimension
+  provenance: curated
+  category: model_characteristics
+  statement: >
+    The training-window length is itself an optimization the agent should run, not a fixed
+    setting: start from the phase rule (12 weeks on takeoff, 52/104 in a lull) and explore
+    past it.
+  entities: {}
+  context: {}
+  payload:
+    search_space: {train_window_weeks: [8, 12, 26, 52, 104]}
+  evidence:
+    source: "A. Adiga, meetings 2026-09-09, 2026-09-24"
+    n_observations: null
+    reward_delta: null
+  confidence: high
+  llm_gloss: null
+  created_at: 2026-09-30
+
+- id: seasonality-needs-two-plus-years
+  provenance: curated
+  category: input_data
+  statement: >
+    Seasonality detection needs more than two years of history; with less, a model cannot
+    tell a seasonal cycle from a one-off trend and seasonal features should not be trusted.
+  entities: {data_source: cdc_flusight}
+  context: {}
+  payload:
+    minimum_history_years: 2
+    note: The cached CDC series starts 2022-02-05, so the pinned split barely clears this bar.
+  evidence:
+    source: "A. Adiga, meetings 2026-09-09, 2026-09-24"
+    n_observations: null
+    reward_delta: null
+  confidence: high
+  llm_gloss: null
+  created_at: 2026-09-30
+
+- id: onset-definition-v1
+  provenance: curated
+  category: domain_dynamics
+  statement: >
+    Season onset = 3 consecutive weeks of increase above threshold T (T still to be fixed by
+    the lab).
+  entities: {phase: onset}
+  context: {season_week: [38, 46]}
+  payload:
+    rule: {consecutive_weeks: 3, threshold: TBD}
+  evidence:
+    source: "A. Adiga, meetings 2026-09-09, 2026-09-24"
+    n_observations: null
+    reward_delta: null
+  confidence: medium
+  llm_gloss: null
+  created_at: 2026-09-30
+
+- id: growth-starts-october-rate-varies
+  provenance: curated
+  category: domain_dynamics
+  statement: >
+    Epidemic curves start growing around October every season, but the growth rate varies
+    from season to season, so the onset date and the steepness of the rise are not fixed.
+  entities: {phase: onset}
+  context: {season_week: [36, 48]}
+  payload:
+    typical_onset_month: 10
+  evidence:
+    source: "A. Adiga, meetings 2026-09-03, 2026-09-09"
+    n_observations: null
+    reward_delta: null
+  confidence: medium
+  llm_gloss: null
+  created_at: 2026-09-30

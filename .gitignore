@@ -7,3 +7,18 @@ outputs/agent_runs/
 .venv/
 # timestamped demo runs (scripts/demo_stage1.py); curated runs are committed by hand
 outputs/model_selection/demo_????????-??????/
+# local review surfaces (lavish-axi)
+.lavish/
+# experiment harnesses (scripts/experiments/): raw logs + pooled forecasts stay
+# local; summary.md and manifest.json are committed by hand
+outputs/experiments/**
+!outputs/experiments/**/
+!outputs/experiments/**/summary.md
+!outputs/experiments/**/manifest.json
+# only the merged sweep dir keeps its summary/manifest; splits and smoke runs are scratch
+outputs/experiments/pr-split-*/
+outputs/experiments/*-smoke-*/
+outputs/experiments/sweep-logs/
+
+# private meeting notes stay local
+documentation/meeting-notes/

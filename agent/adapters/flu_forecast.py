@@ -4,6 +4,7 @@ Wraps the existing XGBoost-based influenza hospitalization forecasting pipeline
 to provide domain-specific data loading, metrics computation, and LLM context.
 """
 
+import functools
 import json
 import os
 import sys
@@ -20,6 +21,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from agent.domain_adapter import DomainAdapter
+from agent.knowledge import KnowledgeBank, RetrievalContext, render_known_facts
 from agent.phase_evaluator import PhaseEvaluator
 
 # The family whose knobs live in the legacy config sections (xgboost.*,
@@ -27,6 +29,25 @@ from agent.phase_evaluator import PhaseEvaluator
 # is hand-written below. Every other family gets a catalog generated from
 # its ForecastModel.param_space(), and its knobs live in model.params.*.
 LEGACY_MODEL_FAMILY = "xgboost_direct"
+
+# Upper guardrail for set_training_window. 104 weeks = 2 seasons, the long
+# "lull" window the lab pairs with 52 (meetings 09-03/09-09/09-24). The
+# lower bound is src.pipeline.MIN_TRAIN_WINDOW_WEEKS (FORECAST_HORIZON + 4),
+# read from the pipeline so the catalog and the pipeline can never disagree.
+DEFAULT_MAX_TRAIN_WINDOW_WEEKS = 104
+
+
+@functools.lru_cache(maxsize=1)
+def training_window_guardrail() -> Tuple[int, int]:
+    """(min, max) admissible `weeks` for the set_training_window action.
+
+    Resolved lazily: src.pipeline imports xgboost (~2s, and the libomp clash
+    on macOS), and this module keeps src/* out of its import time so the CLI
+    and the knowledge tooling stay light.
+    """
+    from src.pipeline import MIN_TRAIN_WINDOW_WEEKS
+
+    return (MIN_TRAIN_WINDOW_WEEKS, DEFAULT_MAX_TRAIN_WINDOW_WEEKS)
 
 
 class FluForecastAdapter(DomainAdapter):
@@ -38,10 +59,36 @@ class FluForecastAdapter(DomainAdapter):
         - agent.phase_evaluator.PhaseEvaluator (phase-aware metrics)
     """
 
-    def __init__(self, project_root: str = None, exclude_locations: List[str] = None):
+    def __init__(
+        self,
+        project_root: str = None,
+        exclude_locations: List[str] = None,
+        knowledge_bank: KnowledgeBank | None = None,
+        knowledge_enabled: bool = True,
+    ):
+        if not isinstance(knowledge_enabled, bool):
+            raise ValueError(
+                f"knowledge_enabled must be a bool, got {type(knowledge_enabled).__name__}: "
+                f"{knowledge_enabled!r}"
+            )
         self.project_root = Path(project_root) if project_root else PROJECT_ROOT
         self._location_names = None  # lazy-loaded FIPS-to-name mapping
         self.exclude_locations = set(exclude_locations) if exclude_locations else set()
+        # Opened lazily by `knowledge_bank` on the first get_domain_context call, so
+        # constructing an adapter never touches knowledge/knowledge.db. Tests pass a
+        # bank built in a temp dir; the CLI and the improve loop get the repo bank.
+        self._knowledge_bank = knowledge_bank
+        # `improve --no-knowledge` is an A/B control against the bank-aware default:
+        # with knowledge_enabled=False the KNOWN FACTS block is left out of every
+        # prompt and the bank is never opened, so the run reads no bank at all.
+        self.knowledge_enabled = knowledge_enabled
+
+    @property
+    def knowledge_bank(self) -> KnowledgeBank:
+        """The knowledge bank behind get_domain_context (repo bank unless injected)."""
+        if self._knowledge_bank is None:
+            self._knowledge_bank = KnowledgeBank.open()
+        return self._knowledge_bank
 
     @property
     def location_names(self) -> Dict[str, str]:
@@ -269,14 +316,18 @@ class FluForecastAdapter(DomainAdapter):
         {
             "name": "reweight_training_samples",
             "description": (
-                "Upweight a slice of the training data by phase, horizon, or location. "
-                "Use this when one segment is consistently underperforming and you "
-                "want the next training run to pay more attention to it."
+                "Upweight a slice of the training data by phase, horizon, location, "
+                "or approaching_peak. Use this when one segment is consistently "
+                "underperforming and you want the next training run to pay more "
+                "attention to it. dimension='approaching_peak' upweights the rows in "
+                "the K weeks before each past season's observed peak (value = K, an "
+                "integer number of weeks; weight = lambda). Use it when the model "
+                "under-predicts the peak; the current season is never labeled."
             ),
             "params_schema": {
                 "dimension": {
                     "type": "string",
-                    "enum": ["phase", "horizon", "location"],
+                    "enum": ["phase", "horizon", "location", "approaching_peak"],
                 },
                 "value": {"type": "string"},
                 "weight": {"type": "number"},
@@ -285,6 +336,8 @@ class FluForecastAdapter(DomainAdapter):
                 "weight": (1.0, 5.0),
                 "phase_values": ["onset", "peak", "decline"],
                 "horizon_values": ["1", "2", "3", "4"],
+                # value = weeks_before for dimension='approaching_peak'
+                "approaching_peak_weeks": (2, 12),
             },
         },
         {
@@ -332,6 +385,26 @@ class FluForecastAdapter(DomainAdapter):
             "guardrails": {},
         },
         {
+            "name": "set_training_window",
+            "description": (
+                "Restrict training to the last N weeks of ROWS per location, applied "
+                "after feature engineering so lag/rolling/yoy features stay intact "
+                "(they still look back over the full history). Rule: ~12 weeks on a "
+                "sharp takeoff (rely less on seasonality, stay agile); 52 or 104 weeks "
+                "in a lull (draw on seasonal history). weeks=null restores the default "
+                "of training on all rows."
+            ),
+            "params_schema": {
+                "weeks": {"type": "integer|null"},
+            },
+            "guardrails": {
+                # (min, max) weeks, filled by get_available_actions() from
+                # training_window_guardrail(); None here because the min is
+                # the pipeline's rule and src.pipeline is a lazy import.
+                "weeks": None,
+            },
+        },
+        {
             "name": "stop",
             "description": (
                 "Declare convergence. Use this when no further action is "
@@ -364,7 +437,7 @@ class FluForecastAdapter(DomainAdapter):
         """
         family = self.model_family_of(config)
         if family == LEGACY_MODEL_FAMILY:
-            return list(self.ACTION_CATALOG)
+            return [self._resolve_catalog_entry(a) for a in self.ACTION_CATALOG]
 
         from src.model_bank.registry import resolve_family
 
@@ -395,6 +468,15 @@ class FluForecastAdapter(DomainAdapter):
             })
         catalog.append(next(a for a in self.ACTION_CATALOG if a["name"] == "stop"))
         return catalog
+
+    @staticmethod
+    def _resolve_catalog_entry(entry: Dict[str, Any]) -> Dict[str, Any]:
+        """Copy a catalog entry with lazily-resolved guardrails filled in."""
+        if entry["name"] != "set_training_window":
+            return entry
+        resolved = dict(entry)
+        resolved["guardrails"] = {"weeks": training_window_guardrail()}
+        return resolved
 
     def apply_action(
         self,
@@ -473,11 +555,36 @@ class FluForecastAdapter(DomainAdapter):
             val = str(params["value"])
             weight = float(params["weight"])
 
-            if dim not in {"phase", "horizon", "location"}:
-                raise ValueError(f"reweight: dimension must be phase/horizon/location, got {dim!r}")
+            allowed_dims = set(spec["params_schema"]["dimension"]["enum"])
+            if dim not in allowed_dims:
+                raise ValueError(
+                    f"reweight: dimension must be one of {sorted(allowed_dims)}, got {dim!r}"
+                )
             wlo, whi = spec["guardrails"]["weight"]
             if not (wlo <= weight <= whi):
                 raise ValueError(f"reweight: weight={weight} outside [{wlo}, {whi}]")
+
+            if dim == "approaching_peak":
+                # value = K weeks before the season peak; stored as a dict so
+                # src.direct_forecast._compute_sample_weights reads it directly.
+                try:
+                    weeks_before = int(val)
+                except ValueError:
+                    raise ValueError(
+                        f"reweight: approaching_peak value must be an integer number "
+                        f"of weeks, got {params['value']!r}"
+                    ) from None
+                klo, khi = spec["guardrails"]["approaching_peak_weeks"]
+                if not (klo <= weeks_before <= khi):
+                    raise ValueError(
+                        f"reweight: approaching_peak weeks_before={weeks_before} "
+                        f"outside [{klo}, {khi}]"
+                    )
+                section = "sample_weights.approaching_peak"
+                new_cfg = set_config_value(
+                    config, section, {"weeks_before": weeks_before, "weight": weight}
+                )
+                return new_cfg, f"{section} = {{weeks_before: {weeks_before}, weight: {weight}}}"
             if dim == "phase" and val not in spec["guardrails"]["phase_values"]:
                 raise ValueError(
                     f"reweight: phase value must be one of {spec['guardrails']['phase_values']}"
@@ -526,7 +633,23 @@ class FluForecastAdapter(DomainAdapter):
             new_cfg = set_config_value(config, "target.mode", t)
             return new_cfg, f"target.mode: {old} -> {t}"
 
-        # Defensive — should be unreachable due to catalog check above
+        if name == "set_training_window":
+            self._require_keys(params, ["weeks"])
+            if params["weeks"] is None:
+                old = get_config_value(config, "data.train_window_weeks")
+                new_cfg = set_config_value(config, "data.train_window_weeks", None)
+                return new_cfg, f"data.train_window_weeks: {old} -> None (all rows)"
+            weeks = self._coerce_weeks(params["weeks"])
+            lo, hi = training_window_guardrail()
+            if not (lo <= weeks <= hi):
+                raise ValueError(
+                    f"set_training_window: weeks={weeks} outside guardrail [{lo}, {hi}] "
+                    f"(minimum {lo} = FORECAST_HORIZON + 4, maximum {hi} = 2 seasons)"
+                )
+            new_cfg = set_config_value(config, "data.train_window_weeks", weeks)
+            return new_cfg, f"data.train_window_weeks = {weeks}"
+
+        # Defensive - should be unreachable due to catalog check above
         raise ValueError(f"Unhandled action: {name}")
 
     def _apply_bank_action(
@@ -569,6 +692,45 @@ class FluForecastAdapter(DomainAdapter):
         missing = [k for k in keys if k not in params]
         if missing:
             raise ValueError(f"Action missing required params: {missing}")
+
+    @staticmethod
+    def _coerce_weeks(value: Any) -> int:
+        """`weeks` for set_training_window as an int, from the shapes an LLM emits.
+
+        Accepts an int, or a float / string that is exactly an integer ("12",
+        12.0), the same leniency `reweight_training_samples` gives its `value`.
+        Rejects bool (True is an int in Python but never a week count),
+        non-integer floats and non-numeric strings, naming the value.
+        """
+        if isinstance(value, bool):
+            raise ValueError(
+                f"set_training_window: weeks must be an int number of weeks or null, got {value!r}"
+            )
+        if isinstance(value, int):
+            return value
+        if isinstance(value, float):
+            if value.is_integer():
+                return int(value)
+            raise ValueError(
+                f"set_training_window: weeks must be a whole number of weeks, got {value!r}"
+            )
+        if isinstance(value, str):
+            try:
+                as_float = float(value.strip())
+            except ValueError:
+                raise ValueError(
+                    f"set_training_window: weeks must be an int number of weeks or null, "
+                    f"got {value!r}"
+                ) from None
+            if as_float.is_integer():
+                return int(as_float)
+            raise ValueError(
+                f"set_training_window: weeks must be a whole number of weeks, got {value!r}"
+            )
+        raise ValueError(
+            "set_training_window: weeks must be an int number of weeks or null, "
+            f"got {type(value).__name__}: {value!r}"
+        )
 
     def run_pipeline(
         self,
@@ -637,22 +799,28 @@ class FluForecastAdapter(DomainAdapter):
     def get_domain_context(self, config: Optional[Dict[str, Any]] = None) -> str:
         """Return flu forecasting domain context for the LLM prompt.
 
-        The model-specific paragraph depends on the active family; the
-        epidemic-phase and performance context is shared by every model.
+        The model-specific paragraph depends on the active family; everything
+        shared by every model (epidemic phases, performance conventions, the
+        lab's guardrails) comes from the knowledge bank as a KNOWN FACTS block,
+        filtered to entries that apply to the active family. The query limit
+        (`DEFAULT_QUERY_LIMIT`) keeps the block bounded as the bank grows; when
+        it truncates, the block ends with an explicit omitted-count line. The
+        phase/metric-aware retrieval at each proposal step lives in the
+        orchestrator (design section 6, unit 4), not here.
+
+        With `knowledge_enabled=False` (`improve --no-knowledge`) only the model
+        paragraph is returned and the bank is never opened.
         """
         family = self.model_family_of(config)
         if family == LEGACY_MODEL_FAMILY:
             model_context = self._XGBOOST_MODEL_CONTEXT
         else:
             model_context = self._bank_model_context(family, config or {})
-        return model_context + (
-            "Epidemic phases:\n"
-            "- Onset (Oct-Nov): flu activity begins rising\n"
-            "- Peak (Dec-Jan): highest hospitalization rates\n"
-            "- Decline (Feb-Apr): activity decreasing\n\n"
-            "Performance context:\n"
-            "- MAPE < 40% is good, 40-60% is acceptable, > 60% indicates problems\n"
-            "- Error typically increases with horizon (Week 1 best, Week 4 worst)\n"
-            "- Peak periods are hardest to forecast due to rapid changes\n"
-            "- Positive bias = model over-predicts; negative bias = model under-predicts"
-        )
+        if not self.knowledge_enabled:
+            return model_context
+        # The former "Epidemic phases" / "Performance context" bullets now live in
+        # knowledge/curated/domain-context.yaml (migrated 2026-09-30).
+        ctx = RetrievalContext(model=family)
+        facts = self.knowledge_bank.query(ctx)
+        omitted = self.knowledge_bank.count_matching(ctx) - len(facts)
+        return model_context + render_known_facts(facts, omitted=omitted)

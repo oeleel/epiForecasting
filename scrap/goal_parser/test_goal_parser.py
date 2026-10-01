@@ -1,4 +1,9 @@
-"""Unit tests for agent.goal_parser (English sentence -> SelectionGoal)."""
+"""Unit tests for scrap/goal_parser (English sentence -> SelectionGoal).
+
+DEMOTED 2026-09-30: not in tests/agent/run_all.py MODULES and not under the
+documented pytest path (tests/agent/). Run by hand from the repo root:
+    PYTHONPATH=. .venv/bin/python scrap/goal_parser/test_goal_parser.py
+"""
 
 from __future__ import annotations
 
@@ -10,8 +15,9 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from agent.goal_parser import parse_goal
-from agent.model_selection import DEFAULT_GOAL, SelectionGoal
+from scrap.goal_parser.goal_parser import parse_goal
+from agent.model_selection import DEFAULT_GOAL, VALID_METRICS, VALID_PHASES, SelectionGoal
+from scrap.goal_parser.prompt import format_goal_parse_prompt, validate_goal
 from tests.agent.fakes import FakeLLM
 
 # A sentence containing no METRIC_KEYWORDS and no PHASE_KEYWORDS substring, so
@@ -132,6 +138,31 @@ def test_empty_goal_text_raises():
         assert False, "should have raised"
     except ValueError:
         pass
+
+
+# ---- prompt + validator (moved out of tests/agent/test_prompts.py 2026-09-30) ----
+
+def test_validate_goal_rejects_missing_keys():
+    try:
+        validate_goal({"metric": "wis"}, VALID_METRICS, VALID_PHASES)
+        assert False, "should have raised"
+    except ValueError as e:
+        assert "phase" in str(e)
+    validate_goal(
+        {"metric": "wis", "phase": "peak", "rationale": "the sentence said peak"},
+        VALID_METRICS,
+        VALID_PHASES,
+    )
+
+
+def test_format_goal_parse_prompt_lists_legal_values():
+    prompt = format_goal_parse_prompt("best at the peak", VALID_METRICS, VALID_PHASES)
+    for metric in VALID_METRICS:
+        assert metric in prompt
+    for phase in VALID_PHASES:
+        assert phase in prompt
+    assert "Output ONLY the JSON object" in prompt
+    assert "off_season" not in prompt
 
 
 ALL = [fn for name, fn in sorted(globals().items()) if name.startswith("test_") and callable(fn)]

@@ -10,7 +10,7 @@ DEFAULT_CUTOFF_DATE = "2024-11-02"
 MIN_TRAINING_WEEKS = 10
 
 # ----------------------------------------------------------------------------
-# Pinned train / evaluation split (decided 2026-09-02 advisor sync)
+# Pinned train / evaluation split (decided 2026-09-02 lab sync)
 # ----------------------------------------------------------------------------
 # Every model in the model bank is fit on data from TRAIN_START_DATE up to the
 # rolling cutoff, and evaluated on cutoffs inside [EVAL_START_DATE,
@@ -237,7 +237,8 @@ DEFAULT_MODEL_FAMILY = "xgboost_direct"
 #   clustering        Location clustering settings
 #   sample_weights    Optional reweighting (consumed by reweight_training_samples)
 #   model             Model-bank family + family-specific params
-#   data              Cutoff date / forecast horizon / pinned train start
+#   data              Cutoff date / forecast horizon / pinned train start /
+#                     optional rolling train window (train_window_weeks)
 
 import copy as _copy
 from typing import Any, Dict
@@ -311,6 +312,12 @@ def get_default_config() -> Dict[str, Any]:
             "forecast_horizon": FORECAST_HORIZON,
             "min_training_weeks": MIN_TRAINING_WEEKS,
             "train_start_date": TRAIN_START_DATE,
+            # Rolling fit window in weeks, applied AFTER feature engineering
+            # (date > cutoff - N weeks). None = fit on everything since
+            # train_start_date. Set by the peak-rectification experiment
+            # harness ("fit on the last 12 weeks"); see src/pipeline.py.
+            # Must be >= src.pipeline.MIN_TRAIN_WINDOW_WEEKS when set.
+            "train_window_weeks": None,
         },
     })
 
@@ -335,7 +342,7 @@ def get_config_value(config: Dict[str, Any], path: str) -> Any:
 def set_config_value(config: Dict[str, Any], path: str, value: Any) -> Dict[str, Any]:
     """Return a *new* config dict with `path` set to `value`.
 
-    Pure function — does not mutate the input. The orchestrator and
+    Pure function - does not mutate the input. The orchestrator and
     apply_action use this so iteration N can be reconstructed from
     iteration N-1 plus a single action without aliasing.
 

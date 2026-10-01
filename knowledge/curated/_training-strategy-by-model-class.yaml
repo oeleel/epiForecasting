@@ -1,0 +1,62 @@
+# INTAKE STUB - skipped by the loader while the filename starts with "_".
+#
+# To be authored by the lab (per-model-class training strategies; A. Adiga, 2026-09-24): "for the class of
+# models, this is the general training strategy we use". Training strategy is
+# per MODEL CLASS: statistical / autoregressive models and ML models get
+# different rules (window length, what to do at onset vs in a lull, how much
+# seasonal history to trust, when to retrain vs warm-start).
+#
+# How to fill this in:
+#   1. Replace each TODO below with the real rule, one entry per rule per class.
+#      Split an entry when a rule differs by phase (use `context.phase`).
+#   2. `context.model` lists the family names the rule applies to. Registered
+#      families today: `python -m agent list-models` (e.g. xgboost_direct,
+#      persistence, seasonal_naive, mlf_lightgbm, nf_nhits ...). A family that
+#      is not wrapped yet can still be named; the string is free.
+#   3. Rename the file to training-strategy-by-model-class.yaml (drop the "_")
+#      and run `python -m agent knowledge validate`; open a PR.
+#
+# The two placeholder entries below already validate structurally, so renaming
+# the file before editing them would load two TODO statements into the bank.
+
+- id: train-strategy-statistical-ar
+  provenance: curated
+  category: model_characteristics
+  statement: >
+    TODO (statistical / autoregressive models): the general training strategy the lab uses
+    for this class, e.g. fit window, differencing/seasonal terms, refit cadence.
+  entities: {}
+  context:
+    model: [persistence, seasonal_naive]     # TODO: the AR/statistical families this covers
+    # phase: [surge, onset]                  # optional: restrict to a phase
+  payload:
+    model_class: statistical_ar
+    # recommendation: {action: not_yet_available, params: {weeks: 12}}
+  evidence:
+    source: "A. Adiga, TODO meeting or document date"
+    n_observations: null
+    reward_delta: null
+  confidence: medium
+  llm_gloss: null
+  created_at: 2026-09-30
+
+- id: train-strategy-ml-gradient-boosting
+  provenance: curated
+  category: model_characteristics
+  statement: >
+    TODO (ML / gradient-boosting models): the general training strategy the lab uses for this
+    class, e.g. window length, sample weighting, feature history depth, retrain vs warm-start.
+  entities: {}
+  context:
+    model: [xgboost_direct, mlf_lightgbm]    # TODO: the ML families this covers
+    # phase: [peak, approaching_peak]        # optional: restrict to a phase
+  payload:
+    model_class: ml_gradient_boosting
+    # recommendation: {action: reweight_training_samples, params: {dimension: approaching_peak}}
+  evidence:
+    source: "A. Adiga, TODO meeting or document date"
+    n_observations: null
+    reward_delta: null
+  confidence: medium
+  llm_gloss: null
+  created_at: 2026-09-30

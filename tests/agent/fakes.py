@@ -35,6 +35,14 @@ import pandas as pd
 
 from agent.domain_adapter import DomainAdapter
 from agent.adapters.flu_forecast import FluForecastAdapter
+from agent.knowledge import (
+    CONFIDENCE_RANK,
+    DEFAULT_QUERY_LIMIT,
+    TRUST_RANK,
+    KnowledgeEntry,
+    RetrievalContext,
+)
+from agent.knowledge.schema import LIST_CONTEXT_KEYS
 
 
 # ----------------------------------------------------------------------------
@@ -95,8 +103,13 @@ def valid_action(
     params: Optional[Dict[str, Any]] = None,
     rationale: str = "Test rationale",
     expected_effect: str = "Test effect",
+    cited_entries: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
-    """Build a schema-valid action proposal dict for tests."""
+    """Build a schema-valid action proposal dict for tests.
+
+    `cited_entries` is omitted from the dict when None (the key is optional in
+    the schema), so existing no-bank tests keep emitting the pre-bank shape.
+    """
     if params is None:
         if name == "adjust_hyperparameter":
             params = {"name": "max_depth", "value": 5}
@@ -110,12 +123,118 @@ def valid_action(
             params = {"transform": "raw"}
         else:
             params = {}
-    return {
+    action: Dict[str, Any] = {
         "name": name,
         "params": params,
         "rationale": rationale,
         "expected_effect": expected_effect,
     }
+    if cited_entries is not None:
+        action["cited_entries"] = list(cited_entries)
+    return action
+
+
+# ----------------------------------------------------------------------------
+# FakeKnowledgeBank
+# ----------------------------------------------------------------------------
+
+def fake_entry(
+    entry_id: str,
+    statement: str = "A scripted fact.",
+    phase: Optional[str] = None,
+    model: Optional[str] = None,
+    metric: Optional[str] = None,
+    action: Optional[str] = None,
+    params: Optional[Dict[str, Any]] = None,
+    confidence: str = "high",
+    provenance: str = "curated",
+    n_observations: Optional[int] = None,
+) -> KnowledgeEntry:
+    """A valid KnowledgeEntry (curated unless `provenance` says otherwise) scoped by context.
+
+    `action` (with `params`) attaches a `payload.recommendation`, which is what
+    the orchestrator matches against the proposed action name for `supported_by`.
+    `n_observations` lands in `evidence` so the fake bank's ordering can be tested.
+    """
+    context: Dict[str, Any] = {}
+    if phase is not None:
+        context["phase"] = [phase]
+    if model is not None:
+        context["model"] = [model]
+    if metric is not None:
+        context["metric"] = [metric]
+    payload: Dict[str, Any] = {}
+    if action is not None:
+        payload["recommendation"] = {"action": action, "params": params or {}}
+    evidence: Dict[str, Any] = {"source": "tests/agent/fakes.py"}
+    if n_observations is not None:
+        evidence["n_observations"] = n_observations
+    return KnowledgeEntry(
+        id=entry_id,
+        provenance=provenance,
+        category="model_characteristics",
+        statement=statement,
+        context=context,
+        payload=payload,
+        evidence=evidence,
+        confidence=confidence,
+        created_at="2026-10-01",
+    )
+
+
+def _store_order_key(entry: KnowledgeEntry):
+    """The store's ORDER BY as a sort key: trust desc, confidence desc,
+    n_observations desc (NULL last), id asc. (`updated_at` is skipped: the
+    fake has no clock, and the store's tie-break on it never changes which
+    rows a limit cuts in these tests.)"""
+    n_obs = entry.evidence.get("n_observations")
+    return (
+        -TRUST_RANK[entry.provenance],
+        -CONFIDENCE_RANK[entry.confidence],
+        1 if n_obs is None else 0,
+        -(n_obs or 0),
+        entry.id,
+    )
+
+
+class FakeKnowledgeBank:
+    """In-memory stand-in for `agent.knowledge.KnowledgeBank`.
+
+    Implements the two methods the orchestrator calls (`query`,
+    `count_matching`) over a scripted list of entries, with the store's
+    matching rule for the list-valued context keys: an entry matches when,
+    for each key set on the context, it has no constraint or contains the
+    value. Matches come back in the store's order (`_store_order_key`) so a
+    `limit` cuts the same rows the real bank would cut. Every
+    `RetrievalContext` seen is recorded in `queries` so a test can assert
+    what the orchestrator asked for.
+    """
+
+    def __init__(self, entries: List[KnowledgeEntry]):
+        self._entries = list(entries)
+        self.queries: List[RetrievalContext] = []
+
+    def _matching(self, ctx: RetrievalContext) -> List[KnowledgeEntry]:
+        matched: List[KnowledgeEntry] = []
+        for entry in self._entries:
+            ok = True
+            for key in LIST_CONTEXT_KEYS:
+                wanted = getattr(ctx, key)
+                allowed = entry.context.get(key)
+                if wanted is not None and allowed is not None and wanted not in allowed:
+                    ok = False
+            if ok:
+                matched.append(entry)
+        return sorted(matched, key=_store_order_key)
+
+    def query(
+        self, ctx: RetrievalContext, *, limit: int = DEFAULT_QUERY_LIMIT
+    ) -> List[KnowledgeEntry]:
+        self.queries.append(ctx)
+        return self._matching(ctx)[:limit]
+
+    def count_matching(self, ctx: RetrievalContext) -> int:
+        return len(self._matching(ctx))
 
 
 # ----------------------------------------------------------------------------
