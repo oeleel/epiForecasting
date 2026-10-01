@@ -557,7 +557,6 @@ epiForecasting/
 ├── analysis/                       # SHAP and dashboard scripts
 ├── documentation/
 │   ├── requirements.txt            # Python dependencies
-│   ├── meeting-notes/              # Research meeting summaries
 │   └── *.md                        # Design docs
 └── README.md                       # This file
 ```
@@ -662,7 +661,7 @@ Any OpenAI-compatible endpoint works. Set `LLM_BASE_URL` to your provider's URL 
 
 ## Where to go next
 
-- Read [`documentation/knowledge-bank-design.md`](documentation/knowledge-bank-design.md) for the current direction (lab-authored guardrails first) and `documentation/meeting-notes/` for the decisions behind it.
+- Read [`documentation/knowledge-bank-design.md`](documentation/knowledge-bank-design.md) for the current direction (lab-authored guardrails first) and `the meeting syncs` for the decisions behind it.
 - The March 2026 framing docs ([`documentation/archive/agentic_framework_design.md`](documentation/archive/agentic_framework_design.md), [`documentation/archive/agent_framework_report.md`](documentation/archive/agent_framework_report.md)) are superseded (2026-08-27: exploration tool, not real-time) and kept for history only.
 - See [`.claude/CLAUDE.md`](.claude/CLAUDE.md) for the development guide and milestone roadmap.
 - See `agent/orchestrator.py` and `agent/adapters/flu_forecast.py` for the Milestone 2 implementation. The action catalog at the top of `flu_forecast.py` is the easiest entry point - adding a new action is one entry there plus a clause in `apply_action`.

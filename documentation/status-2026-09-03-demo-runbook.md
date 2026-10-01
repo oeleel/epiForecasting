@@ -12,7 +12,7 @@ works" was executed, not read from docs. Companion to
 > machine holds 15 live runs from the 09-09 review. Items 1-2 and the 6.1 half
 > of item 6 in "What still needs implementing" are done. Priorities were reset
 > by A. Adiga on 09-10: knowledge bank first
-> (`meeting-notes/2026-09-10-knowledge-bank-first.md`).
+> (sync of 2026-09-09).
 
 ## What works (verified)
 

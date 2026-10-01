@@ -1,6 +1,6 @@
 # A. Adiga's five rectification actions (Teams follow-up ~2026-09-27, after the
 # 09-24 meeting): what to do when the results summarizer reports that a model
-# fails at the peak. Meeting record: documentation/meeting-notes/
+# fails at the peak. Source: A. Adiga, 2026-09-24 sync and Teams follow-up (~2026-09-27).
 # 2026-09-24-controlled-experiment-and-curated-guardrails.md, "The experiment".
 #
 # Every entry carries `payload.recommendation`. `action` is either an adapter

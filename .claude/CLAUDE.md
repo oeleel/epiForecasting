@@ -209,7 +209,7 @@ Both expose an OpenAI-compatible API (`/v1/chat/completions`). Swapping environm
 - NL goal (roadmap 2.3): **demoted 2026-09-30 to `scrap/goal_parser/`** (A. Adiga, 2026-09-10: cosmetic, do not invest). The structured `SelectionGoal(metric, phase)` + `select-model --metric/--phase` stay. `scrap/` is never imported or tested; see `scrap/README.md`.
 - `agent/phase_segmentation.py`: Adiga-style surge/plateau/decline segmentation from the curve, alongside the calendar phases.
 - Open review findings on the report: `documentation/handoff-2026-09-11-desktop.md` §3 (the goal-parser findings there are moot after the demotion).
-- **Current priority (set 2026-09-10): knowledge bank first** - `documentation/meeting-notes/2026-09-10-knowledge-bank-first.md`.
+- **Current priority (set 2026-09-10): knowledge bank first** - see `documentation/knowledge-bank-design.md`.
 
 **Knowledge bank v1** - LANDED (2026-09-30)
 - Exists: entry schema, SQLite store, curated YAML intake, query, `knowledge` CLI, KNOWN FACTS renderer (`agent/knowledge/`); seeded curated entries in `knowledge/curated/` (the five rectification actions from A. Adiga (Teams ~2026-09-27), training-strategy rules, domain context migrated out of `FluForecastAdapter.get_domain_context`, which now serves them from the bank)
@@ -258,7 +258,7 @@ Key details:
 - **`tests/agent/`** - the real test suite (pytest or `run_all.py`)
 - **`scripts/experiments/`** - controlled experiments whose logs feed the knowledge bank (`peak_rectification.py`)
 - **`scrap/`** - demoted code (NL goal parser), kept for reference only; never imported, tested, or maintained (see `scrap/README.md`)
-- **`documentation/archive/`** - superseded March 2026 framing docs (automate-end-to-end), kept for history; current direction is in `documentation/meeting-notes/`
+- **`documentation/archive/`** - superseded March 2026 framing docs (automate-end-to-end), kept for history; current direction is in `the meeting syncs`
 
 ## Data Source
 

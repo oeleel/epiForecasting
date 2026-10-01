@@ -1,7 +1,7 @@
 # Fall 2026 roadmap - model bank, selection stage, and warm-start research
 
 Work plan coming out of the 2026-09-02 sync with A. Adiga
-(`meeting-notes/2026-09-02-ts-agent-review-and-nixtla-direction.md`) and the
+(sync of 2026-08-27) and the
 TS-Agent gap analysis (`ts-agent-comparison-notes.md`).
 
 **Frame:** Milestones 1–3 (summarize, improvement loop, tracking) are complete.
@@ -20,7 +20,7 @@ warm-start research layer and the knowledge/reporting pieces needed for the
   plug-and-play for whatever models the team brings
   (`documentation/MODEL_BANK.md`).
 
-**Reprioritized 2026-09-10** (`meeting-notes/2026-09-10-knowledge-bank-first.md`):
+**Reprioritized 2026-09-10** (sync of 2026-09-09):
 Workstream 5 (knowledge bank) is now FIRST and must be finished before the
 rest; the natural-language front end in 2.3 is "cosmetic" and gets no further
 investment; the paper gains a formal RL framing (reward = change in the

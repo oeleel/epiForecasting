@@ -1,7 +1,7 @@
 # Knowledge Bank Design
 
 **Deliverable for the 2026-09-17 meeting with A. Adiga.** Covers the three asks from
-the 09-10 sync (`meeting-notes/2026-09-10-knowledge-bank-first.md`): the
+the 2026-09-09 sync: the
 knowledge-bank design, the overall architecture diagram (§8), and the
 knowledge-graph vs flat-bank recommendation (§7).
 

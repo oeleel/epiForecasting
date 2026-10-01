@@ -132,7 +132,7 @@ PYTHONPATH=. .venv/bin/python tests/agent/run_all.py
 
 ## 5. Next research actions - REPRIORITIZED by the 09-10 meeting
 
-Full decisions: `meeting-notes/2026-09-10-knowledge-bank-first.md`. Summary:
+Decisions from the 2026-09-09 sync, summary:
 
 1. **PRIMARY: the knowledge bank, design-first.** Deliverables to Adiga ~Fri/Mon
    via Teams, final by next Thursday: an overall **architecture diagram**, a

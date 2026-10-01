@@ -1,4 +1,4 @@
-> **Superseded 2026-08-27** (exploration tool, not real-time); see `documentation/meeting-notes/`. Kept in `documentation/archive/` for the March 2026 framing only.
+> **Superseded 2026-08-27** (exploration tool, not real-time); see `documentation/knowledge-bank-design.md` and `documentation/fall-2026-roadmap.md`. Kept in `documentation/archive/` for the March 2026 framing only.
 
 # Agentic Forecasting Framework — Research Meeting Report
 

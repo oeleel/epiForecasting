@@ -19,3 +19,6 @@ outputs/experiments/**
 outputs/experiments/pr-split-*/
 outputs/experiments/*-smoke-*/
 outputs/experiments/sweep-logs/
+
+# private meeting notes stay local
+documentation/meeting-notes/
