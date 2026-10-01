@@ -63,7 +63,7 @@ Knowledge bank at the proposal step (design unit 4, injection point B):
     curated/derived entries instead.
 
     Guardrails are advisory with an override log (design doc section 6,
-    advisor 2026-09-24): a citation of an id that was never shown is dropped
+    A. Adiga, 2026-09-24): a citation of an id that was never shown is dropped
     with a warning, an action that no retrieved recommendation supports is
     logged, a supporting recommendation whose params differ is logged, and
     nothing is ever blocked. With `knowledge_bank=None` the proposal path

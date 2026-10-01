@@ -57,7 +57,7 @@ SEASON_START_MONTH = 10
 # July, well past any plausible flu peak (Dec-Feb).
 MIN_SEASON_WEEKS = 40
 
-# Human-calibratable starting point (advisor question): how many weeks before
+# Human-calibratable starting point (open question for the lab): how many weeks before
 # the season peak count as "approaching peak". 6 covers the 4-week horizons
 # whose targets land on the rise.
 DEFAULT_APPROACHING_PEAK_WEEKS = 6

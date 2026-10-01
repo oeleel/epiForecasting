@@ -1,10 +1,10 @@
-# Training-strategy rules the advisor has stated at least twice across the
+# Training-strategy rules A. Adiga has stated at least twice across the
 # 09-03, 09-09 and 09-24 meetings (documentation/meeting-notes/). These are the
 # lab's guardrails on HOW to fit, independent of the peak-rectification actions.
 # The loop should cite the rule it follows and is still allowed to explore past
 # it ("12 weeks is not always right when seasonality is strong" is a valid
 # conclusion). Per-model-class refinements of these rules are the content the
-# advisor promised; they land in _training-strategy-by-model-class.yaml.
+# lab will author; they land in _training-strategy-by-model-class.yaml.
 
 - id: train-short-window-on-takeoff
   provenance: curated
@@ -23,7 +23,7 @@
         104); the experiment harness sets the same key directly.
     config_key: data.train_window_weeks
   evidence:
-    source: "advisor (A. Adiga), meetings 2026-09-03, 2026-09-09, 2026-09-24"
+    source: "A. Adiga, meetings 2026-09-03, 2026-09-09, 2026-09-24"
     n_observations: null
     reward_delta: null
   confidence: high
@@ -45,7 +45,7 @@
       note: 52 or 104 weeks (104 = 2 seasons, the catalog maximum); writes `data.train_window_weeks`.
     config_key: data.train_window_weeks
   evidence:
-    source: "advisor (A. Adiga), meetings 2026-09-03, 2026-09-09, 2026-09-24"
+    source: "A. Adiga, meetings 2026-09-03, 2026-09-09, 2026-09-24"
     n_observations: null
     reward_delta: null
   confidence: high
@@ -64,7 +64,7 @@
   payload:
     search_space: {train_window_weeks: [8, 12, 26, 52, 104]}
   evidence:
-    source: "advisor (A. Adiga), meetings 2026-09-09, 2026-09-24"
+    source: "A. Adiga, meetings 2026-09-09, 2026-09-24"
     n_observations: null
     reward_delta: null
   confidence: high
@@ -83,7 +83,7 @@
     minimum_history_years: 2
     note: The cached CDC series starts 2022-02-05, so the pinned split barely clears this bar.
   evidence:
-    source: "advisor (A. Adiga), meetings 2026-09-09, 2026-09-24"
+    source: "A. Adiga, meetings 2026-09-09, 2026-09-24"
     n_observations: null
     reward_delta: null
   confidence: high
@@ -101,7 +101,7 @@
   payload:
     rule: {consecutive_weeks: 3, threshold: TBD}
   evidence:
-    source: "advisor (A. Adiga), meetings 2026-09-09, 2026-09-24"
+    source: "A. Adiga, meetings 2026-09-09, 2026-09-24"
     n_observations: null
     reward_delta: null
   confidence: medium
@@ -119,7 +119,7 @@
   payload:
     typical_onset_month: 10
   evidence:
-    source: "advisor (A. Adiga), meetings 2026-09-03, 2026-09-09"
+    source: "A. Adiga, meetings 2026-09-03, 2026-09-09"
     n_observations: null
     reward_delta: null
   confidence: medium

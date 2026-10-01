@@ -1,4 +1,4 @@
-# The advisor's five rectification actions (Teams follow-up ~2026-09-27, after the
+# A. Adiga's five rectification actions (Teams follow-up ~2026-09-27, after the
 # 09-24 meeting): what to do when the results summarizer reports that a model
 # fails at the peak. Meeting record: documentation/meeting-notes/
 # 2026-09-24-controlled-experiment-and-curated-guardrails.md, "The experiment".
@@ -27,11 +27,11 @@
       params: {}
       note: >
         The cached CDC series starts 2022-02-05, so the only lever is admitting earlier
-        seasons; whether the 2020-22 seasons are admissible is an open advisor question.
+        seasons; whether the 2020-22 seasons are admissible is an open question for the lab.
         Other locations are already pooled in the training set.
     rank: 1
   evidence:
-    source: "advisor (A. Adiga), Teams follow-up, ~2026-09-27"
+    source: "A. Adiga, Teams follow-up, ~2026-09-27"
     n_observations: null
     reward_delta: null
   confidence: high
@@ -56,7 +56,7 @@
         keep the two arms distinct. Planned experiment arm, not run yet.
     rank: 2
   evidence:
-    source: "advisor (A. Adiga), Teams follow-up, ~2026-09-27"
+    source: "A. Adiga, Teams follow-up, ~2026-09-27"
     n_observations: null
     reward_delta: null
   confidence: high
@@ -75,10 +75,10 @@
     recommendation:
       action: not_yet_available
       params: {}
-      note: Advisor expects it to fail ("likely to fail"); planned arm, run last if at all.
+      note: A. Adiga expects it to fail ("likely to fail"); planned arm, run last if at all.
     rank: 3
   evidence:
-    source: "advisor (A. Adiga), Teams follow-up, ~2026-09-27"
+    source: "A. Adiga, Teams follow-up, ~2026-09-27"
     n_observations: null
     reward_delta: null
   confidence: low
@@ -105,7 +105,7 @@
     rank: 4
     config_key: data.train_window_weeks
   evidence:
-    source: "advisor (A. Adiga), Teams follow-up, ~2026-09-27"
+    source: "A. Adiga, Teams follow-up, ~2026-09-27"
     n_observations: null
     reward_delta: null
   confidence: high
@@ -131,7 +131,7 @@
     rank: 5
     loss: "L = 1/N sum w_i l(yhat_i, y_i); w_i = lambda if approaching-peak else 1"
   evidence:
-    source: "advisor (A. Adiga), Teams follow-up, ~2026-09-27"
+    source: "A. Adiga, Teams follow-up, ~2026-09-27"
     n_observations: null
     reward_delta: null
   confidence: high

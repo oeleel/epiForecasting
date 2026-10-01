@@ -11,7 +11,7 @@ two-agent improvement loop (TS-Agent Stage 1 -> our Stage 2):
   3. Warm-up: fit + forecast every candidate at every cutoff (no leakage)
   4. Score with the shared phase-aware WIS and rank by the goal metric
   5. Same warm-up, different goals: re-rank by peak and by decline WIS
-     (no refitting - the goal is a parameter, exactly as the advisor asked)
+     (no refitting - the goal is a parameter, as agreed in the 2026-09-02 sync)
   6. Write the JSON + markdown report for the run
   7. (optional) Hand the incumbent to the improvement loop for 2 iterations
 
@@ -225,7 +225,7 @@ def main() -> None:
         print("  Cite the --full run (all states, 9 cutoffs) when reporting results.")
 
     step("5. Same warm-up, different goals (no refitting)")
-    print("  The advisor left the objective open: peak vs average vs overall.")
+    print("  The lab left the objective open: peak vs average vs overall.")
     print("  The goal is a parameter, so one warm-up answers all three:")
     for goal in DEMO_GOALS[1:]:
         res = results[goal.describe()]

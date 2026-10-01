@@ -4,7 +4,7 @@ Question
 --------
 XGBoost's worst phase on the pinned 2025-26 split is the peak (WIS 122.4,
 bias -52.4 = under-prediction; `outputs/model_selection/demo_2026-09-02.json`).
-Does either of the advisor's two cheap rectification actions move peak WIS
+Does either of the lab's two cheap rectification actions move peak WIS
 without hurting overall WIS?
 
     action 5  loss weight lambda on approaching-peak training rows

@@ -1,6 +1,6 @@
 # INTAKE STUB - skipped by the loader while the filename starts with "_".
 #
-# What we are asking the lab to write (advisor, 2026-09-24): "for the class of
+# To be authored by the lab (per-model-class training strategies; A. Adiga, 2026-09-24): "for the class of
 # models, this is the general training strategy we use". Training strategy is
 # per MODEL CLASS: statistical / autoregressive models and ML models get
 # different rules (window length, what to do at onset vs in a lull, how much
@@ -33,7 +33,7 @@
     model_class: statistical_ar
     # recommendation: {action: not_yet_available, params: {weeks: 12}}
   evidence:
-    source: "advisor (A. Adiga), TODO meeting or document date"
+    source: "A. Adiga, TODO meeting or document date"
     n_observations: null
     reward_delta: null
   confidence: medium
@@ -54,7 +54,7 @@
     model_class: ml_gradient_boosting
     # recommendation: {action: reweight_training_samples, params: {dimension: approaching_peak}}
   evidence:
-    source: "advisor (A. Adiga), TODO meeting or document date"
+    source: "A. Adiga, TODO meeting or document date"
     n_observations: null
     reward_delta: null
   confidence: medium

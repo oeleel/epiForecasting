@@ -3,7 +3,7 @@
 # "Performance context" bullets), migrated here on 2026-09-30 so the adapter
 # serves it from the bank like every other fact. The wording is kept close to
 # the original bullets; the calendar phases are the ones PhaseEvaluator.PHASE_MAP
-# scores with (advisor question: calendar vs curve-based phases).
+# scores with (open question: calendar vs curve-based phases).
 #
 # `context.season_week` is the epidemiological week of the year (1..53, week 40
 # is early October), inclusive. The peak window (Dec-Jan) wraps the year

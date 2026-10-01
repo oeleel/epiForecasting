@@ -4,7 +4,7 @@ The knowledge bank is the memory the agent loop reads before it proposes a chang
 lab's domain rules and guardrails, facts derived from the data, and lessons from past runs,
 stored as one queryable SQLite table. It is not a document store and not a place for
 free-form notes; every entry is a single validated fact with retrieval keys, and the loop
-cites the entry it acts on but is still free to explore past it (advisor, 2026-09-24).
+cites the entry it acts on but is still free to explore past it (A. Adiga, 2026-09-24).
 
 Design: `documentation/knowledge-bank-design.md`. Code: `agent/knowledge/` (read
 `schema.py` first). CLI: `python -m agent knowledge {validate,rebuild,list,query,import-experiment}`.
@@ -31,7 +31,7 @@ there is no compile step and the files here are the source of truth for curated 
   entities: {phase: onset}         # typed refs (model, phase, data_source, season, metric)
   context: {season_week: [38, 46]} # WHEN it applies: phase/model/metric lists, season_week [lo, hi]
   payload: {rule: {consecutive_weeks: 3}}      # free JSON; see recommendation convention below
-  evidence: {source: "advisor (A. Adiga), meeting 2026-09-24", n_observations: null, reward_delta: null}
+  evidence: {source: "A. Adiga, meeting 2026-09-24", n_observations: null, reward_delta: null}
   confidence: medium               # high | medium | low
   llm_gloss: null                  # reserved for an LLM's interpretation; never a retrieval key
   created_at: 2026-09-30
@@ -101,14 +101,14 @@ bank-writer, design doc unit 5.
 
 ## Files in `curated/`
 
-- `rectification-actions.yaml` - the advisor's five actions for a model that fails at the peak.
+- `rectification-actions.yaml` - A. Adiga's five actions for a model that fails at the peak.
 - `training-strategy.yaml` - window-length rules, the seasonality data requirement, onset definition.
 - `domain-context.yaml` - calendar phases and performance conventions migrated from the adapter.
 - `_TEMPLATE.yaml` - annotated entry to copy. `_training-strategy-by-model-class.yaml` - intake stub.
 
-## What we are asking the lab to write next
+## Entries still to be authored by the lab
 
-Per-model-class training strategies (advisor, 2026-09-24): statistical/autoregressive
+Per-model-class training strategies (A. Adiga, 2026-09-24): statistical/autoregressive
 models and ML models get different rules for window length, seasonal history, and when to
 retrain. The skeleton is `curated/_training-strategy-by-model-class.yaml`: replace the TODO
 statements, list the families each rule covers in `context.model`, drop the underscore from

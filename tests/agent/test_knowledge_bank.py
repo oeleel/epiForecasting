@@ -50,7 +50,7 @@ def _entry_dict(**overrides: Any) -> dict[str, Any]:
         "context": {"season_week": [38, 46]},
         "payload": {"rule": {"consecutive_weeks": 3}},
         "evidence": {
-            "source": "advisor, meeting 2026-09-10",
+            "source": "A. Adiga, meeting 2026-09-10",
             "n_observations": None,
             "reward_delta": None,
         },
@@ -95,10 +95,10 @@ def test_from_dict_to_dict_round_trips():
 
 
 def test_to_dict_emits_canonical_evidence_shape():
-    data = _entry_dict(evidence={"source": "advisor"})
+    data = _entry_dict(evidence={"source": "A. Adiga"})
     entry = KnowledgeEntry.from_dict(data)
     assert entry.to_dict()["evidence"] == {
-        "source": "advisor",
+        "source": "A. Adiga",
         "n_observations": None,
         "reward_delta": None,
     }
@@ -139,7 +139,7 @@ def test_created_at_rejects_yaml_timestamp():
         directory = Path(tmp)
         (directory / "a.yaml").write_text(
             "- id: ts-entry\n  provenance: curated\n  category: forecasts\n"
-            "  statement: A fact.\n  evidence: {source: advisor}\n  confidence: low\n"
+            "  statement: A fact.\n  evidence: {source: A. Adiga}\n  confidence: low\n"
             "  created_at: 2026-09-30 10:00:00\n",
             encoding="utf-8",
         )
@@ -981,7 +981,7 @@ def test_render_empty_list_is_explicit_placeholder():
 
 # ---- seed files (knowledge/curated) ----------------------------------------
 
-# The advisor's five peak-rectification actions (Teams 2026-09-27), in his order.
+# The five peak-rectification actions (A. Adiga, Teams 2026-09-27), in the stated order.
 SEED_RECTIFICATION_IDS = (
     "rectify-peak-add-examples-other-seasons",
     "rectify-peak-oversample-windows",

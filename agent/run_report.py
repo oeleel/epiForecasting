@@ -5,7 +5,7 @@ iteration to SQLite, but neither is the artifact a reader actually needs. The
 question a run has to answer is narrow and practical:
 
     "Did the search find a better config than the baseline, which edit did it,
-     and how much do I believe the number?"
+     and how much should the number be believed?"
 
 This module answers exactly that, and nothing else. It turns a `RunResult`
 (live, in-process) or a `RunTracker.get_run()` row (historical, from
@@ -24,7 +24,7 @@ Design notes
 - **The report describes the search, never the epidemic.** Every sentence is
   about models, actions, metric deltas, and the recommendation. Summarizing what
   the forecast says about flu is a separate agent and deliberately out of scope
-  (advisor meeting 2026-09-02).
+  (A. Adiga, meeting 2026-09-02).
 - **Carry-forward rows are flagged, not credited.** `skipped`, `no_op`, `stop`,
   and `user_stop` iterations reuse the previous iteration's forecast and metrics
   verbatim. Crediting them with a delta would invent an improvement that no
@@ -34,7 +34,7 @@ Design notes
   it relied on, after the orchestrator dropped ids that were never shown) and
   `supported_by` (retrieved entries whose recommendation names the proposed
   action) ride along on each line and in `report.json`, and the tried table
-  shows `cites: ...`. That is the advisor's validation mechanism (meeting
+  shows `cites: ...`. That is the lab's validation mechanism (A. Adiga, meeting
   2026-09-24): cited reasoning, inspectable after the fact, not hard blocks.
 - **Best-iteration is recomputed here, from the lines.** `RunTracker.
   get_best_iteration` only supports four metrics while `improve --target-metric`

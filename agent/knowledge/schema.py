@@ -36,7 +36,7 @@ Invariants
 - `KNOWN_PHASES` accepts both phase vocabularies in the repo (calendar phases
   from `PhaseEvaluator.PHASE_MAP`, curve phases from `phase_segmentation`)
   plus `approaching_peak`. They are deliberately not unified here; that is an
-  open advisor question.
+  open question for the lab.
 - `payload` is free JSON, with one validated convention:
   `payload.recommendation = {action, params, note?}` for "what to do"
   entries. `action` is an adapter action name or the literal

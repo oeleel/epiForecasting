@@ -31,7 +31,7 @@ Schema
         one row per value of the list-valued context keys (phase, model,
         metric); FK to entries with ON DELETE CASCADE. Retrieval is a SQL
         filter over this table, not a Python scan: "a database that can be
-        queried" is the advisor's explicit ask.
+        queried" is an explicit requirement (A. Adiga).
 
 Invariants
 ----------

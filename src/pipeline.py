@@ -28,7 +28,7 @@ Design:
                                    AFTER feature engineering on purpose: the
                                    lag / rolling / seasonal features still see
                                    the full history, only the rows the model
-                                   fits on shrink (the advisor's "fit on the
+                                   fits on shrink (the lab's "fit on the
                                    last 12 weeks" knob; knowledge-bank design
                                    doc, rectification action 4). N must be
                                    >= MIN_TRAIN_WINDOW_WEEKS or ValueError.

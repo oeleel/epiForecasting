@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Knowledge Bank Demo - the 2026-10-01 advisor walkthrough
+Knowledge Bank Demo - the 2026-10-01 meeting walkthrough
 =========================================================
 
-The advisor's ask (meeting 2026-09-10, follow-up 09-24): a knowledge bank the
+The ask (A. Adiga, meeting 2026-09-10, follow-up 09-24): a knowledge bank the
 improvement loop reads before it proposes a change, holding the lab's rules,
 facts derived from the data, and lessons from past runs, as *queryable*
 entries that the loop cites. This script walks that bank end to end in under
@@ -389,7 +389,7 @@ def step_loop_reach(bank: KnowledgeBank, out: TextIO) -> dict[str, Any]:
           file=out)
     why(
         out,
-        "The advisor's requirement: the loop CITES the fact it acts on but stays free to",
+        "The lab's requirement: the loop CITES the fact it acts on but stays free to",
         "explore past the bank. Citations are stored per iteration in the run tracker, so a",
         "run report can say which rule drove which change, and which changes were explorations.",
     )
@@ -494,7 +494,7 @@ def run_demo(bank: KnowledgeBank, out: TextIO, *, curated_dir: Path = DEFAULT_CU
 
 
 def main() -> None:
-    p = argparse.ArgumentParser(description="Knowledge bank demo (advisor meeting 2026-10-01)")
+    p = argparse.ArgumentParser(description="Knowledge bank demo (meeting 2026-10-01)")
     p.add_argument("--pause", action="store_true", help="wait for enter between steps")
     p.add_argument("--live", action="store_true",
                    help="also run the improve loop for 2 iterations (needs Ollama qwen3:8b)")

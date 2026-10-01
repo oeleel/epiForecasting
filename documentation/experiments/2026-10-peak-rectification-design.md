@@ -1,6 +1,6 @@
 # Peak rectification experiment - design
 
-This is the design of the controlled XGBoost experiment the advisor asked for on 2026-09-24: what is fixed, what is varied, how each configuration is scored and logged. It is written for sign-off before the numbers are read; the numbers live in the results doc.
+This is the design of the controlled XGBoost experiment A. Adiga asked for on 2026-09-24: what is fixed, what is varied, how each configuration is scored and logged. It is written for sign-off before the numbers are read; the numbers live in the results doc.
 
 Status (2026-09-30): harness built and smoke-tested; the full sweep finished on 2026-09-30 (see [Results](#results)).
 
@@ -14,9 +14,9 @@ Status (2026-09-30): harness built and smoke-tested; the full sweep finished on 
 | decline | 49.28 | -26.7 |
 | **peak** | **122.37** | **-52.4** |
 
-The failure is under-prediction. Question: do the advisor's two cheap rectification actions (loss weight on approaching-peak rows, and a short training window) lower peak WIS without hurting overall WIS?
+The failure is under-prediction. Question: do the two cheap rectification actions (loss weight on approaching-peak rows, and a short training window) lower peak WIS without hurting overall WIS?
 
-Source: advisor's five actions, Teams ~09-27, recorded in [`../meeting-notes/2026-09-24-controlled-experiment-and-curated-guardrails.md`](../meeting-notes/2026-09-24-controlled-experiment-and-curated-guardrails.md) and seeded as curated entries in [`../../knowledge/curated/rectification-actions.yaml`](../../knowledge/curated/rectification-actions.yaml).
+Source: the five rectification actions (A. Adiga, Teams ~2026-09-27), recorded in [`../meeting-notes/2026-09-24-controlled-experiment-and-curated-guardrails.md`](../meeting-notes/2026-09-24-controlled-experiment-and-curated-guardrails.md) and seeded as curated entries in [`../../knowledge/curated/rectification-actions.yaml`](../../knowledge/curated/rectification-actions.yaml).
 
 ## 2. Objective
 
@@ -63,13 +63,13 @@ Known property of the fixed setup: the validation split is positional over rows 
 
 ## 4. The five actions and which are run
 
-| # | advisor action | run now? | how | why / why not |
+| # | rectification action | run now? | how | why / why not |
 |---|---|---|---|---|
 | 5 | Reweight the loss: w = lambda for approaching-peak rows, 1 otherwise | **yes, two forms** | `lambda` and `lambda_calendar` arms | Cheap; the knob already existed for calendar phases |
 | 4 | Shorter window when the current season differs from past ones | **yes, window only** | `window` arm | The "season differs" trigger is not defined yet; this tests the lever unconditionally |
 | 2 | Oversample training windows from the failing phase | no | - | For XGBoost, integer sample weights equal row duplication except under `subsample` (0.7 here). Running it as a separate arm needs literal row duplication to stay distinct from action 5. Planned after lambda results say whether upweighting helps at all |
-| 3 | SMOTE | no | - | Advisor expects it to fail. Lowest priority; run last if at all |
-| 1 | Add failing-phase examples from other seasons / locations / outbreaks | no | - | All locations are already pooled. The only lever left is data before 2022-02-05 (COVID-era NHSN reporting), which is an admissibility question for the advisor, not an engineering one |
+| 3 | SMOTE | no | - | Adiga expects it to fail. Lowest priority; run last if at all |
+| 1 | Add failing-phase examples from other seasons / locations / outbreaks | no | - | All locations are already pooled. The only lever left is data before 2022-02-05 (COVID-era NHSN reporting), which is an admissibility question for the lab, not an engineering one |
 
 Entry #4 and the two window rules in `knowledge/curated/training-strategy.yaml` (`train-short-window-on-takeoff`, `train-long-window-in-lull`) carry `action: not_yet_available` until a `set_training_window` adapter action exists. Until then the harness sets `data.train_window_weeks` directly; the improve loop cannot take this action yet.
 
@@ -82,7 +82,7 @@ Entry #4 and the two window rules in `knowledge/curated/training-strategy.yaml` 
 | `lambda_calendar` | `lambda_calendar_2`, `lambda_calendar_3` | `sample_weights.by_phase.peak = lambda` (Dec-Jan origin dates) | action 5 with the calendar label: does the label definition matter? |
 | `window` | `window_12`, `window_26`, `window_52` | `data.train_window_weeks = N` | action 4 |
 
-Lambda values are `DEFAULT_LAMBDAS = (1.5, 2.0, 3.0, 5.0)`; the adapter's guardrail for `reweight_training_samples` weights is [1.0, 5.0], so 5 is the top of what the loop may propose. Windows are `DEFAULT_WINDOWS = (12, 26, 52)`: the advisor's takeoff window, a half year, and his lull window. 104 weeks (the other lull value he named) is not in this sweep; it is a one-flag addition (`--arms baseline window --windows 104`) if 52 looks promising.
+Lambda values are `DEFAULT_LAMBDAS = (1.5, 2.0, 3.0, 5.0)`; the adapter's guardrail for `reweight_training_samples` weights is [1.0, 5.0], so 5 is the top of what the loop may propose. Windows are `DEFAULT_WINDOWS = (12, 26, 52)`: Adiga's takeoff window, a half year, and the lull window Adiga named. 104 weeks (the other lull value named) is not in this sweep; it is a one-flag addition (`--arms baseline window --windows 104`) if 52 looks promising.
 
 ### How the sweep was run
 
@@ -121,7 +121,7 @@ The first-cutoff case is the conservative side of the rule, not a bug. It means 
 
 ### Alternative definition (not implemented)
 
-The advisor's 09-03 wording was "when entering a growth phase", a curve property. `agent/phase_segmentation.py` already implements the Adiga surge / plateau / decline segmentation (bottom-up piecewise-linear fit on log1p, `DEFAULT_DELTA = 0.10`, `DEFAULT_MIN_SEGMENT_WEEKS = 3`). The alternative label is: rows inside the `surge` segment that ends at an eligible season's peak.
+Adiga's 09-03 wording was "when entering a growth phase", a curve property. `agent/phase_segmentation.py` already implements the Adiga surge / plateau / decline segmentation (bottom-up piecewise-linear fit on log1p, `DEFAULT_DELTA = 0.10`, `DEFAULT_MIN_SEGMENT_WEEKS = 3`). The alternative label is: rows inside the `surge` segment that ends at an eligible season's peak.
 
 | | K weeks before max (implemented) | surge segment (alternative) |
 |---|---|---|
@@ -130,7 +130,7 @@ The advisor's 09-03 wording was "when entering a growth phase", a curve property
 | leakage handling | eligibility rule above | same eligibility rule; for anything touching the in-progress season, `segment_incrementally` (freezes breakpoints, refits only the tail) instead of `segment_series` |
 | cost to switch | - | a new mask function behind the same config key |
 
-The implemented rule is the simpler one to audit. Which one the lab wants is advisor question 1.
+The implemented rule is the simpler one to audit. Which one the lab wants is open question 1.
 
 ## 6. Window knob semantics
 
@@ -209,14 +209,14 @@ Not built yet. The plan, in order:
 
 1. **Input**: the merged `log.jsonl` plus `manifest.json`. Nothing else, so the summarizer sees exactly what the experiment recorded.
 2. **Deterministic pass first**: rank configs by `reward.delta`, flag guard violations (peak WIS down, overall WIS up), group by `arm`. No LLM touches these numbers.
-3. **LLM pass**: the local model (Qwen 3 8B) writes "which strategy is best, where, and how confident" from the deterministic table, citing `config_id`s. The advisor expects a small model to summarize poorly; where it fails tells us how to organize the bank.
+3. **LLM pass**: the local model (Qwen 3 8B) writes "which strategy is best, where, and how confident" from the deterministic table, citing `config_id`s. Adiga expects a small model to summarize poorly; where it fails indicates how to organize the bank.
 4. **Output**: candidate `experiential` entries in the bank schema (`payload.state / action / reward`, `evidence.n_observations`, `evidence.reward_delta`, `confidence: low` for a single split), for human review before promotion. The same path later becomes the end-of-run bank-writer (design doc §5, unit 5).
 
 ## Results
 
 The sweep finished on 2026-09-30: all 10 configs over 9 cutoffs, merged into `outputs/experiments/peak_rectification/log.jsonl`. Results and their reading, with every number traced to a `log.jsonl` line, are in [`2026-10-peak-rectification-results.md`](2026-10-peak-rectification-results.md).
 
-## 9. Questions for the advisor
+## 9. Open questions
 
 1. **Approaching-peak definition and K.** Keep "K weeks before the season max" with K = 6, or switch to the surge segment from `phase_segmentation`? If K, what value?
 2. **2020-22 seasons.** Are the COVID-era seasons admissible as extra peak examples (action 1), or does training stay pinned at 2022-02-05?

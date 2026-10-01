@@ -6,7 +6,7 @@
 # agent/knowledge/schema.py; unknown keys are an error (a typo must be loud).
 # Do not use em dashes anywhere; use "-".
 
-- id: my-entry-slug-v1              # required. Lowercase slug [a-z0-9-], unique across
+- id: example-entry-slug-v1              # required. Lowercase slug [a-z0-9-], unique across
                                     #   ALL files. Version the slug (-v2) when the
                                     #   meaning changes; edit in place for typos.
   provenance: curated               # required. Always `curated` in these files.
@@ -39,7 +39,7 @@
     #   note: free text, not shown to the LLM    #   `not_yet_available`. `params` is
                                     #   required (use {} when there are none).
   evidence:                         # required. Only these three keys are allowed.
-    source: "advisor (A. Adiga), meeting 2026-09-24"   # required, non-empty: who said it,
+    source: "A. Adiga, meeting 2026-09-24"   # required, non-empty: who said it,
                                     #   which meeting/paper/job. Put extra notes in
                                     #   payload, not here.
     n_observations: null            # experiential only: runs behind the claim. null here.

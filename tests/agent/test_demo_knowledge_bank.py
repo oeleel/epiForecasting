@@ -1,4 +1,4 @@
-"""Tests for scripts/demo_knowledge_bank.py (the 2026-10-01 advisor demo).
+"""Tests for scripts/demo_knowledge_bank.py (the 2026-10-01 meeting demo).
 
 Drives the non-live steps against a bank built from the real curated YAML
 into a temp DB, so a schema or curated-file change that would break the demo

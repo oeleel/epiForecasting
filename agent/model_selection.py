@@ -12,7 +12,7 @@ this stage answers "which model should we even start from?":
 
 Design notes
 ------------
-- Goal-as-parameter (advisor, 09-02): the ranking metric and the phase it is
+- Goal-as-parameter (A. Adiga, 2026-09-02): the ranking metric and the phase it is
   read from are arguments (`SelectionGoal`), so "best at peak" vs "best
   overall" is a flag, not a code change. A natural-language front end can map
   onto the same struct later.

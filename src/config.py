@@ -10,7 +10,7 @@ DEFAULT_CUTOFF_DATE = "2024-11-02"
 MIN_TRAINING_WEEKS = 10
 
 # ----------------------------------------------------------------------------
-# Pinned train / evaluation split (decided 2026-09-02 advisor sync)
+# Pinned train / evaluation split (decided 2026-09-02 lab sync)
 # ----------------------------------------------------------------------------
 # Every model in the model bank is fit on data from TRAIN_START_DATE up to the
 # rolling cutoff, and evaluated on cutoffs inside [EVAL_START_DATE,

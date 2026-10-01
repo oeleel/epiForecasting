@@ -31,7 +31,7 @@ from agent.phase_evaluator import PhaseEvaluator
 LEGACY_MODEL_FAMILY = "xgboost_direct"
 
 # Upper guardrail for set_training_window. 104 weeks = 2 seasons, the long
-# "lull" window the advisor pairs with 52 (meetings 09-03/09-09/09-24). The
+# "lull" window the lab pairs with 52 (meetings 09-03/09-09/09-24). The
 # lower bound is src.pipeline.MIN_TRAIN_WINDOW_WEEKS (FORECAST_HORIZON + 4),
 # read from the pipeline so the catalog and the pipeline can never disagree.
 DEFAULT_MAX_TRAIN_WINDOW_WEEKS = 104

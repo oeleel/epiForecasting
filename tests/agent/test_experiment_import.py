@@ -157,7 +157,7 @@ def _write_curated(directory: Path) -> Path:
             "category": "model_characteristics",
             "statement": "Curated peak fact.",
             "context": {"phase": ["peak", "approaching_peak"]},
-            "evidence": {"source": "advisor"},
+            "evidence": {"source": "A. Adiga"},
             "confidence": "high",
             "created_at": "2026-09-17",
         },
@@ -167,7 +167,7 @@ def _write_curated(directory: Path) -> Path:
             "category": "domain_dynamics",
             "statement": "Curated onset fact.",
             "context": {"phase": ["onset"]},
-            "evidence": {"source": "advisor"},
+            "evidence": {"source": "A. Adiga"},
             "confidence": "low",
             "created_at": "2026-09-17",
         },
@@ -292,14 +292,14 @@ def test_entities_context_provenance_category_confidence():
 
 
 def test_evidence_carries_source_single_observation_and_delta():
-    entries = rows_to_entries(_three_rows(), created_at=CREATED_AT, source_label="my.jsonl")
+    entries = rows_to_entries(_three_rows(), created_at=CREATED_AT, source_label="run.jsonl")
 
     assert entries[0].evidence == {
-        "source": "my.jsonl#lambda_3 run_at 2026-09-30T20:17:23+00:00",
+        "source": "run.jsonl#lambda_3 run_at 2026-09-30T20:17:23+00:00",
         "n_observations": 1,
         "reward_delta": 2.7,
     }
-    assert entries[1].evidence["source"] == "my.jsonl#window_12 run_at 2026-09-30T20:25:00+00:00"
+    assert entries[1].evidence["source"] == "run.jsonl#window_12 run_at 2026-09-30T20:25:00+00:00"
     assert entries[1].evidence["reward_delta"] == 117.25
 
 

@@ -21,8 +21,8 @@ Two prompt families:
                                   B). The agent is asked to CITE the entry
                                   ids it acted on in `cited_entries`, and
                                   stays free to propose an unsupported
-                                  action if the rationale says why (advisor
-                                  09-24). With no bank (`known_facts=None`)
+                                  action if the rationale says why (A. Adiga,
+                                  2026-09-24). With no bank (`known_facts=None`)
                                   the known-facts section and every mention
                                   of `cited_entries` are left out, so the
                                   prompt is byte-identical to the pre-bank

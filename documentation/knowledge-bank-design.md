@@ -1,6 +1,6 @@
 # Knowledge Bank Design
 
-**Deliverable for the 2026-09-17 advisor meeting.** Covers the three asks from
+**Deliverable for the 2026-09-17 meeting with A. Adiga.** Covers the three asks from
 the 09-10 sync (`meeting-notes/2026-09-10-knowledge-bank-first.md`): the
 knowledge-bank design, the overall architecture diagram (§8), and the
 knowledge-graph vs flat-bank recommendation (§7).
@@ -18,12 +18,12 @@ repeated observations is still open, as are unit 3 (derived jobs) and units 6-7.
 | Decision | Choice | Why (one line) |
 |---|---|---|
 | Primary partition | **Provenance**: curated / derived / experiential | Every content category exists on all three sides; provenance decides trust, refresh, and write path |
-| Advisor's categories | Tags on entries (+ new `domain_dynamics`) | Preserved as the query dimension he thinks in; onset rule fits none of the original three |
+| Categories proposed by A. Adiga | Tags on entries (+ new `domain_dynamics`) | Preserved as the query dimension the lab thinks in; onset rule fits none of the original three |
 | Entry schema | One uniform table, typed entity refs, JSON payload | One retrieval path for all knowledge; rows are graph-ready edges |
 | Storage | SQLite (`knowledge.db`); curated side authored as YAML files, auto-compiled at startup | "A database that you create which can be queried" - serverless, joins native, lab edits text files via PR, zero sync step |
 | Write timing | Read at every proposal step; **write once at end of run** | Mid-run "lessons" can be falsified by later iterations; end-of-run rewards are final and aggregatable |
 | Bank-writer | Deterministic core fields + optional LLM gloss (marked as interpretation) | Queryable fields can never be hallucinated; small local LLM must not write causal claims into permanent memory |
-| Retrieval | Deterministic, context-keyed (phase, season week, model, metric) | We always know the context at proposal time; no embeddings or LLM-composed queries needed at this scale |
+| Retrieval | Deterministic, context-keyed (phase, season week, model, metric) | The context is always known at proposal time; no embeddings or LLM-composed queries needed at this scale |
 | Guardrails | **Advisory + override log** (no hard blocks in v1) | The override log is itself paper evidence (does memory change behavior?); premature blocks turn one bad entry into a blind spot |
 | KG vs flat | **Flat, graph-ready; defer the KG** until a real multi-hop query exists | Deferral costs zero: typed entity refs mean a graph is materializable from the flat bank at any time (§7) |
 
@@ -39,7 +39,7 @@ WIS 4x will happily propose it again next week, because nothing carries the
 lesson forward.
 
 The knowledge bank is that memory, plus the domain knowledge the lab already
-holds. In the RL formalization the advisor is drafting:
+holds. In the RL formalization A. Adiga is drafting:
 
 - **State** = forecasting context: current phase (surge/plateau/decline),
   week-of-season, model family, target metric, recent config.
@@ -59,7 +59,7 @@ Two layers, deliberately distinct:
 | **Ledger** (`runs.db`) | Every iteration, raw | During the run, automatically | Yes (run tracker) |
 | **Bank** (`knowledge.db`) | Distilled entries | Once, at end of run + curated/derived inputs | This design |
 
-The ledger is evidence; the bank is what the evidence taught us.
+The ledger is evidence; the bank is what the evidence taught the framework.
 
 ## 2. Taxonomy: provenance first, categories as tags
 
@@ -78,11 +78,11 @@ how much to trust it, how it is refreshed, and who may write it:
   *Example: "input_size=52 on NHITS regressed WIS ~4x vs 26 in decline phase
   (2 observations, runs X, Y)."*
 
-Note the advisor's own seed example straddles the split: the onset *rule* is
+Note that Adiga's own seed example straddles the split: the onset *rule* is
 curated, the per-season onset *dates* are derived. That is why provenance must
-be the partition - his example is two entries with different lifecycles.
+be the partition - that example is two entries with different lifecycles.
 
-The advisor's three categories survive as the **`category` tag** - the
+The three categories proposed by Adiga survive as the **`category` tag** - the
 dimension a query filters on:
 
 - `model_characteristics` - which models do well, where, and with what settings
@@ -90,7 +90,7 @@ dimension a query filters on:
 - `forecasts` - properties of past forecasts and their errors
 - `domain_dynamics` **(new)** - epidemiological regularities: onset/peak
   timing, phase transition behavior, season shape. The onset rule fits none of
-  the original three; rather than shoehorn it, we extend the taxonomy by one.
+  the original three; rather than shoehorn it, the taxonomy is extended by one.
 
 ## 3. Entry schema
 
@@ -122,7 +122,7 @@ payload:                           # free JSON; shape varies by entry type
     threshold: TBD                 # open question §10
 
 evidence:
-  source: "advisor, meeting 2026-09-10"   # citation, run_id(s), or job name
+  source: "A. Adiga, meeting 2026-09-10"   # citation, run_id(s), or job name
   n_observations: null             # experiential: how many runs support this
   reward_delta: null               # experiential: mean delta on target metric
 
@@ -193,7 +193,7 @@ confidence: high
 created_at: "2026-09-20"               # required for every provenance; jobs fill it
 ```
 
-This is exactly the advisor's "as the expected onset approaches, the bank tells
+This is exactly Adiga's "as the expected onset approaches, the bank tells
 the model change is coming": the `context.season_week` window makes it
 retrievable at precisely the right moment, and the refresh job keeps it current.
 
@@ -225,8 +225,8 @@ incrementing `n_observations` and updating `reward_delta` and `confidence`.
 **One SQLite database, `knowledge/knowledge.db`**, alongside the existing
 `runs.db`. Rationale against the alternatives:
 
-- Loose markdown/files only: not queryable - fails the advisor's explicit ask.
-- Vector store: solves fuzzy similarity we do not have; adds an embedding
+- Loose markdown/files only: not queryable - fails the explicit ask from Adiga.
+- Vector store: solves fuzzy similarity the bank does not need; adds an embedding
   dependency; at a few hundred entries SQL filters are exact and instant.
 - Graph database: §7.
 - Client/server DB (Postgres): operational weight with zero benefit at this
@@ -267,7 +267,7 @@ sourced from what already exists - the run tracker rows and the run report:
 3. Merge into existing entries on (entities, action) match: bump
    `n_observations`, update mean `reward_delta`, recompute `confidence`
    (single observation = low; consistent replication = medium/high -
-   thresholds are named constants, advisor-calibratable, §10).
+   thresholds are named constants, lab-calibratable, §10).
 4. Optionally ask the local LLM for a one-line `llm_gloss` - stored in a
    dedicated field, rendered with an "interpretation" marker, never used as a
    retrieval key. A wrong gloss cannot corrupt retrieval or the RL record.
@@ -282,7 +282,7 @@ plus a relevance ordering. As implemented (`agent/knowledge/store.py`,
 1), confidence desc (high > medium > low), `n_observations` desc (NULL last),
 `updated_at` desc, `id` asc - total and deterministic, so ties between curated
 entries loaded in one rebuild fall to the id. No embeddings; no LLM-composed
-queries - qwen3:8b writing its own queries is a reliability hole we do not
+queries - qwen3:8b writing its own queries is a reliability hole the bank does not
 need at this scale.
 
 Retrieved entries are rendered into a compact prompt block:
@@ -298,7 +298,7 @@ KNOWN FACTS (knowledge bank; [C]=curated [D]=derived [E]=experiential):
 
 - **A - Stage 1, model selection.** Retrieve `model_characteristics` entries
   for the current phase/context into the selection prompt. (TS-Agent's
-  case-bank move, on our bank.)
+  case-bank move, on this bank.)
 - **B - Stage 2, every proposal step (v1 scope).** Before the agent proposes a
   config action, retrieve entries matching current model + phase + metric.
   This is the RL memory read - the mechanism that makes the loop smarter than
@@ -344,23 +344,23 @@ those models?"* is three edges walked, and that inference across relations is
 the KG's genuine selling point.
 
 **What a KG costs here**: graph storage or a graph layer, a node/edge-type
-schema designed before we know our query patterns, traversal query logic, and
-a retrieval path complicated enough that either we hand-code every traversal
+schema designed before the query patterns are known, traversal query logic, and
+a retrieval path complicated enough that either every traversal is hand-coded
 or let a small local LLM compose graph queries - the exact reliability trade
-we rejected for plain SQL.
+rejected for plain SQL.
 
-**The observation that decides it**: in our schema every entry already carries
+**The observation that decides it**: in this schema every entry already carries
 typed entity references. A row with `entities: {model: nhits, phase: decline}`
 and a negative reward *is* the edge `(nhits) -[degrades_in]-> (decline)`,
 stored flat. The flat bank is a graph in edge-list form. Materializing an
 actual graph (networkx) from it is ~50 lines and zero migration - so deferring
-the KG costs nothing, while building it now buys nothing our v1 queries use:
+the KG costs nothing, while building it now buys nothing the v1 queries use:
 **every v1 retrieval (§6) is a single-hop lookup.**
 
 **Recommendation**: flat, graph-ready, with an explicit adoption trigger -
 *the day an agent needs a multi-hop question answered* (e.g. cross-referencing
-data sources with model-phase weaknesses in one retrieval), we materialize the
-graph from the same rows and evaluate it against the flat baseline. Offer: a
+data sources with model-phase weaknesses in one retrieval), the
+graph is materialized from the same rows and evaluate it against the flat baseline. Offer: a
 small networkx prototype over the seeded bank, with one worked multi-hop
 query, as a demo the following week.
 
@@ -405,9 +405,9 @@ The loop reads the bank at every proposal; the bank grows only between runs.
 `runs.db` (raw experience) and `knowledge.db` (distilled memory) are the two
 halves of the RL formalization's memory.
 
-### 8.1 The advisor's three-agent sketch (09-24), mapped onto the code
+### 8.1 The three-agent sketch from A. Adiga (09-24), mapped onto the code
 
-On 09-24 the advisor described the loop as an orchestrator, a data agent, and a
+On 09-24 Adiga described the loop as an orchestrator, a data agent, and a
 trainer agent: the trainer asks for data ("Virginia, last 12 weeks"), the
 orchestrator distills the request, the data agent serves it, and what was
 requested and what was served gets logged. Solid boxes below exist today;
@@ -441,7 +441,7 @@ flowchart LR
   TRAINER -.->|"not built: trainer requests data, served-data log"| DATAAG
 ```
 
-| Advisor's role | Existing component | Built? |
+| Role in the sketch | Existing component | Built? |
 |---|---|---|
 | Orchestrator | `agent/orchestrator.py` (two-agent loop, plain Python) | Yes |
 | Data agent | `data.*` config keys, including `train_window_weeks` (legacy `xgboost_direct` path only; the bank-family runner does not read it), and the CDC-to-long bridge in `src/model_bank/data_bridge.py` | As config and a function, not as an agent |
@@ -460,7 +460,7 @@ yet, so the window knob is set by the experiment harness, not by the agent.
 | # | Unit | Status (2026-10-01) | Contents |
 |---|---|---|---|
 | 1 | `agent/knowledge/` package (`schema.py`, `store.py`, `curated.py`, `render.py`) | [x] done | `KnowledgeEntry` (frozen dataclass), SQLite store, YAML loader, `query(context)` with trust/confidence ordering, `KNOWN FACTS` renderer, `python -m agent knowledge validate / rebuild / list / query` |
-| 2 | `knowledge/curated/*.yaml` | [x] done | Seeded: the advisor's five rectification actions, training-strategy rules (from 09-03 / 09-09 / 09-24), and the domain context migrated out of the adapter. Not seeded: the model-phase affinities from the two Adiga papers and the auxiliary-data findings. Intake stub for the lab's per-model-class strategies: `_training-strategy-by-model-class.yaml` |
+| 2 | `knowledge/curated/*.yaml` | [x] done | Seeded: the five rectification actions (A. Adiga, Teams ~2026-09-27), training-strategy rules (from 09-03 / 09-09 / 09-24), and the domain context migrated out of the adapter. Not seeded: the model-phase affinities from the two Adiga papers and the auxiliary-data findings. Intake stub for the lab's per-model-class strategies: `_training-strategy-by-model-class.yaml` |
 | 3 | `agent/derived_knowledge.py` | [ ] not started | Onset-dates job (curated rule + `phase_segmentation` over the CDC series). Blocked on onset threshold T (§10 Q1) |
 | 4 | Orchestrator integration | [x] v1 done 2026-10-01 | `FluForecastAdapter.get_domain_context` renders the model-keyed `KNOWN FACTS` block. At every proposal the orchestrator also retrieves on diagnosed weak phase + model family + target metric, shows entries with ids, asks for and records `cited_entries`, drops unretrieved citations, records `supported_by` / `supported_by_params_mismatch` / `retrieved_entry_ids`, and logs advisory overrides (section 6). Not built: season-week keying, persisted override table, diagnosis enrichment (point C) |
 | 5 | `agent/knowledge/experiment_import.py` (slice) | [~] slice done 2026-10-01 | `python -m agent knowledge import-experiment [--log PATH]` turns the sweep's `log.jsonl` into 9 experiential entries (deterministic, confidence low, one observation each). Still open: the end-of-run bank-writer (distiller from tracker rows + report) that merges repeated observations and applies the confidence rules |
@@ -471,28 +471,28 @@ Tests ship with each unit (`tests/agent/test_<module>.py`, both gates; 281
 tests in `tests/agent` as of 2026-09-30; see pytest for the current count). Units 1-5 are the original
 Thursday-to-Thursday scope; 6-7 stretch.
 
-## 10. Open questions for the advisor
+## 10. Open questions
 
 Note (2026-10-01): the `set_training_window` adapter action now exists (weeks in [8, 104] or null), and the three window entries recommend it (12 / 12 / 52 weeks). Q1-Q4 and 9 below are unchanged.
 
 1. **Onset threshold T** - what value (or per-season quantile) for "increase
    above a threshold"? And should the 3-consecutive-weeks rule and the papers'
-   ±10% breakpoint classification coexist as *two* curated entries (our
-   assumption), or be reconciled into one definition?
-2. **Lab content intake** - we supply the YAML template + 3 worked examples;
-   does the lab author entries directly, or hand us prose to transcribe?
+   ±10% breakpoint classification coexist as *two* curated entries (the
+   working assumption), or be reconciled into one definition?
+2. **Lab content intake** - the YAML template + 3 worked examples are supplied;
+   does the lab author entries directly, or hand over prose to transcribe?
 3. **Confidence calibration** - proposed defaults: 1 observation = low,
    3+ consistent = medium, 5+ consistent = high (named constants,
    calibratable). Reasonable starting points?
 4. **KG prototype** - want the networkx materialization + one multi-hop demo
    query next week, or park it until a real multi-hop need appears?
 5. **Approaching-peak definition and K** - K weeks before the season max
-   (default K = 6, our assumption), or the surge interval from the curve-based
+   (default K = 6, a working assumption), or the surge interval from the curve-based
    segmentation in `phase_segmentation`? If K, which value or range?
 6. **Earlier seasons** - are the 2020-22 COVID-era seasons admissible as
    "additional examples" (rectification action 1), or does `TRAIN_START_DATE`
    = 2022-02-05 stay fixed?
-7. **Loss-weight range** - we sweep lambda 1.5 / 2 / 3 / 5. Wider, finer, or learned
+7. **Loss-weight range** - the sweep covers lambda 1.5 / 2 / 3 / 5. Wider, finer, or learned
    per season or per location? (The adapter guardrail is currently [1, 5].)
 8. **Warm-start vs retrain** across a regime change (08-27) - a bank category
    now, an experiment arm later?
