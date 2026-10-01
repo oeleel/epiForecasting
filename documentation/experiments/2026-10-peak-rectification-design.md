@@ -16,7 +16,7 @@ Status (2026-09-30): harness built and smoke-tested; the full sweep finished on 
 
 The failure is under-prediction. Question: do the two cheap rectification actions (loss weight on approaching-peak rows, and a short training window) lower peak WIS without hurting overall WIS?
 
-Source: the five rectification actions (A. Adiga, Teams ~2026-09-27), recorded in [`../meeting-notes/2026-09-24-controlled-experiment-and-curated-guardrails.md`](../meeting-notes/2026-09-24-controlled-experiment-and-curated-guardrails.md) and seeded as curated entries in [`../../knowledge/curated/rectification-actions.yaml`](../../knowledge/curated/rectification-actions.yaml).
+Source: the five rectification actions (A. Adiga, Teams ~2026-09-27), recorded from the 2026-09-24 sync and seeded as curated entries in [`../../knowledge/curated/rectification-actions.yaml`](../../knowledge/curated/rectification-actions.yaml).
 
 ## 2. Objective
 
