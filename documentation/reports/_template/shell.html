@@ -1,0 +1,158 @@
+<!doctype html>
+<!--
+  shell.html - the one page shell every weekly report (and the index) is built from.
+
+  WHY: a standard layout means the week-to-week work is only the content in
+  report.yaml. The builder (scripts/reports/build_report.py) fills the
+  double-brace placeholders and inlines tokens.css and widgets.js, so each output page
+  is a single self-contained file that works from GitHub Pages and from disk
+  (file://). The only external loads are the Tailwind Play CDN and Inter from
+  Google Fonts; tokens.css carries enough base styling that the page stays
+  readable if either is unavailable.
+
+  Placeholders: TITLE, DATE, SUMMARY, HEADER_LINKS, NAV, SECTIONS, DATA_JSON,
+  WIDGETS_JS, TOKENS_CSS. Everything the builder puts into them is already
+  HTML-escaped or trusted template output.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{TITLE}}</title>
+<meta name="description" content="Weekly meeting report for the agentic flu-forecasting project.">
+<meta name="color-scheme" content="light dark">
+<script>
+  // Theme before first paint: data-theme on <html> wins, else the OS setting,
+  // else a choice the viewer made earlier on this device (localStorage may be
+  // unavailable on file:// or in private windows, hence the try/catch).
+  (function () {
+    var root = document.documentElement;
+    var stored = null;
+    try { stored = localStorage.getItem("report-theme"); } catch (e) { stored = null; }
+    var explicit = root.getAttribute("data-theme") || stored;
+    var dark = explicit ? explicit === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+    root.classList.toggle("dark", dark);
+    if (!explicit && window.matchMedia) {
+      window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function (ev) {
+        if (!root.getAttribute("data-theme")) root.classList.toggle("dark", ev.matches);
+      });
+    }
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  // shadcn/ui semantic colours mapped onto the CSS variables in tokens.css.
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif"] },
+        colors: {
+          border: "hsl(var(--border))",
+          input: "hsl(var(--input))",
+          ring: "hsl(var(--ring))",
+          background: "hsl(var(--background))",
+          foreground: "hsl(var(--foreground))",
+          primary: { DEFAULT: "hsl(var(--primary))", foreground: "hsl(var(--primary-foreground))" },
+          secondary: { DEFAULT: "hsl(var(--secondary))", foreground: "hsl(var(--secondary-foreground))" },
+          destructive: { DEFAULT: "hsl(var(--destructive))", foreground: "hsl(var(--destructive-foreground))" },
+          muted: { DEFAULT: "hsl(var(--muted))", foreground: "hsl(var(--muted-foreground))" },
+          accent: { DEFAULT: "hsl(var(--accent))", foreground: "hsl(var(--accent-foreground))" },
+          popover: { DEFAULT: "hsl(var(--popover))", foreground: "hsl(var(--popover-foreground))" },
+          card: { DEFAULT: "hsl(var(--card))", foreground: "hsl(var(--card-foreground))" }
+        },
+        borderRadius: { lg: "var(--radius)", md: "calc(var(--radius) - 2px)", sm: "calc(var(--radius) - 4px)" }
+      }
+    }
+  };
+</script>
+<style>
+{{TOKENS_CSS}}
+</style>
+</head>
+<body class="min-h-screen bg-background font-sans text-foreground antialiased">
+
+<header class="site-header sticky top-0 z-20">
+  <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+    <div class="flex min-w-0 items-center gap-3">
+      <a href="{{HOME_HREF}}" class="truncate text-sm font-semibold tracking-tight">epiForecasting reports</a>
+      <span class="badge badge-outline hidden sm:inline-flex">{{DATE}}</span>
+    </div>
+    <div class="flex items-center gap-2">
+      {{HEADER_LINKS}}
+      <button type="button" class="btn btn-ghost btn-sm" id="theme-toggle" aria-label="Toggle colour theme" title="Toggle colour theme">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="mx-auto max-w-6xl px-4 py-8 lg:py-10">
+  <div class="mb-8 lg:mb-10">
+    <div class="mb-2 sm:hidden"><span class="badge badge-outline">{{DATE}}</span></div>
+    <h1 class="text-3xl font-semibold tracking-tight lg:text-4xl">{{TITLE}}</h1>
+    <p class="mt-2 max-w-3xl text-base text-muted-foreground">{{SUMMARY}}</p>
+  </div>
+
+  <div class="grid gap-8 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-12">
+    <aside class="min-w-0 lg:block">
+      <nav class="toc hidden lg:sticky lg:top-20 lg:block" aria-label="Sections">
+        <div class="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">On this page</div>
+        {{NAV}}
+      </nav>
+      <nav class="toc-inline lg:hidden" aria-label="Sections">
+        {{NAV}}
+      </nav>
+    </aside>
+
+    <main class="min-w-0 space-y-12">
+{{SECTIONS}}
+    </main>
+  </div>
+
+  <footer class="mt-16 border-t pt-6 text-xs text-muted-foreground">
+    Built by <code class="inline">scripts/reports/build_report.py</code> from <code class="inline">report.yaml</code>. Same shell every week; only the content changes.
+  </footer>
+</div>
+
+<script>
+// Embedded data for the widgets, keyed by the data file stem named in report.yaml.
+window.REPORT_DATA = {{DATA_JSON}};
+</script>
+<script>
+{{WIDGETS_JS}}
+</script>
+<script>
+  (function () {
+    // Theme toggle: pins the choice on <html data-theme> and remembers it.
+    var root = document.documentElement;
+    var btn = document.getElementById("theme-toggle");
+    if (btn) btn.addEventListener("click", function () {
+      var next = root.classList.contains("dark") ? "light" : "dark";
+      root.setAttribute("data-theme", next);
+      root.classList.toggle("dark", next === "dark");
+      try { localStorage.setItem("report-theme", next); } catch (e) { /* storage unavailable */ }
+    });
+    // Mount every widget and wire the tabs.
+    if (window.ReportWidgets) window.ReportWidgets.init(window.REPORT_DATA || {});
+    // Highlight the section in view in the sidebar.
+    var links = Array.prototype.slice.call(document.querySelectorAll(".toc a[href^='#']"));
+    if ("IntersectionObserver" in window && links.length) {
+      var byId = {};
+      links.forEach(function (a) { byId[a.getAttribute("href").slice(1)] = a; });
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) {
+          if (!en.isIntersecting) return;
+          links.forEach(function (a) { a.classList.remove("is-current"); });
+          var a = byId[en.target.id]; if (a) a.classList.add("is-current");
+        });
+      }, { rootMargin: "-20% 0px -70% 0px" });
+      document.querySelectorAll("main section[id]").forEach(function (s) { io.observe(s); });
+    }
+  })();
+</script>
+</body>
+</html>

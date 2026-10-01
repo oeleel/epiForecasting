@@ -1,4 +1,8 @@
-"""Unit tests for agent.knowledge (schema, YAML intake, SQLite store, render).
+"""Unit tests for agent.knowledge (schema, YAML intake, SQLite store, render) and
+the `knowledge remove` CLI handler.
+
+The CLI tests import `agent.cli` inside the test body: it pulls in the flu
+adapter (xgboost, torch), which the store tests do not need.
 
 Every test is linear setup -> execute -> verify and uses
 `tempfile.TemporaryDirectory()` rather than pytest fixtures, so the same
@@ -10,6 +14,10 @@ Run with:
 
 from __future__ import annotations
 
+import argparse
+import contextlib
+import io
+import sqlite3
 import sys
 import tempfile
 from collections.abc import Callable
@@ -579,6 +587,93 @@ def test_delete_provenance_cascades_and_validates():
         _expect_value_error(lambda: bank.delete_provenance("guess"), "provenance", "guess")
 
 
+def _context_rows(db_path: Path, entry_id: str) -> list[tuple[str, str]]:
+    """The raw entry_context rows for one entry, read straight from SQLite."""
+    conn = sqlite3.connect(db_path)
+    try:
+        rows = conn.execute(
+            "SELECT key, value FROM entry_context WHERE entry_id = ? ORDER BY key, value",
+            (entry_id,),
+        ).fetchall()
+    finally:
+        conn.close()
+    return [(str(key), str(value)) for key, value in rows]
+
+
+def test_remove_experiential_entry_returns_it_and_drops_context_rows():
+    with tempfile.TemporaryDirectory() as tmp:
+        db_path = Path(tmp) / "k.db"
+        bank = KnowledgeBank(db_path)
+        target = _entry(
+            id="exp-window-26-2025",
+            provenance="experiential",
+            context={"phase": ["peak"], "model": ["xgboost_direct"]},
+            evidence={"source": "harness", "n_observations": 1, "reward_delta": -0.5},
+        )
+        other = _entry(id="exp-window-52-2025", provenance="experiential",
+                       context={"phase": ["peak"]}, evidence={"source": "harness"})
+        bank.upsert(target)
+        bank.upsert(other)
+        assert _context_rows(db_path, "exp-window-26-2025") == [
+            ("model", "xgboost_direct"), ("phase", "peak"),
+        ]
+
+        removed = bank.remove("exp-window-26-2025")
+
+        assert removed == target
+        assert bank.get("exp-window-26-2025") is None
+        assert bank.count("experiential") == 1
+        assert [e.id for e in bank.query(RetrievalContext(phase="peak"))] == ["exp-window-52-2025"]
+        assert _context_rows(db_path, "exp-window-26-2025") == []
+        assert _context_rows(db_path, "exp-window-52-2025") == [("phase", "peak")]
+
+
+def test_remove_refuses_curated_id_and_points_at_yaml_plus_rebuild():
+    with tempfile.TemporaryDirectory() as tmp:
+        db_path = Path(tmp) / "k.db"
+        bank = KnowledgeBank(db_path)
+        bank.upsert(_entry(id="onset-definition-v1", provenance="curated",
+                           context={"phase": ["onset"]}))
+
+        _expect_value_error(
+            lambda: bank.remove("onset-definition-v1"),
+            "onset-definition-v1", "curated", "knowledge/curated/*.yaml", "knowledge rebuild",
+        )
+
+        assert bank.get("onset-definition-v1") is not None
+        assert _context_rows(db_path, "onset-definition-v1") == [("phase", "onset")]
+
+
+def test_remove_unknown_id_raises_naming_it():
+    with tempfile.TemporaryDirectory() as tmp:
+        bank = KnowledgeBank(Path(tmp) / "k.db")
+        bank.upsert(_entry(id="exp-present", provenance="experiential"))
+
+        _expect_value_error(lambda: bank.remove("exp-absent"), "no entry", "exp-absent")
+        _expect_value_error(lambda: bank.remove(""), "non-empty string")
+
+        assert bank.count() == 1
+
+
+def test_remove_dry_run_runs_every_check_and_changes_nothing():
+    with tempfile.TemporaryDirectory() as tmp:
+        db_path = Path(tmp) / "k.db"
+        bank = KnowledgeBank(db_path)
+        target = _entry(id="exp-one", provenance="experiential", context={"phase": ["peak"]})
+        bank.upsert(target)
+        bank.upsert(_entry(id="cur-one", provenance="curated"))
+
+        previewed = bank.remove("exp-one", dry_run=True)
+
+        assert previewed == target
+        assert bank.get("exp-one") == target
+        assert _context_rows(db_path, "exp-one") == [("phase", "peak")]
+        assert bank.count() == 2
+        _expect_value_error(lambda: bank.remove("cur-one", dry_run=True), "curated")
+        _expect_value_error(lambda: bank.remove("exp-nope", dry_run=True), "exp-nope")
+        _expect_value_error(lambda: bank.remove("exp-one", dry_run="yes"), "dry_run", "bool")
+
+
 def test_rebuild_curated_is_idempotent_and_keeps_derived_rows():
     with tempfile.TemporaryDirectory() as tmp:
         directory = Path(tmp) / "curated"
@@ -1036,6 +1131,140 @@ def test_seed_files_hold_the_migrated_adapter_domain_context():
     assert entries["bias-sign-convention"].category == "forecasts"
     for entry_id in ("calendar-phase-onset", "mape-quality-bands", "bias-sign-convention"):
         assert entries[entry_id].evidence["source"].startswith("migrated from agent/adapters/")
+
+
+# ---- CLI: knowledge remove ----------------------------------------------------
+
+
+def _knowledge_args(action: str, **flags: Any) -> argparse.Namespace:
+    """A `knowledge <action>` Namespace with every flag unset except `flags`."""
+    from agent.cli import _KNOWLEDGE_ALL_FLAGS
+
+    values: dict[str, Any] = {flag: None for flag in _KNOWLEDGE_ALL_FLAGS}
+    values.update(flags)
+    return argparse.Namespace(command="knowledge", action=action, **values)
+
+
+def _run_capturing(fn: Callable[[], Any]) -> tuple[str, str, int | None]:
+    """Run `fn`; return (stdout, stderr, exit code or None when it returned normally)."""
+    out, err = io.StringIO(), io.StringIO()
+    code: int | None = None
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        try:
+            fn()
+        except SystemExit as exc:
+            code = int(exc.code) if exc.code is not None else 0
+    return out.getvalue(), err.getvalue(), code
+
+
+def test_cli_remove_action_is_registered_with_its_flags():
+    from agent.cli import (
+        _KNOWLEDGE_ALL_FLAGS,
+        KNOWLEDGE_ACTIONS,
+        KNOWLEDGE_FLAGS_BY_ACTION,
+        KNOWLEDGE_REQUIRED_FLAGS_BY_ACTION,
+    )
+
+    assert "remove" in KNOWLEDGE_ACTIONS
+    assert KNOWLEDGE_FLAGS_BY_ACTION["remove"] == ("id", "dry_run")
+    assert KNOWLEDGE_REQUIRED_FLAGS_BY_ACTION["remove"] == ("id",)
+    assert set(KNOWLEDGE_FLAGS_BY_ACTION) == set(KNOWLEDGE_ACTIONS)
+    for flags in KNOWLEDGE_FLAGS_BY_ACTION.values():
+        assert set(flags) <= set(_KNOWLEDGE_ALL_FLAGS)
+
+
+def test_cli_remove_dry_run_prints_entry_and_leaves_count_unchanged():
+    from agent.cli import _knowledge_remove
+
+    with tempfile.TemporaryDirectory() as tmp:
+        bank = KnowledgeBank(Path(tmp) / "k.db")
+        bank.upsert(_entry(id="exp-window-26-2025", provenance="experiential",
+                           statement="train_window_weeks 26: peak WIS 240.24 vs 121.01 baseline.",
+                           evidence={"source": "harness", "n_observations": 1}))
+        bank.upsert(_entry(id="cur-one", provenance="curated"))
+
+        out, err, code = _run_capturing(
+            lambda: _knowledge_remove(bank, "exp-window-26-2025", dry_run=True)
+        )
+
+        assert code is None and err == ""
+        assert "id:         exp-window-26-2025" in out
+        assert "provenance: experiential" in out
+        assert "statement:  train_window_weeks 26: peak WIS 240.24 vs 121.01 baseline." in out
+        assert "dry run: nothing changed" in out
+        assert "\nremoved" not in out
+        assert "import-experiment" in out
+        assert bank.count() == 2
+        assert bank.get("exp-window-26-2025") is not None
+
+
+def test_cli_remove_deletes_and_notes_experiential_recreation():
+    from agent.cli import _knowledge_remove
+
+    with tempfile.TemporaryDirectory() as tmp:
+        bank = KnowledgeBank(Path(tmp) / "k.db")
+        bank.upsert(_entry(id="exp-one", provenance="experiential", evidence={"source": "h"}))
+        bank.upsert(_entry(id="der-one", provenance="derived", evidence={"source": "job"}))
+
+        out_exp, err_exp, code_exp = _run_capturing(
+            lambda: _knowledge_remove(bank, "exp-one", dry_run=False)
+        )
+        out_der, err_der, code_der = _run_capturing(
+            lambda: _knowledge_remove(bank, "der-one", dry_run=False)
+        )
+
+        assert code_exp is None and err_exp == ""
+        assert "id:         exp-one" in out_exp
+        assert "\nremoved" in out_exp
+        assert "dry run" not in out_exp
+        assert "import-experiment" in out_exp
+        assert code_der is None and err_der == ""
+        assert "\nremoved" in out_der
+        assert "import-experiment" not in out_der
+        assert bank.count() == 0
+
+
+def test_cli_remove_curated_or_unknown_id_exits_one_with_store_message():
+    from agent.cli import _knowledge_remove
+
+    with tempfile.TemporaryDirectory() as tmp:
+        bank = KnowledgeBank(Path(tmp) / "k.db")
+        bank.upsert(_entry(id="cur-one", provenance="curated"))
+
+        out_cur, err_cur, code_cur = _run_capturing(
+            lambda: _knowledge_remove(bank, "cur-one", dry_run=False)
+        )
+        out_gone, err_gone, code_gone = _run_capturing(
+            lambda: _knowledge_remove(bank, "exp-gone", dry_run=True)
+        )
+
+        assert code_cur == 1 and out_cur == ""
+        assert "cur-one" in err_cur and "knowledge/curated/*.yaml" in err_cur
+        assert code_gone == 1 and out_gone == ""
+        assert "exp-gone" in err_gone
+        assert bank.count() == 1
+
+
+def test_cli_remove_rejects_stray_flags_and_requires_id_before_opening_bank():
+    from agent.cli import cmd_knowledge
+
+    out_stray, err_stray, code_stray = _run_capturing(
+        lambda: cmd_knowledge(_knowledge_args("remove", id="exp-one", phase="peak"))
+    )
+    out_missing, err_missing, code_missing = _run_capturing(
+        lambda: cmd_knowledge(_knowledge_args("remove", dry_run=True))
+    )
+    out_other, err_other, code_other = _run_capturing(
+        lambda: cmd_knowledge(_knowledge_args("rebuild", dry_run=True))
+    )
+
+    assert code_stray == 1 and out_stray == ""
+    assert "remove does not accept --phase" in err_stray
+    assert "--id, --dry-run" in err_stray
+    assert code_missing == 1 and out_missing == ""
+    assert "remove requires --id" in err_missing
+    assert code_other == 1 and out_other == ""
+    assert "rebuild does not accept --dry-run" in err_other
 
 
 ALL = [fn for name, fn in sorted(globals().items()) if name.startswith("test_") and callable(fn)]

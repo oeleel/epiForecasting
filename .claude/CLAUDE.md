@@ -55,6 +55,7 @@ python -m agent knowledge rebuild                                      # reload 
 python -m agent knowledge list [--provenance P] [--category C]         # table of stored entries
 python -m agent knowledge query [--phase P] [--model M] [--metric X] [--season-week N]   # print the KNOWN FACTS block
 python -m agent knowledge import-experiment [--log PATH]               # peak-rectification log.jsonl -> experiential entries
+python -m agent knowledge remove --id ID [--dry-run]                   # delete one derived/experiential entry; curated: edit YAML + rebuild
 python -m agent improve ... [--no-knowledge]                           # bank off: no KNOWN FACTS block in any prompt, no proposal-step retrieval/citations
 python scripts/demo_knowledge_bank.py [--live] [--json PATH]           # lab demo; --live runs a 2-iteration improve
 ```

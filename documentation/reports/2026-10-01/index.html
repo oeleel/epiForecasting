@@ -1,0 +1,1170 @@
+<!doctype html>
+<!--
+  shell.html - the one page shell every weekly report (and the index) is built from.
+
+  WHY: a standard layout means the week-to-week work is only the content in
+  report.yaml. The builder (scripts/reports/build_report.py) fills the
+  double-brace placeholders and inlines tokens.css and widgets.js, so each output page
+  is a single self-contained file that works from GitHub Pages and from disk
+  (file://). The only external loads are the Tailwind Play CDN and Inter from
+  Google Fonts; tokens.css carries enough base styling that the page stays
+  readable if either is unavailable.
+
+  Placeholders: TITLE, DATE, SUMMARY, HEADER_LINKS, NAV, SECTIONS, DATA_JSON,
+  WIDGETS_JS, TOKENS_CSS. Everything the builder puts into them is already
+  HTML-escaped or trusted template output.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weekly report - 2026-10-01</title>
+<meta name="description" content="Weekly meeting report for the agentic flu-forecasting project.">
+<meta name="color-scheme" content="light dark">
+<script>
+  // Theme before first paint: data-theme on <html> wins, else the OS setting,
+  // else a choice the viewer made earlier on this device (localStorage may be
+  // unavailable on file:// or in private windows, hence the try/catch).
+  (function () {
+    var root = document.documentElement;
+    var stored = null;
+    try { stored = localStorage.getItem("report-theme"); } catch (e) { stored = null; }
+    var explicit = root.getAttribute("data-theme") || stored;
+    var dark = explicit ? explicit === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+    root.classList.toggle("dark", dark);
+    if (!explicit && window.matchMedia) {
+      window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function (ev) {
+        if (!root.getAttribute("data-theme")) root.classList.toggle("dark", ev.matches);
+      });
+    }
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  // shadcn/ui semantic colours mapped onto the CSS variables in tokens.css.
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif"] },
+        colors: {
+          border: "hsl(var(--border))",
+          input: "hsl(var(--input))",
+          ring: "hsl(var(--ring))",
+          background: "hsl(var(--background))",
+          foreground: "hsl(var(--foreground))",
+          primary: { DEFAULT: "hsl(var(--primary))", foreground: "hsl(var(--primary-foreground))" },
+          secondary: { DEFAULT: "hsl(var(--secondary))", foreground: "hsl(var(--secondary-foreground))" },
+          destructive: { DEFAULT: "hsl(var(--destructive))", foreground: "hsl(var(--destructive-foreground))" },
+          muted: { DEFAULT: "hsl(var(--muted))", foreground: "hsl(var(--muted-foreground))" },
+          accent: { DEFAULT: "hsl(var(--accent))", foreground: "hsl(var(--accent-foreground))" },
+          popover: { DEFAULT: "hsl(var(--popover))", foreground: "hsl(var(--popover-foreground))" },
+          card: { DEFAULT: "hsl(var(--card))", foreground: "hsl(var(--card-foreground))" }
+        },
+        borderRadius: { lg: "var(--radius)", md: "calc(var(--radius) - 2px)", sm: "calc(var(--radius) - 4px)" }
+      }
+    }
+  };
+</script>
+<style>
+/*
+ * tokens.css - design tokens and component recipes for the weekly reports.
+ *
+ * WHY THIS FILE EXISTS
+ *   Every weekly report is built from the same shell (shell.html) so that the
+ *   layout never has to be re-decided. The look is shadcn/ui (zinc palette),
+ *   but there is no build step: Tailwind comes from the Play CDN and the
+ *   shadcn CSS variables below are inlined by the builder. Anything the CDN
+ *   cannot express well at runtime (data-state styling, details/summary
+ *   chevrons, SVG chart text, generated widget markup) lives here as plain
+ *   CSS classes so the widgets in widgets.js can use short class names.
+ *
+ * HOW TO REUSE THE RECIPES
+ *   Each component below lists the shadcn utility string it reproduces so a
+ *   future report (or a hand-written HTML snippet inside report.yaml) can
+ *   either use the class or paste the utilities. Keep the markup shape:
+ *
+ *   Card       .card > .card-header > .card-title / .card-description ; .card-content
+ *              = rounded-lg border bg-card text-card-foreground shadow-sm
+ *                CardHeader p-6 ; CardTitle text-2xl font-semibold leading-none
+ *                tracking-tight ; CardContent p-6 pt-0
+ *   Badge      .badge (+ .badge-secondary | .badge-outline | .badge-destructive)
+ *              = inline-flex items-center rounded-full border px-2.5 py-0.5
+ *                text-xs font-semibold
+ *   Tabs       .tabs-list > .tabs-trigger[data-state=active|inactive]
+ *              = TabsList inline-flex h-10 items-center rounded-md bg-muted p-1
+ *                text-muted-foreground ; TabsTrigger inline-flex items-center
+ *                justify-center whitespace-nowrap rounded-sm px-3 py-1.5
+ *                text-sm font-medium ring-offset-background transition-all
+ *                data-[state=active]:bg-background
+ *                data-[state=active]:text-foreground
+ *                data-[state=active]:shadow-sm
+ *   Table      .table-wrap > table.table
+ *              = w-full text-sm ; th h-12 px-4 text-left font-medium
+ *                text-muted-foreground ; td p-4 align-middle ;
+ *                tr border-b hover:bg-muted/50
+ *   Accordion  details.accordion-item > summary.accordion-trigger (+ .chevron)
+ *              = item border-b ; trigger flex w-full py-4 font-medium
+ *                hover:underline ; chevron rotates 180deg when open
+ *   Button     .btn (+ .btn-outline | .btn-ghost | .btn-secondary)
+ *              = inline-flex items-center justify-center h-10 px-4 py-2
+ *                rounded-md text-sm font-medium transition-colors
+ *   Alert      .alert > .alert-title / .alert-description
+ *              = relative w-full rounded-lg border p-4
+ *   Separator  .separator = shrink-0 bg-border h-px w-full
+ *   Select     .select = flex h-10 rounded-md border border-input bg-background
+ *                px-3 py-2 text-sm
+ *   Checkbox   .checkbox = h-4 w-4 rounded-sm border border-primary
+ *
+ * COLOR TOKENS
+ *   The variables are shadcn's zinc theme verbatim. Chart series colours are
+ *   project-specific (--chart-1..3) and switch with the theme. Tailwind reads
+ *   these through the inline tailwind.config in shell.html, e.g. bg-card maps
+ *   to hsl(var(--card)).
+ */
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 240 10% 3.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 3.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 10% 3.9%;
+  --primary: 240 5.9% 10%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 240 4.8% 95.9%;
+  --secondary-foreground: 240 5.9% 10%;
+  --muted: 240 4.8% 95.9%;
+  --muted-foreground: 240 3.8% 46.1%;
+  --accent: 240 4.8% 95.9%;
+  --accent-foreground: 240 5.9% 10%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 5.9% 90%;
+  --input: 240 5.9% 90%;
+  --ring: 240 10% 3.9%;
+  --radius: 0.5rem;
+  /* chart series (project-specific) */
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-good: #1a8f5f;
+  --chart-bad: #c8401f;
+  color-scheme: light;
+}
+
+.dark {
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --card: 240 10% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 0 0% 98%;
+  --primary-foreground: 240 5.9% 10%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --accent: 240 3.7% 15.9%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --ring: 240 4.9% 83.9%;
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-good: #3fbf8a;
+  --chart-bad: #ef7a5a;
+  color-scheme: dark;
+}
+
+/* ---- base (readable even before the Tailwind CDN script has run) ---- */
+* { border-color: hsl(var(--border)); }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-feature-settings: "cv11", "ss01";
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+code, pre, kbd, .mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+a { color: inherit; }
+svg { display: block; max-width: 100%; }
+[hidden] { display: none !important; }
+
+/* ---- Card ---- */
+.card {
+  border-radius: var(--radius);
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  min-width: 0;
+}
+.card-header { display: flex; flex-direction: column; gap: 0.375rem; padding: 1.5rem; }
+.card-title { font-size: 1.5rem; font-weight: 600; line-height: 1; letter-spacing: -0.025em; margin: 0; }
+.card-title-sm { font-size: 1rem; font-weight: 600; line-height: 1.25; letter-spacing: -0.01em; margin: 0; }
+.card-description { font-size: 0.875rem; color: hsl(var(--muted-foreground)); margin: 0; }
+.card-content { padding: 1.5rem; padding-top: 0; }
+.card-content > :first-child { margin-top: 0; }
+.card-content > :last-child { margin-bottom: 0; }
+
+/* ---- Badge ---- */
+.badge {
+  display: inline-flex; align-items: center; border-radius: 9999px;
+  border: 1px solid transparent; padding: 0.125rem 0.625rem;
+  font-size: 0.75rem; font-weight: 600; line-height: 1rem; white-space: nowrap;
+  background: hsl(var(--primary)); color: hsl(var(--primary-foreground));
+}
+.badge-secondary { background: hsl(var(--secondary)); color: hsl(var(--secondary-foreground)); }
+.badge-outline { background: transparent; color: hsl(var(--foreground)); border-color: hsl(var(--border)); }
+.badge-destructive { background: hsl(var(--destructive)); color: hsl(var(--destructive-foreground)); }
+
+/* ---- Tabs ---- */
+.tabs-list {
+  display: inline-flex; max-width: 100%; height: auto; min-height: 2.5rem; align-items: center;
+  border-radius: calc(var(--radius) - 2px); background: hsl(var(--muted)); padding: 0.25rem;
+  color: hsl(var(--muted-foreground)); gap: 0.125rem; flex-wrap: wrap;
+}
+.tabs-trigger {
+  display: inline-flex; align-items: center; justify-content: center; white-space: nowrap;
+  border-radius: calc(var(--radius) - 4px); padding: 0.375rem 0.75rem; font-size: 0.875rem;
+  font-weight: 500; line-height: 1.25rem; border: 0; background: transparent; color: inherit;
+  cursor: pointer; transition: background-color .15s, color .15s, box-shadow .15s;
+  font-family: inherit;
+}
+.tabs-trigger:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
+.tabs-trigger[data-state="active"] {
+  background: hsl(var(--background)); color: hsl(var(--foreground));
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+.tabs-content { margin-top: 0.5rem; }
+.tabs-content[data-state="inactive"] { display: none; }
+
+/* ---- Table ---- */
+.table-wrap { position: relative; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table { width: 100%; caption-side: bottom; font-size: 0.875rem; border-collapse: collapse; }
+.table th {
+  height: 3rem; padding: 0 1rem; text-align: left; vertical-align: middle;
+  font-weight: 500; color: hsl(var(--muted-foreground)); white-space: nowrap;
+}
+.table td { padding: 1rem; vertical-align: middle; }
+.table tr { border-bottom: 1px solid hsl(var(--border)); transition: background-color .15s; }
+.table tbody tr:hover { background: hsl(var(--muted) / 0.5); }
+.table tbody tr:last-child { border-bottom: 0; }
+.table tr.row-highlight { background: hsl(var(--muted) / 0.6); }
+.table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.table-compact td { padding: 0.5rem 1rem; }
+
+/* ---- Accordion (details/summary so it works without JS) ---- */
+.accordion-item { border-bottom: 1px solid hsl(var(--border)); }
+.accordion-trigger {
+  display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: 1rem 0; font-weight: 500; font-size: 0.9375rem; cursor: pointer; list-style: none;
+}
+.accordion-trigger::-webkit-details-marker { display: none; }
+.accordion-trigger:hover { text-decoration: underline; }
+.accordion-trigger .chevron { flex: none; width: 1rem; height: 1rem; color: hsl(var(--muted-foreground)); transition: transform .2s; }
+details[open] > .accordion-trigger .chevron { transform: rotate(180deg); }
+.accordion-content { padding-bottom: 1rem; font-size: 0.875rem; }
+.accordion-content > :first-child { margin-top: 0; }
+
+/* ---- Button ---- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; white-space: nowrap;
+  height: 2.5rem; padding: 0.5rem 1rem; border-radius: calc(var(--radius) - 2px);
+  font-size: 0.875rem; font-weight: 500; line-height: 1.25rem; font-family: inherit;
+  border: 1px solid transparent; cursor: pointer; transition: background-color .15s, color .15s;
+  background: hsl(var(--primary)); color: hsl(var(--primary-foreground));
+}
+.btn:hover { background: hsl(var(--primary) / 0.9); }
+.btn:disabled { pointer-events: none; opacity: 0.5; }
+.btn:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
+.btn-sm { height: 2.25rem; padding: 0 0.75rem; }
+.btn-outline { background: hsl(var(--background)); color: hsl(var(--foreground)); border-color: hsl(var(--input)); }
+.btn-outline:hover { background: hsl(var(--accent)); color: hsl(var(--accent-foreground)); }
+.btn-ghost { background: transparent; color: hsl(var(--foreground)); }
+.btn-ghost:hover { background: hsl(var(--accent)); color: hsl(var(--accent-foreground)); }
+.btn-secondary { background: hsl(var(--secondary)); color: hsl(var(--secondary-foreground)); }
+.btn-secondary:hover { background: hsl(var(--secondary) / 0.8); }
+.btn[aria-pressed="true"], .btn.is-active { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); border-color: hsl(var(--primary)); }
+
+/* ---- Alert ---- */
+.alert {
+  position: relative; width: 100%; border-radius: var(--radius); border: 1px solid hsl(var(--border));
+  padding: 1rem; background: hsl(var(--card)); color: hsl(var(--card-foreground));
+}
+.alert-title { margin: 0 0 0.25rem; font-weight: 500; line-height: 1; letter-spacing: -0.01em; }
+.alert-description { font-size: 0.875rem; }
+.alert-description > :first-child { margin-top: 0; }
+.alert-description > :last-child { margin-bottom: 0; }
+
+/* ---- Separator ---- */
+.separator { flex: none; height: 1px; width: 100%; background: hsl(var(--border)); }
+
+/* ---- form controls ---- */
+.select {
+  display: flex; height: 2.5rem; width: 100%; align-items: center; border-radius: calc(var(--radius) - 2px);
+  border: 1px solid hsl(var(--input)); background: hsl(var(--background)); color: hsl(var(--foreground));
+  padding: 0 0.75rem; font-size: 0.875rem; font-family: inherit;
+}
+.select:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
+.field { display: flex; flex-direction: column; gap: 0.375rem; min-width: 0; }
+.field-label { font-size: 0.875rem; font-weight: 500; line-height: 1; }
+.checkbox-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; font-weight: 500; cursor: pointer; }
+.checkbox { width: 1rem; height: 1rem; border-radius: 0.125rem; border: 1px solid hsl(var(--primary)); accent-color: hsl(var(--primary)); margin: 0; }
+
+/* ---- prose (the markdown subset the builder emits) ---- */
+.prose { font-size: 0.9375rem; max-width: 72ch; }
+.prose p { margin: 0 0 0.75rem; }
+.prose ul { margin: 0 0 0.75rem; padding-left: 1.5rem; }
+.prose li { margin: 0.25rem 0; }
+.prose li::marker { color: hsl(var(--muted-foreground)); }
+.prose strong { font-weight: 600; }
+.prose a { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: hsl(var(--muted-foreground)); }
+.prose a:hover { text-decoration-color: currentColor; }
+.prose > :last-child { margin-bottom: 0; }
+.prose-muted { color: hsl(var(--muted-foreground)); }
+code.inline, .prose code, .table code, .accordion-content code, .card code {
+  font-size: 0.8125em; background: hsl(var(--muted)); border-radius: 0.25rem; padding: 0.125rem 0.375rem;
+  overflow-wrap: anywhere;
+}
+pre.code-block {
+  margin: 0; padding: 1rem; border-radius: var(--radius); border: 1px solid hsl(var(--border));
+  background: hsl(var(--muted)); font-size: 0.8125rem; line-height: 1.6; overflow-x: auto;
+}
+pre.code-block code { background: none; padding: 0; font-size: inherit; }
+pre.code-block .comment { color: hsl(var(--muted-foreground)); }
+
+/* ---- stat tiles ---- */
+.stat-value { font-size: 1.75rem; font-weight: 600; letter-spacing: -0.025em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.stat-label { font-size: 0.8125rem; color: hsl(var(--muted-foreground)); margin-top: 0.25rem; }
+
+/* ---- page chrome ---- */
+.site-header { border-bottom: 1px solid hsl(var(--border)); background: hsl(var(--background) / 0.9); backdrop-filter: blur(8px); }
+.toc a { display: block; padding: 0.25rem 0; font-size: 0.875rem; color: hsl(var(--muted-foreground)); text-decoration: none; }
+.toc a:hover, .toc a.is-current { color: hsl(var(--foreground)); }
+.toc-inline { display: flex; gap: 0.25rem; overflow-x: auto; padding-bottom: 0.25rem; scrollbar-width: thin; }
+.toc-inline a { flex: none; font-size: 0.8125rem; color: hsl(var(--muted-foreground)); text-decoration: none; padding: 0.25rem 0.625rem; border-radius: 9999px; border: 1px solid hsl(var(--border)); }
+.toc-inline a:hover { color: hsl(var(--foreground)); background: hsl(var(--accent)); }
+.section-title { font-size: 1.375rem; font-weight: 600; letter-spacing: -0.025em; line-height: 1.2; margin: 0 0 1rem; }
+.section-anchor { color: hsl(var(--muted-foreground)); text-decoration: none; opacity: 0; margin-left: 0.375rem; font-weight: 400; }
+.section-title:hover .section-anchor { opacity: 1; }
+
+/* ---- widgets: knowledge bank explorer ---- */
+.facts {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.8125rem; line-height: 1.55;
+  background: hsl(var(--muted)); border: 1px solid hsl(var(--border)); border-radius: var(--radius);
+  padding: 0.875rem 1rem; white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.facts .fact-line { display: block; padding: 0.125rem 0.375rem; margin: 0 -0.375rem; border-radius: 0.25rem; cursor: pointer; }
+.facts .fact-line:hover { background: hsl(var(--accent)); }
+.facts .fact-line.is-selected { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+.facts .fact-line:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 1px; }
+.facts .tag { font-weight: 600; }
+.entry-detail dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; margin: 0; font-size: 0.8125rem; }
+.entry-detail dt { color: hsl(var(--muted-foreground)); font-weight: 500; }
+.entry-detail dd { margin: 0; min-width: 0; }
+.entry-detail dd code { white-space: pre-wrap; overflow-wrap: anywhere; background: none; padding: 0; font-size: 0.8125rem; }
+@media (max-width: 640px) { .entry-detail dl { grid-template-columns: 1fr; } .entry-detail dt { margin-top: 0.5rem; } }
+
+/* ---- widgets: id chips ---- */
+.ids { display: flex; flex-wrap: wrap; gap: 0.375rem; margin-top: 0.375rem; }
+.ids .chip {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.75rem; padding: 0.125rem 0.5rem;
+  border-radius: 9999px; border: 1px solid hsl(var(--border)); background: hsl(var(--muted)); overflow-wrap: anywhere;
+}
+.ids .chip-e { border-color: var(--chart-2); }
+.ids .chip-c { border-color: var(--chart-1); }
+
+/* ---- widgets: charts ---- */
+.chart-host { position: relative; width: 100%; }
+.chart-host svg { width: 100%; height: auto; overflow: visible; }
+.chart-host svg text { font-size: 11px; fill: hsl(var(--muted-foreground)); font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+.chart-host svg text.lbl { fill: hsl(var(--foreground)); font-weight: 500; }
+.chart-tip {
+  position: absolute; pointer-events: none; z-index: 10; background: hsl(var(--popover)); color: hsl(var(--popover-foreground));
+  border: 1px solid hsl(var(--border)); box-shadow: 0 4px 12px rgb(0 0 0 / 0.12);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.75rem; padding: 0.375rem 0.5rem;
+  border-radius: 0.375rem; white-space: nowrap; transform: translate(-50%, -115%); opacity: 0; transition: opacity .08s;
+}
+.legend { display: flex; flex-wrap: wrap; gap: 0.5rem 0.875rem; font-size: 0.75rem; color: hsl(var(--muted-foreground)); margin-top: 0.5rem; }
+.legend i { display: inline-block; width: 0.625rem; height: 0.625rem; border-radius: 9999px; margin-right: 0.375rem; vertical-align: middle; }
+.legend i.ref { border-radius: 0; height: 2px; }
+.delta-good { color: var(--chart-good); }
+.delta-bad { color: var(--chart-bad); }
+
+/* ---- widgets: diagrams ---- */
+.diagram-host svg { width: 100%; height: auto; }
+.diagram-host .node rect { fill: hsl(var(--card)); stroke: hsl(var(--border)); stroke-width: 1.25; transition: stroke .15s, fill .15s; }
+.diagram-host .node text { fill: hsl(var(--foreground)); font-size: 12px; font-weight: 500; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+.diagram-host .node text.sub { fill: hsl(var(--muted-foreground)); font-size: 10.5px; font-weight: 400; }
+.diagram-host .node { cursor: pointer; }
+.diagram-host .node:hover rect { stroke: hsl(var(--foreground)); }
+.diagram-host .node.is-active rect { fill: hsl(var(--primary)); stroke: hsl(var(--primary)); }
+.diagram-host .node.is-active text { fill: hsl(var(--primary-foreground)); }
+.diagram-host .node:focus-visible { outline: none; }
+.diagram-host .node:focus-visible rect { stroke: hsl(var(--ring)); stroke-width: 2; }
+.diagram-host .edge { stroke: hsl(var(--muted-foreground)); stroke-width: 1.25; fill: none; }
+.diagram-host .edge-label { fill: hsl(var(--muted-foreground)); font-size: 10px; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+.diagram-host .arrow { fill: hsl(var(--muted-foreground)); }
+
+/* ---- widgets: lifecycle flow ---- */
+.flow { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.flow .flow-arrow { color: hsl(var(--muted-foreground)); font-size: 0.875rem; }
+.flow .btn { height: auto; min-height: 2.5rem; white-space: normal; text-align: left; }
+
+/* ---- misc ---- */
+.muted { color: hsl(var(--muted-foreground)); }
+.kbd-line { font-size: 0.8125rem; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+</style>
+</head>
+<body class="min-h-screen bg-background font-sans text-foreground antialiased">
+
+<header class="site-header sticky top-0 z-20">
+  <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+    <div class="flex min-w-0 items-center gap-3">
+      <a href="../index.html" class="truncate text-sm font-semibold tracking-tight">epiForecasting reports</a>
+      <span class="badge badge-outline hidden sm:inline-flex">2026-10-01</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="../index.html" class="btn btn-ghost btn-sm">All reports</a>
+      <button type="button" class="btn btn-ghost btn-sm" id="theme-toggle" aria-label="Toggle colour theme" title="Toggle colour theme">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="mx-auto max-w-6xl px-4 py-8 lg:py-10">
+  <div class="mb-8 lg:mb-10">
+    <div class="mb-2 sm:hidden"><span class="badge badge-outline">2026-10-01</span></div>
+    <h1 class="text-3xl font-semibold tracking-tight lg:text-4xl">Weekly report - 2026-10-01</h1>
+    <p class="mt-2 max-w-3xl text-base text-muted-foreground">Knowledge bank v1 is in the loop: 27 entries (18 lab-authored, 9 learned from a controlled peak-rectification experiment), cited on every proposal. The loss-weight rectification fixes the peak bias but not the peak score; shorter windows are worse everywhere.</p>
+  </div>
+
+  <div class="grid gap-8 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-12">
+    <aside class="min-w-0 lg:block">
+      <nav class="toc hidden lg:sticky lg:top-20 lg:block" aria-label="Sections">
+        <div class="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">On this page</div>
+        <a href="#summary">Summary</a><a href="#asked">What was asked</a><a href="#delivered">What was delivered</a><a href="#proof">Proof of concept</a><a href="#results">Results in brief</a><a href="#open-questions">Open questions</a><a href="#next">Next steps</a><a href="#reproduce">Reproduce</a>
+      </nav>
+      <nav class="toc-inline lg:hidden" aria-label="Sections">
+        <a href="#summary">Summary</a><a href="#asked">What was asked</a><a href="#delivered">What was delivered</a><a href="#proof">Proof of concept</a><a href="#results">Results in brief</a><a href="#open-questions">Open questions</a><a href="#next">Next steps</a><a href="#reproduce">Reproduce</a>
+      </nav>
+    </aside>
+
+    <main class="min-w-0 space-y-12">
+<section id="summary" class="scroll-mt-24"><h2 class="section-title">Summary<a class="section-anchor" href="#summary" aria-label="Link to this section">#</a></h2><div class="space-y-4"><div class="alert" role="note"><h5 class="alert-title">This week in one paragraph</h5><div class="alert-description prose"><p>The knowledge bank asked for on 2026-09-24 exists and is wired into the improve loop: curated YAML is the source of truth, every proposal sees a <strong>KNOWN FACTS</strong> block and must cite what it relied on, and exploration is still allowed but logged. The five rectification actions from the 2026-09-27 Teams follow-up are seeded as curated entries. A controlled experiment on XGBoost&#x27;s worst phase (peak) swept the loss weight and the training window over 9 cutoffs; its 9 outcomes were imported back into the bank as experiential entries. Result: the approaching-peak weight moves peak bias from -58.8 to about zero without improving peak WIS, and short windows hurt at every phase.</p></div></div><div class="grid gap-4 grid-cols-2 lg:grid-cols-4"><div class="card"><div class="card-content !p-5"><div class="stat-value">27</div><div class="stat-label">bank entries (18 lab-authored, 9 learned from the experiment)</div></div></div><div class="card"><div class="card-content !p-5"><div class="stat-value">10 x 9</div><div class="stat-label">experiment configurations x cutoffs, deterministic</div></div></div><div class="card"><div class="card-content !p-5"><div class="stat-value">7</div><div class="stat-label">constrained actions the loop can take</div></div></div><div class="card"><div class="card-content !p-5"><div class="stat-value">369</div><div class="stat-label">tests passing</div></div></div></div></div></section>
+<section id="asked" class="scroll-mt-24"><h2 class="section-title">What was asked<a class="section-anchor" href="#asked" aria-label="Link to this section">#</a></h2><div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"><div class="card"><div class="card-header !p-5 !pb-3"><div class="flex flex-wrap items-start justify-between gap-2"><h3 class="card-title-sm">Knowledge bank as human-authored guardrails first</h3><span class="badge badge-secondary">2026-09-24 sync</span></div></div><div class="card-content !p-5 !pt-0 prose text-sm"><p>Build the bank from lab-authored rules before any learned knowledge. The agent must cite the entry it acted on, and it must still be free to explore beyond the rules.</p></div></div><div class="card"><div class="card-header !p-5 !pb-3"><div class="flex flex-wrap items-start justify-between gap-2"><h3 class="card-title-sm">A principled, controlled experiment on the worst phase</h3><span class="badge badge-secondary">2026-09-24 sync</span></div></div><div class="card-content !p-5 !pt-0 prose text-sm"><p>Take XGBoost&#x27;s failing phase, hold everything else fixed and make the fixed-vs-varied split explicit, so any gain can be attributed to one change.</p></div></div><div class="card"><div class="card-header !p-5 !pb-3"><div class="flex flex-wrap items-start justify-between gap-2"><h3 class="card-title-sm">Five rectification actions for a failing phase</h3><span class="badge badge-secondary">2026-09-27 Teams</span></div></div><div class="card-content !p-5 !pt-0 prose text-sm"><p>From A. Adiga&#x27;s follow-up, with the instruction to &quot;pick the phase where it fails most&quot;:</p><ul><li>add examples from other seasons</li><li>oversample failing-phase windows</li><li>SMOTE</li><li>shorter window when the season diverges</li><li>loss weight lambda on approaching-peak rows</li></ul></div></div><div class="card"><div class="card-header !p-5 !pb-3"><div class="flex flex-wrap items-start justify-between gap-2"><h3 class="card-title-sm">Summarize the best strategy from the logs</h3><span class="badge badge-secondary">later</span></div></div><div class="card-content !p-5 !pt-0 prose text-sm"><p>Once experiments produce logs, run an agent over them to summarize which strategy worked best and why.</p></div></div></div></section>
+<section id="delivered" class="scroll-mt-24"><h2 class="section-title">What was delivered<a class="section-anchor" href="#delivered" aria-label="Link to this section">#</a></h2><div class="space-y-4"><div class="table-wrap rounded-md border"><table class="table"><thead><tr><th>Ask</th><th>Delivered</th><th>Where</th></tr></thead><tbody><tr><td>Knowledge bank v1</td><td>Schema, SQLite store, YAML intake rebuilt on open, trust-ranked retrieval, a <strong>KNOWN FACTS</strong> block in every prompt, CLI <code class="inline">validate</code> / <code class="inline">rebuild</code> / <code class="inline">list</code> / <code class="inline">query</code> / <code class="inline">import-experiment</code> / <code class="inline">remove</code></td><td><code class="inline">agent/knowledge/</code>, <code class="inline">knowledge/</code></td></tr><tr><td>Guardrails first</td><td>Five rectification actions seeded as curated entries, plus training-strategy rules and the migrated domain context (18 entries)</td><td><code class="inline">knowledge/curated/</code></td></tr><tr><td>Agent cites what it acted on, still explores</td><td>The loop retrieves facts per proposal keyed on the diagnosed phase, records <code class="inline">cited_entries</code> / <code class="inline">supported_by</code> / <code class="inline">retrieved_entry_ids</code>, keeps an advisory override log, and the run report shows a <code class="inline">cites:</code> line</td><td><code class="inline">agent/orchestrator.py</code></td></tr><tr><td>Learned knowledge</td><td>Experiment outcomes imported as 9 experiential entries, one per configuration</td><td><code class="inline">knowledge import-experiment</code></td></tr><tr><td>Loss weight and window as real knobs</td><td>Two knobs (approaching-peak sample weights with a season-eligibility rule; post-feature training-row window) and a seventh action <code class="inline">set_training_window</code></td><td><code class="inline">src/</code>, adapter</td></tr><tr><td>Controlled experiment</td><td>Sweep run: 10 configs x 9 cutoffs, five identical baselines confirm determinism</td><td><code class="inline">scripts/experiments/</code>, <code class="inline">documentation/experiments/</code></td></tr><tr><td>Show it working</td><td>Demo script that walks the bank, a retrieval and a cited proposal</td><td><code class="inline">scripts/demo_knowledge_bank.py</code></td></tr><tr><td>Per-model-class strategies</td><td>Intake stub ready for the lab to fill</td><td><code class="inline">knowledge/curated/_training-strategy-by-model-class.yaml</code></td></tr></tbody></table></div><div class="alert" role="note"><h5 class="alert-title">Not done</h5><div class="alert-description prose"><ul><li>oversampling and SMOTE arms of the experiment</li><li>derived-knowledge jobs (the <code class="inline">derived</code> provenance has no producer yet)</li><li>a bank-writer that merges repeated observations into one entry with higher confidence</li><li>the log summarizer agent</li></ul></div></div></div></section>
+<section id="proof" class="scroll-mt-24"><h2 class="section-title">Proof of concept<a class="section-anchor" href="#proof" aria-label="Link to this section">#</a></h2><div class="space-y-4"><div class="prose prose-muted text-sm"><p>Four interactive panels built from this week&#x27;s real artefacts: the bank as stored, a recorded improve run, the experiment log, and the bank&#x27;s design.</p></div><div data-tabs><div class="tabs-list" role="tablist"><button type="button" class="tabs-trigger" role="tab" data-tab="explorer" data-state="active" aria-selected="true" aria-controls="panel-explorer" id="tab-explorer">Bank explorer</button><button type="button" class="tabs-trigger" role="tab" data-tab="loop" data-state="inactive" aria-selected="false" aria-controls="panel-loop" id="tab-loop">Loop step-through</button><button type="button" class="tabs-trigger" role="tab" data-tab="experiment" data-state="inactive" aria-selected="false" aria-controls="panel-experiment" id="tab-experiment">Experiment</button><button type="button" class="tabs-trigger" role="tab" data-tab="design" data-state="inactive" aria-selected="false" aria-controls="panel-design" id="tab-design">Bank design</button></div><div class="tabs-content" role="tabpanel" data-tab="explorer" data-state="active" id="panel-explorer" aria-labelledby="tab-explorer"><div class="space-y-4"><div class="prose"><p>The 27 entries exactly as the store ranks them. Change the retrieval context to see what the proposal prompt would contain; the line format is the real renderer&#x27;s.</p></div><div class="widget min-w-0" data-widget="bankExplorer" data-source="bank_entries" id="widget-1"></div></div></div><div class="tabs-content" role="tabpanel" data-tab="loop" data-state="inactive" id="panel-loop" aria-labelledby="tab-loop" hidden><div class="space-y-4"><div class="prose"><p>Run <code class="inline">20261001-084414-7d97</code>, cutoff 2025-12-06, with a fake pipeline so WIS never moves. <strong>Iteration 1</strong> cited an experiential entry and was supported by a curated rule, with a parameter mismatch (the rule weights approaching-peak rows; the agent weighted the calendar peak phase). <strong>Iteration 2</strong> chose an action no retrieved rule recommends; it was allowed and logged as an advisory override.</p></div><div class="widget min-w-0" data-widget="runStepper" data-source="live_run" data-options='{&quot;entries&quot;: &quot;bank_entries&quot;}' id="widget-2"></div></div></div><div class="tabs-content" role="tabpanel" data-tab="experiment" data-state="inactive" id="panel-experiment" aria-labelledby="tab-experiment" hidden><div class="space-y-4"><div class="prose"><p>Peak rectification on <code class="inline">xgboost_direct</code>, 9 cutoffs on the pinned 2025-26 split. The dashed line is the baseline; zero bias is drawn where it applies.</p></div><div class="widget min-w-0" data-widget="sweepCharts" data-source="sweep" id="widget-3"></div><div class="widget min-w-0" data-widget="sweepTable" data-source="sweep" id="widget-4"></div></div></div><div class="tabs-content" role="tabpanel" data-tab="design" data-state="inactive" id="panel-design" aria-labelledby="tab-design" hidden><div class="space-y-4"><div class="prose"><p><strong>Where the bank sits.</strong> Click a box for what it is and where it lives.</p></div><div class="widget min-w-0" data-widget="architectureDiagram" id="widget-5"></div><div class="prose"><p><strong>Lifecycle of an entry.</strong> Add, rebuild, retrieve, cite, remove.</p></div><div class="widget min-w-0" data-widget="bankLifecycle" id="widget-6"></div><div class="prose"><p><strong>Schema.</strong> Field by field, the constants that shape retrieval, and two entries in full.</p></div><div class="widget min-w-0" data-widget="schemaReference" data-source="bank_entries" data-options='{&quot;examples&quot;: [&quot;rectify-peak-loss-weight-approaching-peak&quot;, &quot;exp-lambda-3-2025&quot;]}' id="widget-7"></div></div></div></div></div></section>
+<section id="results" class="scroll-mt-24"><h2 class="section-title">Results in brief<a class="section-anchor" href="#results" aria-label="Link to this section">#</a></h2><div class="space-y-4"><div class="prose"><p>Baseline peak WIS <strong>121.01</strong>, bias <strong>-58.8</strong>, coverage <strong>0.855</strong>.</p><ul><li><strong>Loss weight on approaching-peak rows.</strong> Peak WIS 123.5-123.9 at every lambda (about +2.5, no improvement). Bias moves -35.7 / -17.9 / -6.4 / +7.9 for lambda 1.5 / 2 / 3 / 5. Coverage falls to 0.769 at lambda 5.</li><li><strong>Calendar label instead of the curve label.</strong> Matches at matched bias: lambda 3 gives 122.66 with bias -6.2.</li><li><strong>Training window 12 / 26 / 52 weeks.</strong> Peak WIS 238.26 / 240.24 / 197.99, worse at every phase.</li></ul><p><strong>Interpretation.</strong> The weight fixes the level, not the score: the median moves up but the intervals do not widen with it, so WIS does not improve and coverage drops. The short-window rule is a per-series statistical-model rule and does not transfer to pooled XGBoost, which is the per-model-class point behind the new intake stub. Five baselines are identical, and the harness lands within 1.4 WIS of the 09-02 selection run.</p><p><strong>Caveats.</strong> One split and one seed; calendar phases for scoring; K = 6 assumed; the weight acts on <code class="inline">sample_weight</code> only.</p></div><div class="space-y-4"><div class="table-wrap rounded-md border"><table class="table"><thead><tr><th>Configuration</th><th>Peak WIS</th><th>Peak bias</th><th>Peak coverage 95</th><th>Overall WIS</th></tr></thead><tbody><tr><td>baseline</td><td>121.01</td><td>-58.8</td><td>0.855</td><td>50.05</td></tr><tr><td>lambda 1.5 (approaching-peak label)</td><td>123.74</td><td>-35.7</td><td>0.835</td><td>50.92</td></tr><tr><td>lambda 2</td><td>123.54</td><td>-17.9</td><td>0.821</td><td>50.64</td></tr><tr><td>lambda 3</td><td>123.71</td><td>-6.4</td><td>0.808</td><td>50.40</td></tr><tr><td>lambda 5</td><td>123.87</td><td>+7.9</td><td>0.769</td><td>50.53</td></tr><tr><td>lambda 2 (calendar label)</td><td>123.70</td><td>-29.8</td><td>0.827</td><td>50.60</td></tr><tr><td>lambda 3 (calendar label)</td><td>122.66</td><td>-6.2</td><td>0.806</td><td>50.21</td></tr><tr><td>window 12 weeks</td><td>238.26</td><td>-193.0</td><td>0.746</td><td>96.02</td></tr><tr><td>window 26 weeks</td><td>240.24</td><td>-188.2</td><td>0.709</td><td>92.16</td></tr><tr><td>window 52 weeks</td><td>197.99</td><td>+67.5</td><td>0.829</td><td>71.85</td></tr></tbody></table></div><div class="prose prose-muted text-sm"><p>Full per-phase and per-horizon numbers are in the Experiment tab above and in <code class="inline">documentation/experiments/2026-10-peak-rectification-results.md</code>.</p></div></div></div></section>
+<section id="open-questions" class="scroll-mt-24"><h2 class="section-title">Open questions<a class="section-anchor" href="#open-questions" aria-label="Link to this section">#</a></h2><div class="accordion border-t"><details class="accordion-item"><summary class="accordion-trigger"><span>How should approaching-peak be defined, and what is K?</span><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary><div class="accordion-content prose"><p>The experiment labels the K = 6 weeks before each eligible season&#x27;s maximum. Is the definition right (relative to the max, or to a growth threshold), and should K be learned per season rather than fixed?</p></div></details><details class="accordion-item"><summary class="accordion-trigger"><span>Are the 2020-2022 seasons admissible as training examples?</span><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary><div class="accordion-content prose"><p>&quot;Add examples from other seasons&quot; needs a rule for which seasons count. The pandemic seasons have unusual shapes; the season-eligibility rule currently only requires 40 weeks of data.</p></div></details><details class="accordion-item"><summary class="accordion-trigger"><span>What lambda range, and should it vary per season or per location?</span><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary><div class="accordion-content prose"><p>The sweep used 1.5 to 5 with one global weight. A per-season or per-location lambda could follow the divergence of the current season instead of a fixed guess.</p></div></details><details class="accordion-item"><summary class="accordion-trigger"><span>Warm-start versus retrain: a bank category or an experiment arm?</span><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary><div class="accordion-content prose"><p>Re-fitting from the previous model versus training fresh at each cutoff changes what &quot;shorter window&quot; even means. It could be a model_characteristics entry or its own arm.</p></div></details><details class="accordion-item"><summary class="accordion-trigger"><span>Calendar or curve-based phases for scoring?</span><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary><div class="accordion-content prose"><p>Scoring uses calendar phases (Dec-Jan is peak). The curve-based segmentation (surge / plateau / decline) exists; switching the reward to it changes which entries match and which configuration wins.</p></div></details></div></section>
+<section id="next" class="scroll-mt-24"><h2 class="section-title">Next steps<a class="section-anchor" href="#next" aria-label="Link to this section">#</a></h2><div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"><div class="card"><div class="card-header !p-5 !pb-3"><div class="flex flex-wrap items-start justify-between gap-2"><h3 class="card-title-sm">Make the weight act on the intervals</h3><span class="badge badge-secondary">experiment</span></div></div><div class="card-content !p-5 !pt-0 prose text-sm"><p>Weight the quantile loss so the intervals widen with the median, add a bias-only post-correction as a control, and replicate with more seeds.</p></div></div><div class="card"><div class="card-header !p-5 !pb-3"><div class="flex flex-wrap items-start justify-between gap-2"><h3 class="card-title-sm">Per-model-class strategies from the lab</h3><span class="badge badge-secondary">bank</span></div></div><div class="card-content !p-5 !pt-0 prose text-sm"><p>Fill <code class="inline">knowledge/curated/_training-strategy-by-model-class.yaml</code> with which rules apply to pooled tree models, per-series statistical models and neural families.</p></div></div><div class="card"><div class="card-header !p-5 !pb-3"><div class="flex flex-wrap items-start justify-between gap-2"><h3 class="card-title-sm">Model-class context on entries</h3><span class="badge badge-secondary">bank</span></div></div><div class="card-content !p-5 !pt-0 prose text-sm"><p>Add a model-class key to <code class="inline">context</code> so a rule written for ARIMA-style models is not retrieved for XGBoost.</p></div></div><div class="card"><div class="card-header !p-5 !pb-3"><div class="flex flex-wrap items-start justify-between gap-2"><h3 class="card-title-sm">Derived onset-dates job</h3><span class="badge badge-secondary">bank</span></div></div><div class="card-content !p-5 !pt-0 prose text-sm"><p>First derived-knowledge producer: onset dates per season and location, once the threshold T is fixed.</p></div></div><div class="card"><div class="card-header !p-5 !pb-3"><div class="flex flex-wrap items-start justify-between gap-2"><h3 class="card-title-sm">Bank-writer and log summarizer</h3><span class="badge badge-secondary">agent</span></div></div><div class="card-content !p-5 !pt-0 prose text-sm"><p>Merge repeated observations into one entry with higher confidence, and run an agent over the experiment logs to write the strategy summary.</p></div></div><div class="card"><div class="card-header !p-5 !pb-3"><div class="flex flex-wrap items-start justify-between gap-2"><h3 class="card-title-sm">Calendar</h3><span class="badge badge-secondary">planning</span></div></div><div class="card-content !p-5 !pt-0 prose text-sm"><p>October for the items above; November is exams; the paper draft is due in January.</p></div></div></div></section>
+<section id="reproduce" class="scroll-mt-24"><h2 class="section-title">Reproduce<a class="section-anchor" href="#reproduce" aria-label="Link to this section">#</a></h2><div class="space-y-4"><div class="prose prose-muted text-sm"><p>All commands run from the repo root with the project <code class="inline">.venv</code> active.</p></div><pre class="code-block"><code><span class="comment"># macOS: xgboost + torch each bundle libomp; avoid the duplicate-runtime segfault</span>
+export KMP_DUPLICATE_LIB_OK=TRUE OMP_NUM_THREADS=1
+
+<span class="comment"># knowledge bank</span>
+python -m agent knowledge validate
+python -m agent knowledge query --phase peak --model xgboost_direct
+python -m agent knowledge import-experiment --log outputs/experiments/peak_rectification/log.jsonl
+python -m agent knowledge remove --id &lt;id&gt; --dry-run
+
+<span class="comment"># demo (add --live to call the LLM)</span>
+python scripts/demo_knowledge_bank.py
+python scripts/demo_knowledge_bank.py --live
+
+<span class="comment"># experiment (add --summary-only to re-read the log without training)</span>
+python scripts/experiments/peak_rectification.py
+python scripts/experiments/peak_rectification.py --summary-only
+
+<span class="comment"># improve loop with the bank, then the run report</span>
+python -m agent improve --cutoff-date 2025-12-06 --auto-apply
+python -m agent report &lt;run_id&gt;
+
+<span class="comment"># this page</span>
+python scripts/reports/build_report.py documentation/reports/2026-10-01
+python scripts/reports/build_report.py --index</code></pre></div></section>
+    </main>
+  </div>
+
+  <footer class="mt-16 border-t pt-6 text-xs text-muted-foreground">
+    Built by <code class="inline">scripts/reports/build_report.py</code> from <code class="inline">report.yaml</code>. Same shell every week; only the content changes.
+  </footer>
+</div>
+
+<script>
+// Embedded data for the widgets, keyed by the data file stem named in report.yaml.
+window.REPORT_DATA = {"bank_entries":[{"id":"bias-sign-convention","provenance":"curated","category":"forecasts","statement":"Positive bias = the model over-predicts; negative bias = the model under-predicts.","entities":{"metric":"bias"},"context":{},"payload":{"definition":"bias = mean(predicted - actual)"},"evidence":{"source":"migrated from agent/adapters/flu_forecast.py get_domain_context, 2026-09-30","n_observations":null,"reward_delta":null},"confidence":"high","llm_gloss":null,"created_at":"2026-09-30"},{"id":"calendar-phase-decline","provenance":"curated","category":"domain_dynamics","statement":"Decline phase (Feb-Apr): activity decreasing.","entities":{"phase":"decline"},"context":{"phase":["decline"],"season_week":[5,17]},"payload":{"months":[2,3,4],"source_of_truth":"agent/phase_evaluator.py PhaseEvaluator.PHASE_MAP"},"evidence":{"source":"migrated from agent/adapters/flu_forecast.py get_domain_context, 2026-09-30","n_observations":null,"reward_delta":null},"confidence":"high","llm_gloss":null,"created_at":"2026-09-30"},{"id":"calendar-phase-onset","provenance":"curated","category":"domain_dynamics","statement":"Onset phase (Oct-Nov): flu activity begins rising.","entities":{"phase":"onset"},"context":{"phase":["onset"],"season_week":[40,48]},"payload":{"months":[10,11],"source_of_truth":"agent/phase_evaluator.py PhaseEvaluator.PHASE_MAP"},"evidence":{"source":"migrated from agent/adapters/flu_forecast.py get_domain_context, 2026-09-30","n_observations":null,"reward_delta":null},"confidence":"high","llm_gloss":null,"created_at":"2026-09-30"},{"id":"calendar-phase-peak","provenance":"curated","category":"domain_dynamics","statement":"Peak phase (Dec-Jan): highest hospitalization rates.","entities":{"phase":"peak"},"context":{"phase":["peak"]},"payload":{"months":[12,1],"source_of_truth":"agent/phase_evaluator.py PhaseEvaluator.PHASE_MAP"},"evidence":{"source":"migrated from agent/adapters/flu_forecast.py get_domain_context, 2026-09-30","n_observations":null,"reward_delta":null},"confidence":"high","llm_gloss":null,"created_at":"2026-09-30"},{"id":"error-grows-with-horizon","provenance":"curated","category":"forecasts","statement":"Error typically increases with horizon (week 1 best, week 4 worst).","entities":{},"context":{},"payload":{"horizons_weeks":[1,2,3,4]},"evidence":{"source":"migrated from agent/adapters/flu_forecast.py get_domain_context, 2026-09-30","n_observations":null,"reward_delta":null},"confidence":"high","llm_gloss":null,"created_at":"2026-09-30"},{"id":"peak-is-hardest-to-forecast","provenance":"curated","category":"forecasts","statement":"Peak periods are the hardest to forecast because of rapid changes.","entities":{"phase":"peak"},"context":{},"payload":{},"evidence":{"source":"migrated from agent/adapters/flu_forecast.py get_domain_context, 2026-09-30","n_observations":null,"reward_delta":null},"confidence":"high","llm_gloss":null,"created_at":"2026-09-30"},{"id":"rectify-peak-add-examples-other-seasons","provenance":"curated","category":"model_characteristics","statement":"When a model fails at the peak, add more training examples from the failing phase drawn from other seasons, locations, or outbreaks (data is limited, so every extra peak counts).","entities":{"phase":"peak"},"context":{"phase":["peak","approaching_peak"]},"payload":{"recommendation":{"action":"not_yet_available","params":{},"note":"The cached CDC series starts 2022-02-05, so the only lever is admitting earlier seasons; whether the 2020-22 seasons are admissible is an open question for the lab. Other locations are already pooled in the training set.\n"},"rank":1},"evidence":{"source":"A. Adiga, Teams follow-up, ~2026-09-27","n_observations":null,"reward_delta":null},"confidence":"high","llm_gloss":null,"created_at":"2026-09-30"},{"id":"rectify-peak-loss-weight-approaching-peak","provenance":"curated","category":"model_characteristics","statement":"Otherwise reweight the loss: weight approaching-peak training rows by lambda > 1 (value to be learned) and every other row by 1, so the fit is pulled toward the rise into the peak.","entities":{"phase":"peak"},"context":{"phase":["peak","approaching_peak"]},"payload":{"recommendation":{"action":"reweight_training_samples","params":{"dimension":"approaching_peak","weight":">1, to be learned"},"note":"`value` = weeks before each eligible season's peak that count as approaching-peak (guardrail [2, 12], default 6); `weight` = lambda in [1.0, 5.0]. Lambda is the peak-rectification experiment's sweep variable.\n"},"rank":5,"loss":"L = 1/N sum w_i l(yhat_i, y_i); w_i = lambda if approaching-peak else 1"},"evidence":{"source":"A. Adiga, Teams follow-up, ~2026-09-27","n_observations":null,"reward_delta":null},"confidence":"high","llm_gloss":null,"created_at":"2026-09-30"},{"id":"rectify-peak-oversample-windows","provenance":"curated","category":"model_characteristics","statement":"If failing-phase samples are limited, oversample the training windows from that phase (e.g. the weeks leading into each season's peak) so the fit sees them more often.","entities":{"phase":"peak"},"context":{"phase":["peak","approaching_peak"]},"payload":{"recommendation":{"action":"not_yet_available","params":{"factor":">1"},"note":"For XGBoost, integer sample weights are equivalent to row duplication except under `subsample`; either fold into the loss-weight action or duplicate rows literally to keep the two arms distinct. Planned experiment arm, not run yet.\n"},"rank":2},"evidence":{"source":"A. Adiga, Teams follow-up, ~2026-09-27","n_observations":null,"reward_delta":null},"confidence":"high","llm_gloss":null,"created_at":"2026-09-30"},{"id":"rectify-peak-shorter-window-on-divergence","provenance":"curated","category":"model_characteristics","statement":"If the current season at the forecast week differs from past seasons (no future data is available), rely less on seasonal history and fit on a shorter window (6 or 12 weeks instead of 52).","entities":{"phase":"peak"},"context":{"phase":["peak","approaching_peak"]},"payload":{"recommendation":{"action":"set_training_window","params":{"weeks":12},"note":"6 or 12 weeks; 12 is the safer first move (the minimum is FORECAST_HORIZON + 4 = 8, so 6 is not admissible today). Writes `data.train_window_weeks`. The \"current season diverges from past seasons\" trigger is a future derived entry, not yet defined.\n"},"rank":4,"config_key":"data.train_window_weeks"},"evidence":{"source":"A. Adiga, Teams follow-up, ~2026-09-27","n_observations":null,"reward_delta":null},"confidence":"high","llm_gloss":null,"created_at":"2026-09-30"},{"id":"seasonality-needs-two-plus-years","provenance":"curated","category":"input_data","statement":"Seasonality detection needs more than two years of history; with less, a model cannot tell a seasonal cycle from a one-off trend and seasonal features should not be trusted.","entities":{"data_source":"cdc_flusight"},"context":{},"payload":{"minimum_history_years":2,"note":"The cached CDC series starts 2022-02-05, so the pinned split barely clears this bar."},"evidence":{"source":"A. Adiga, meetings 2026-09-09, 2026-09-24","n_observations":null,"reward_delta":null},"confidence":"high","llm_gloss":null,"created_at":"2026-09-30"},{"id":"train-long-window-in-lull","provenance":"curated","category":"model_characteristics","statement":"In a lull (plateau or off-season) use a long fit window of 52 or 104 weeks so the model can draw on seasonal history rather than a flat recent stretch.","entities":{"phase":"plateau"},"context":{"phase":["plateau","off_season"]},"payload":{"recommendation":{"action":"set_training_window","params":{"weeks":52},"note":"52 or 104 weeks (104 = 2 seasons, the catalog maximum); writes `data.train_window_weeks`."},"config_key":"data.train_window_weeks"},"evidence":{"source":"A. Adiga, meetings 2026-09-03, 2026-09-09, 2026-09-24","n_observations":null,"reward_delta":null},"confidence":"high","llm_gloss":null,"created_at":"2026-09-30"},{"id":"train-short-window-on-takeoff","provenance":"curated","category":"model_characteristics","statement":"In a sharp takeoff (entering a growth phase), fit on a short window of roughly the last 12 weeks instead of relying on 52-week seasonality; short windows keep the model agile.","entities":{"phase":"surge"},"context":{"phase":["surge","onset","approaching_peak"]},"payload":{"recommendation":{"action":"set_training_window","params":{"weeks":12},"note":"Writes `data.train_window_weeks` (minimum FORECAST_HORIZON + 4 = 8 weeks, maximum 104); the experiment harness sets the same key directly.\n"},"config_key":"data.train_window_weeks"},"evidence":{"source":"A. Adiga, meetings 2026-09-03, 2026-09-09, 2026-09-24","n_observations":null,"reward_delta":null},"confidence":"high","llm_gloss":null,"created_at":"2026-09-30"},{"id":"window-length-is-a-search-dimension","provenance":"curated","category":"model_characteristics","statement":"The training-window length is itself an optimization the agent should run, not a fixed setting: start from the phase rule (12 weeks on takeoff, 52/104 in a lull) and explore past it.","entities":{},"context":{},"payload":{"search_space":{"train_window_weeks":[8,12,26,52,104]}},"evidence":{"source":"A. Adiga, meetings 2026-09-09, 2026-09-24","n_observations":null,"reward_delta":null},"confidence":"high","llm_gloss":null,"created_at":"2026-09-30"},{"id":"growth-starts-october-rate-varies","provenance":"curated","category":"domain_dynamics","statement":"Epidemic curves start growing around October every season, but the growth rate varies from season to season, so the onset date and the steepness of the rise are not fixed.","entities":{"phase":"onset"},"context":{"season_week":[36,48]},"payload":{"typical_onset_month":10},"evidence":{"source":"A. Adiga, meetings 2026-09-03, 2026-09-09","n_observations":null,"reward_delta":null},"confidence":"medium","llm_gloss":null,"created_at":"2026-09-30"},{"id":"mape-quality-bands","provenance":"curated","category":"forecasts","statement":"MAPE < 40% is good, 40-60% is acceptable, > 60% indicates problems.","entities":{"metric":"mape"},"context":{"metric":["mape"]},"payload":{"bands":{"good_below_pct":40,"acceptable_below_pct":60}},"evidence":{"source":"migrated from agent/adapters/flu_forecast.py get_domain_context, 2026-09-30","n_observations":null,"reward_delta":null},"confidence":"medium","llm_gloss":null,"created_at":"2026-09-30"},{"id":"onset-definition-v1","provenance":"curated","category":"domain_dynamics","statement":"Season onset = 3 consecutive weeks of increase above threshold T (T still to be fixed by the lab).","entities":{"phase":"onset"},"context":{"season_week":[38,46]},"payload":{"rule":{"consecutive_weeks":3,"threshold":"TBD"}},"evidence":{"source":"A. Adiga, meetings 2026-09-09, 2026-09-24","n_observations":null,"reward_delta":null},"confidence":"medium","llm_gloss":null,"created_at":"2026-09-30"},{"id":"rectify-peak-smote","provenance":"curated","category":"model_characteristics","statement":"SMOTE-style synthetic oversampling of failing-phase rows is a candidate rectification but is expected to fail on this data; lowest priority of the five.","entities":{"phase":"peak"},"context":{"phase":["peak","approaching_peak"]},"payload":{"recommendation":{"action":"not_yet_available","params":{},"note":"A. Adiga expects it to fail (\"likely to fail\"); planned arm, run last if at all."},"rank":3},"evidence":{"source":"A. Adiga, Teams follow-up, ~2026-09-27","n_observations":null,"reward_delta":null},"confidence":"low","llm_gloss":null,"created_at":"2026-09-30"},{"id":"exp-lambda-1-5-2025","provenance":"experiential","category":"model_characteristics","statement":"approaching_peak weight 1.5 (weeks_before 6): peak WIS 123.74 vs 121.01 baseline (+2.73, worse); peak bias -58.8 -> -35.7; peak coverage_95 0.855 -> 0.835","entities":{"model":"xgboost_direct","phase":"peak","metric":"wis"},"context":{"phase":["peak"],"model":["xgboost_direct"],"metric":["wis"]},"payload":{"state":{"model":"xgboost_direct","target_phase":"peak","metric":"wis","split":{"train_start_date":"2022-02-05","eval_start_date":"2025-10-01","eval_end_date":"2026-05-31","stride_weeks":4},"n_cutoffs":9},"action":{"name":"reweight_training_samples","params":{"dimension":"approaching_peak","value":6,"weight":1.5},"config_delta":{"sample_weights.approaching_peak":{"weeks_before":6,"weight":1.5}}},"reward":{"metric":"wis","phase":"peak","baseline":121.01,"value":123.74,"delta":2.73,"better":false},"bias_before":-58.8,"bias_after":-35.7,"coverage_95_before":0.855,"coverage_95_after":0.835,"guard":{"metric":"overall_wis","baseline_value":50.05,"value":50.92}},"evidence":{"source":"/Users/leolee/UVA/Year3-2526/epiForecasting/outputs/experiments/peak_rectification/log.jsonl#lambda_1.5 run_at 2026-09-30T20:17:23+00:00","n_observations":1,"reward_delta":2.73},"confidence":"low","llm_gloss":null,"created_at":"2026-10-01"},{"id":"exp-lambda-2-2025","provenance":"experiential","category":"model_characteristics","statement":"approaching_peak weight 2.0 (weeks_before 6): peak WIS 123.54 vs 121.01 baseline (+2.53, worse); peak bias -58.8 -> -17.9; peak coverage_95 0.855 -> 0.821","entities":{"model":"xgboost_direct","phase":"peak","metric":"wis"},"context":{"phase":["peak"],"model":["xgboost_direct"],"metric":["wis"]},"payload":{"state":{"model":"xgboost_direct","target_phase":"peak","metric":"wis","split":{"train_start_date":"2022-02-05","eval_start_date":"2025-10-01","eval_end_date":"2026-05-31","stride_weeks":4},"n_cutoffs":9},"action":{"name":"reweight_training_samples","params":{"dimension":"approaching_peak","value":6,"weight":2.0},"config_delta":{"sample_weights.approaching_peak":{"weeks_before":6,"weight":2.0}}},"reward":{"metric":"wis","phase":"peak","baseline":121.01,"value":123.54,"delta":2.53,"better":false},"bias_before":-58.8,"bias_after":-17.9,"coverage_95_before":0.855,"coverage_95_after":0.821,"guard":{"metric":"overall_wis","baseline_value":50.05,"value":50.64}},"evidence":{"source":"/Users/leolee/UVA/Year3-2526/epiForecasting/outputs/experiments/peak_rectification/log.jsonl#lambda_2 run_at 2026-09-30T20:22:17+00:00","n_observations":1,"reward_delta":2.53},"confidence":"low","llm_gloss":null,"created_at":"2026-10-01"},{"id":"exp-lambda-3-2025","provenance":"experiential","category":"model_characteristics","statement":"approaching_peak weight 3.0 (weeks_before 6): peak WIS 123.71 vs 121.01 baseline (+2.70, worse); peak bias -58.8 -> -6.4; peak coverage_95 0.855 -> 0.808","entities":{"model":"xgboost_direct","phase":"peak","metric":"wis"},"context":{"phase":["peak"],"model":["xgboost_direct"],"metric":["wis"]},"payload":{"state":{"model":"xgboost_direct","target_phase":"peak","metric":"wis","split":{"train_start_date":"2022-02-05","eval_start_date":"2025-10-01","eval_end_date":"2026-05-31","stride_weeks":4},"n_cutoffs":9},"action":{"name":"reweight_training_samples","params":{"dimension":"approaching_peak","value":6,"weight":3.0},"config_delta":{"sample_weights.approaching_peak":{"weeks_before":6,"weight":3.0}}},"reward":{"metric":"wis","phase":"peak","baseline":121.01,"value":123.71,"delta":2.7,"better":false},"bias_before":-58.8,"bias_after":-6.4,"coverage_95_before":0.855,"coverage_95_after":0.808,"guard":{"metric":"overall_wis","baseline_value":50.05,"value":50.4}},"evidence":{"source":"/Users/leolee/UVA/Year3-2526/epiForecasting/outputs/experiments/peak_rectification/log.jsonl#lambda_3 run_at 2026-09-30T20:18:13+00:00","n_observations":1,"reward_delta":2.7},"confidence":"low","llm_gloss":null,"created_at":"2026-10-01"},{"id":"exp-lambda-5-2025","provenance":"experiential","category":"model_characteristics","statement":"approaching_peak weight 5.0 (weeks_before 6): peak WIS 123.87 vs 121.01 baseline (+2.86, worse); peak bias -58.8 -> 7.9; peak coverage_95 0.855 -> 0.769","entities":{"model":"xgboost_direct","phase":"peak","metric":"wis"},"context":{"phase":["peak"],"model":["xgboost_direct"],"metric":["wis"]},"payload":{"state":{"model":"xgboost_direct","target_phase":"peak","metric":"wis","split":{"train_start_date":"2022-02-05","eval_start_date":"2025-10-01","eval_end_date":"2026-05-31","stride_weeks":4},"n_cutoffs":9},"action":{"name":"reweight_training_samples","params":{"dimension":"approaching_peak","value":6,"weight":5.0},"config_delta":{"sample_weights.approaching_peak":{"weeks_before":6,"weight":5.0}}},"reward":{"metric":"wis","phase":"peak","baseline":121.01,"value":123.87,"delta":2.86,"better":false},"bias_before":-58.8,"bias_after":7.9,"coverage_95_before":0.855,"coverage_95_after":0.769,"guard":{"metric":"overall_wis","baseline_value":50.05,"value":50.53}},"evidence":{"source":"/Users/leolee/UVA/Year3-2526/epiForecasting/outputs/experiments/peak_rectification/log.jsonl#lambda_5 run_at 2026-09-30T20:24:12+00:00","n_observations":1,"reward_delta":2.86},"confidence":"low","llm_gloss":null,"created_at":"2026-10-01"},{"id":"exp-lambda-calendar-2-2025","provenance":"experiential","category":"model_characteristics","statement":"phase peak weight 2.0: peak WIS 123.70 vs 121.01 baseline (+2.69, worse); peak bias -58.8 -> -29.8; peak coverage_95 0.855 -> 0.827","entities":{"model":"xgboost_direct","phase":"peak","metric":"wis"},"context":{"phase":["peak"],"model":["xgboost_direct"],"metric":["wis"]},"payload":{"state":{"model":"xgboost_direct","target_phase":"peak","metric":"wis","split":{"train_start_date":"2022-02-05","eval_start_date":"2025-10-01","eval_end_date":"2026-05-31","stride_weeks":4},"n_cutoffs":9},"action":{"name":"reweight_training_samples","params":{"dimension":"phase","value":"peak","weight":2.0},"config_delta":{"sample_weights.by_phase.peak":2.0}},"reward":{"metric":"wis","phase":"peak","baseline":121.01,"value":123.7,"delta":2.69,"better":false},"bias_before":-58.8,"bias_after":-29.8,"coverage_95_before":0.855,"coverage_95_after":0.827,"guard":{"metric":"overall_wis","baseline_value":50.05,"value":50.6}},"evidence":{"source":"/Users/leolee/UVA/Year3-2526/epiForecasting/outputs/experiments/peak_rectification/log.jsonl#lambda_calendar_2 run_at 2026-09-30T20:17:04+00:00","n_observations":1,"reward_delta":2.69},"confidence":"low","llm_gloss":null,"created_at":"2026-10-01"},{"id":"exp-lambda-calendar-3-2025","provenance":"experiential","category":"model_characteristics","statement":"phase peak weight 3.0: peak WIS 122.66 vs 121.01 baseline (+1.65, worse); peak bias -58.8 -> -6.2; peak coverage_95 0.855 -> 0.806","entities":{"model":"xgboost_direct","phase":"peak","metric":"wis"},"context":{"phase":["peak"],"model":["xgboost_direct"],"metric":["wis"]},"payload":{"state":{"model":"xgboost_direct","target_phase":"peak","metric":"wis","split":{"train_start_date":"2022-02-05","eval_start_date":"2025-10-01","eval_end_date":"2026-05-31","stride_weeks":4},"n_cutoffs":9},"action":{"name":"reweight_training_samples","params":{"dimension":"phase","value":"peak","weight":3.0},"config_delta":{"sample_weights.by_phase.peak":3.0}},"reward":{"metric":"wis","phase":"peak","baseline":121.01,"value":122.66,"delta":1.65,"better":false},"bias_before":-58.8,"bias_after":-6.2,"coverage_95_before":0.855,"coverage_95_after":0.806,"guard":{"metric":"overall_wis","baseline_value":50.05,"value":50.21}},"evidence":{"source":"/Users/leolee/UVA/Year3-2526/epiForecasting/outputs/experiments/peak_rectification/log.jsonl#lambda_calendar_3 run_at 2026-09-30T20:21:29+00:00","n_observations":1,"reward_delta":1.65},"confidence":"low","llm_gloss":null,"created_at":"2026-10-01"},{"id":"exp-window-12-2025","provenance":"experiential","category":"model_characteristics","statement":"train_window_weeks 12: peak WIS 238.26 vs 121.01 baseline (+117.25, worse); peak bias -58.8 -> -193.0; peak coverage_95 0.855 -> 0.746","entities":{"model":"xgboost_direct","phase":"peak","metric":"wis"},"context":{"phase":["peak"],"model":["xgboost_direct"],"metric":["wis"]},"payload":{"state":{"model":"xgboost_direct","target_phase":"peak","metric":"wis","split":{"train_start_date":"2022-02-05","eval_start_date":"2025-10-01","eval_end_date":"2026-05-31","stride_weeks":4},"n_cutoffs":9},"action":{"name":"set_training_window","params":{"weeks":12},"config_delta":{"data.train_window_weeks":12}},"reward":{"metric":"wis","phase":"peak","baseline":121.01,"value":238.26,"delta":117.25,"better":false},"bias_before":-58.8,"bias_after":-193.0,"coverage_95_before":0.855,"coverage_95_after":0.746,"guard":{"metric":"overall_wis","baseline_value":50.05,"value":96.02}},"evidence":{"source":"/Users/leolee/UVA/Year3-2526/epiForecasting/outputs/experiments/peak_rectification/log.jsonl#window_12 run_at 2026-09-30T20:10:03+00:00","n_observations":1,"reward_delta":117.25},"confidence":"low","llm_gloss":null,"created_at":"2026-10-01"},{"id":"exp-window-26-2025","provenance":"experiential","category":"model_characteristics","statement":"train_window_weeks 26: peak WIS 240.24 vs 121.01 baseline (+119.23, worse); peak bias -58.8 -> -188.2; peak coverage_95 0.855 -> 0.709","entities":{"model":"xgboost_direct","phase":"peak","metric":"wis"},"context":{"phase":["peak"],"model":["xgboost_direct"],"metric":["wis"]},"payload":{"state":{"model":"xgboost_direct","target_phase":"peak","metric":"wis","split":{"train_start_date":"2022-02-05","eval_start_date":"2025-10-01","eval_end_date":"2026-05-31","stride_weeks":4},"n_cutoffs":9},"action":{"name":"set_training_window","params":{"weeks":26},"config_delta":{"data.train_window_weeks":26}},"reward":{"metric":"wis","phase":"peak","baseline":121.01,"value":240.24,"delta":119.23,"better":false},"bias_before":-58.8,"bias_after":-188.2,"coverage_95_before":0.855,"coverage_95_after":0.709,"guard":{"metric":"overall_wis","baseline_value":50.05,"value":92.16}},"evidence":{"source":"/Users/leolee/UVA/Year3-2526/epiForecasting/outputs/experiments/peak_rectification/log.jsonl#window_26 run_at 2026-09-30T20:11:31+00:00","n_observations":1,"reward_delta":119.23},"confidence":"low","llm_gloss":null,"created_at":"2026-10-01"},{"id":"exp-window-52-2025","provenance":"experiential","category":"model_characteristics","statement":"train_window_weeks 52: peak WIS 197.99 vs 121.01 baseline (+76.98, worse); peak bias -58.8 -> 67.5; peak coverage_95 0.855 -> 0.829","entities":{"model":"xgboost_direct","phase":"peak","metric":"wis"},"context":{"phase":["peak"],"model":["xgboost_direct"],"metric":["wis"]},"payload":{"state":{"model":"xgboost_direct","target_phase":"peak","metric":"wis","split":{"train_start_date":"2022-02-05","eval_start_date":"2025-10-01","eval_end_date":"2026-05-31","stride_weeks":4},"n_cutoffs":9},"action":{"name":"set_training_window","params":{"weeks":52},"config_delta":{"data.train_window_weeks":52}},"reward":{"metric":"wis","phase":"peak","baseline":121.01,"value":197.99,"delta":76.98,"better":false},"bias_before":-58.8,"bias_after":67.5,"coverage_95_before":0.855,"coverage_95_after":0.829,"guard":{"metric":"overall_wis","baseline_value":50.05,"value":71.85}},"evidence":{"source":"/Users/leolee/UVA/Year3-2526/epiForecasting/outputs/experiments/peak_rectification/log.jsonl#window_52 run_at 2026-09-30T20:15:00+00:00","n_observations":1,"reward_delta":76.98},"confidence":"low","llm_gloss":null,"created_at":"2026-10-01"}],"live_run":{"run_id":"20261001-084414-7d97","cutoff":"2025-12-06","iterations":[{"iteration":0,"wis":50.05,"action":null,"diagnosis":null},{"iteration":1,"wis":50.05,"action":{"name":"reweight_training_samples","params":{"dimension":"phase","value":"peak","weight":3.0},"rationale":"The model under-predicts the peak phase (as shown in exp-lambda-calendar-3-2025), so upweighting peak samples will force the model to prioritize accurate predictions during this critical phase.","expected_effect":"Wis should decrease as the model focuses more on learning patterns during the peak phase, which currently contributes to under-prediction.","cited_entries":["exp-lambda-calendar-3-2025"],"supported_by":["rectify-peak-loss-weight-approaching-peak"],"supported_by_params_mismatch":["rectify-peak-loss-weight-approaching-peak"],"retrieved_entry_ids":["bias-sign-convention","calendar-phase-peak","error-grows-with-horizon","peak-is-hardest-to-forecast","rectify-peak-add-examples-other-seasons","rectify-peak-loss-weight-approaching-peak","rectify-peak-oversample-windows","rectify-peak-shorter-window-on-divergence","seasonality-needs-two-plus-years","window-length-is-a-search-dimension","growth-starts-october-rate-varies","onset-definition-v1","rectify-peak-smote","exp-lambda-1-5-2025","exp-lambda-2-2025","exp-lambda-3-2025","exp-lambda-5-2025","exp-lambda-calendar-2-2025","exp-lambda-calendar-3-2025","exp-window-12-2025","exp-window-26-2025","exp-window-52-2025"]},"diagnosis":{"summary":"The model exhibits significant underprediction bias and severe performance degradation at longer horizons, with peak phase predictions being particularly unreliable. Overall MAPE of 66.5% exceeds acceptable thresholds, and the worst individual predictions show errors exceeding -70%.","suggested_focus":"peak_underprediction","weak_segments":[{"dimension":"horizon","value":"4","metric":"mape","delta_vs_overall":26.2,"severity":"high"},{"dimension":"phase","value":"peak","metric":"bias","delta_vs_overall":32.4,"severity":"high"},{"dimension":"location","value":"06","metric":"mape","delta_vs_overall":61.7,"severity":"medium"},{"dimension":"location","value":"36","metric":"bias","delta_vs_overall":248.3,"severity":"medium"}]}},{"iteration":2,"wis":50.05,"action":{"name":"change_target_transform","params":{"transform":"raw"},"rationale":"The log transform compresses upper tails and may under-predict peaks, while raw transform allows better capture of peak values as hypothesized in the diagnosis","expected_effect":"Reduced under-prediction during peak phases should lower WIS by improving prediction accuracy for high-value outcomes","cited_entries":["exp-lambda-calendar-3-2025","exp-window-12-2025"],"supported_by":[],"supported_by_params_mismatch":[],"retrieved_entry_ids":["bias-sign-convention","calendar-phase-peak","error-grows-with-horizon","peak-is-hardest-to-forecast","rectify-peak-add-examples-other-seasons","rectify-peak-loss-weight-approaching-peak","rectify-peak-oversample-windows","rectify-peak-shorter-window-on-divergence","seasonality-needs-two-plus-years","window-length-is-a-search-dimension","growth-starts-october-rate-varies","onset-definition-v1","rectify-peak-smote","exp-lambda-1-5-2025","exp-lambda-2-2025","exp-lambda-3-2025","exp-lambda-5-2025","exp-lambda-calendar-2-2025","exp-lambda-calendar-3-2025","exp-window-12-2025","exp-window-26-2025","exp-window-52-2025"]},"diagnosis":{"summary":"The model exhibits severe underprediction bias (-26.4) with MAPE exceeding 66%, particularly worsening with forecast horizon (week 4 MAPE 92.7%) and during peak phases (peak MAPE 47.7% but -58.8 bias). Critical failures occur in high-impact regions like New York and Florida during peak periods, with errors exceeding -76% in individual predictions.","suggested_focus":"peak_underprediction","weak_segments":[{"dimension":"phase","value":"peak","metric":"bias","delta_vs_overall":-32.4,"severity":"high"},{"dimension":"horizon","value":"4","metric":"mape","delta_vs_overall":26.1,"severity":"high"},{"dimension":"location","value":"06","metric":"mape","delta_vs_overall":25.6,"severity":"medium"},{"dimension":"location","value":"36","metric":"mape","delta_vs_overall":23.1,"severity":"medium"},{"dimension":"location","value":"48","metric":"mape","delta_vs_overall":21.1,"severity":"medium"}]}}]},"sweep":[{"config_id":"baseline","arm":"baseline","config_delta":{},"peak":{"mape":47.7,"mae":171.6,"bias":-58.8,"n":468,"wis":121.01,"coverage_95":0.855},"onset":{"mape":72.8,"mae":17.0,"bias":-9.0,"n":416,"wis":11.07,"coverage_95":0.916},"decline":{"mape":75.3,"mae":70.3,"bias":-26.3,"n":624,"wis":48.61,"coverage_95":0.731},"overall":{"mape":66.5,"mae":72.0,"rmse":197.8,"bias":-26.4,"n_forecasts":1872,"wis":50.05,"coverage_95":0.831},"by_horizon":{"1":29.08,"2":36.91,"3":53.79,"4":80.42},"seconds":478.7},{"config_id":"lambda_1.5","arm":"lambda","config_delta":{"sample_weights.approaching_peak":{"weeks_before":6,"weight":1.5}},"peak":{"mape":48.8,"mae":177.0,"bias":-35.7,"n":468,"wis":123.74,"coverage_95":0.835},"onset":{"mape":74.6,"mae":17.3,"bias":-9.4,"n":416,"wis":11.04,"coverage_95":0.93},"decline":{"mape":74.5,"mae":71.1,"bias":-29.0,"n":624,"wis":49.15,"coverage_95":0.721},"overall":{"mape":67.0,"mae":73.7,"rmse":200.4,"bias":-21.6,"n_forecasts":1872,"wis":50.92,"coverage_95":0.825},"by_horizon":{"1":28.06,"2":36.81,"3":55.59,"4":83.22},"seconds":393.8},{"config_id":"lambda_2","arm":"lambda","config_delta":{"sample_weights.approaching_peak":{"weeks_before":6,"weight":2.0}},"peak":{"mape":49.4,"mae":180.5,"bias":-17.9,"n":468,"wis":123.54,"coverage_95":0.821},"onset":{"mape":75.9,"mae":17.3,"bias":-9.6,"n":416,"wis":11.05,"coverage_95":0.925},"decline":{"mape":76.6,"mae":72.2,"bias":-26.2,"n":624,"wis":48.5,"coverage_95":0.74},"overall":{"mape":68.1,"mae":74.9,"rmse":203.7,"bias":-16.3,"n_forecasts":1872,"wis":50.64,"coverage_95":0.828},"by_horizon":{"1":26.67,"2":35.99,"3":55.99,"4":83.9},"seconds":294.1},{"config_id":"lambda_3","arm":"lambda","config_delta":{"sample_weights.approaching_peak":{"weeks_before":6,"weight":3.0}},"peak":{"mape":48.7,"mae":177.7,"bias":-6.4,"n":468,"wis":123.71,"coverage_95":0.808},"onset":{"mape":79.2,"mae":17.5,"bias":-9.8,"n":416,"wis":10.95,"coverage_95":0.93},"decline":{"mape":77.9,"mae":71.0,"bias":-25.3,"n":624,"wis":47.69,"coverage_95":0.75},"overall":{"mape":68.9,"mae":73.9,"rmse":200.1,"bias":-13.2,"n_forecasts":1872,"wis":50.4,"coverage_95":0.829},"by_horizon":{"1":26.47,"2":35.76,"3":57.12,"4":82.25},"seconds":393.4},{"config_id":"lambda_5","arm":"lambda","config_delta":{"sample_weights.approaching_peak":{"weeks_before":6,"weight":5.0}},"peak":{"mape":49.8,"mae":180.4,"bias":7.9,"n":468,"wis":123.87,"coverage_95":0.769},"onset":{"mape":90.3,"mae":17.5,"bias":-8.1,"n":416,"wis":10.94,"coverage_95":0.938},"decline":{"mape":83.8,"mae":73.7,"bias":-24.3,"n":624,"wis":47.89,"coverage_95":0.752},"overall":{"mape":73.3,"mae":75.6,"rmse":205.6,"bias":-9.0,"n_forecasts":1872,"wis":50.53,"coverage_95":0.822},"by_horizon":{"1":25.23,"2":35.96,"3":57.39,"4":83.54},"seconds":358.2},{"config_id":"lambda_calendar_2","arm":"lambda_calendar","config_delta":{"sample_weights.by_phase.peak":2.0},"peak":{"mape":47.8,"mae":175.2,"bias":-29.8,"n":468,"wis":123.7,"coverage_95":0.827},"onset":{"mape":75.9,"mae":17.5,"bias":-9.7,"n":416,"wis":11.07,"coverage_95":0.93},"decline":{"mape":78.2,"mae":71.1,"bias":-21.6,"n":624,"wis":48.32,"coverage_95":0.731},"overall":{"mape":68.2,"mae":73.3,"rmse":196.1,"bias":-17.7,"n_forecasts":1872,"wis":50.6,"coverage_95":0.826},"by_horizon":{"1":27.29,"2":35.71,"3":56.18,"4":83.21},"seconds":314.6},{"config_id":"lambda_calendar_3","arm":"lambda_calendar","config_delta":{"sample_weights.by_phase.peak":3.0},"peak":{"mape":47.5,"mae":174.2,"bias":-6.2,"n":468,"wis":122.66,"coverage_95":0.806},"onset":{"mape":81.5,"mae":17.5,"bias":-9.6,"n":416,"wis":11.01,"coverage_95":0.933},"decline":{"mape":81.8,"mae":71.9,"bias":-20.0,"n":624,"wis":48.01,"coverage_95":0.721},"overall":{"mape":70.3,"mae":73.3,"rmse":195.0,"bias":-11.2,"n_forecasts":1872,"wis":50.21,"coverage_95":0.821},"by_horizon":{"1":25.48,"2":34.54,"3":57.08,"4":83.76},"seconds":265.3},{"config_id":"window_12","arm":"window","config_delta":{"data.train_window_weeks":12},"peak":{"mape":110.3,"mae":326.9,"bias":-193.0,"n":468,"wis":238.26,"coverage_95":0.746},"onset":{"mape":59.3,"mae":32.6,"bias":-31.3,"n":416,"wis":24.15,"coverage_95":0.724},"decline":{"mape":317.5,"mae":124.9,"bias":32.6,"n":624,"wis":87.63,"coverage_95":0.683},"overall":{"mape":172.5,"mae":133.2,"rmse":325.5,"bias":-45.5,"n_forecasts":1872,"wis":96.02,"coverage_95":0.739},"by_horizon":{"1":68.93,"2":75.16,"3":98.64,"4":141.33},"seconds":77.8},{"config_id":"window_26","arm":"window","config_delta":{"data.train_window_weeks":26},"peak":{"mape":108.0,"mae":325.9,"bias":-188.2,"n":468,"wis":240.24,"coverage_95":0.709},"onset":{"mape":58.4,"mae":28.3,"bias":-27.5,"n":416,"wis":23.93,"coverage_95":0.651},"decline":{"mape":197.1,"mae":106.9,"bias":-12.0,"n":624,"wis":72.95,"coverage_95":0.671},"overall":{"mape":168.9,"mae":126.9,"rmse":322.9,"bias":-56.0,"n_forecasts":1872,"wis":92.16,"coverage_95":0.697},"by_horizon":{"1":66.21,"2":71.84,"3":93.1,"4":137.5},"seconds":87.9},{"config_id":"window_52","arm":"window","config_delta":{"data.train_window_weeks":52},"peak":{"mape":111.6,"mae":329.5,"bias":67.5,"n":468,"wis":197.99,"coverage_95":0.829},"onset":{"mape":61.3,"mae":21.0,"bias":-17.3,"n":416,"wis":14.42,"coverage_95":0.928},"decline":{"mape":79.5,"mae":77.0,"bias":-42.2,"n":624,"wis":53.84,"coverage_95":0.788},"overall":{"mape":82.9,"mae":114.8,"rmse":310.5,"bias":-2.2,"n_forecasts":1872,"wis":71.85,"coverage_95":0.847},"by_horizon":{"1":39.49,"2":51.49,"3":80.38,"4":116.04},"seconds":192.1}]};
+</script>
+<script>
+/*
+ * widgets.js - the interactive panels a weekly report can mount.
+ *
+ * WHY: the reports are static pages (GitHub Pages, or file:// on a laptop in a
+ * meeting), so every interactive piece is a plain function that takes a mount
+ * element and already-embedded data. No framework, no build step, no fetch.
+ * The builder inlines this file into the shell and emits
+ *   <div data-widget="bankExplorer" data-source="bank_entries" data-options='{...}'></div>
+ * for every `kind: widget` block in report.yaml; `ReportWidgets.init(data)`
+ * mounts them all and wires the tabs.
+ *
+ * Every widget has the signature  fn(el, data, options, allData)  where `data`
+ * is the parsed JSON of the block's data file (or undefined for widgets that
+ * need none), `options` is the block's `options:` map, and `allData` is the
+ * whole embedded map (so one widget can cross-reference another's file).
+ *
+ * The bank explorer reproduces the real retrieval rules so what the page shows
+ * is what the loop shows the LLM:
+ *   - an entry matches when its context lacks the key or lists the value
+ *   - order: provenance trust (curated 3, derived 2, experiential 1) desc,
+ *     confidence (high 3, medium 2, low 1) desc, n_observations desc, id asc
+ *   - lines render as "- [C, high] statement -> try action(k=v)" and
+ *     "[E, low, 1 run]" for experiential entries
+ *   - the proposal limit (30) reserves up to 6 slots for experiential entries
+ *
+ * All text goes through DOM text nodes (never innerHTML with data), so the
+ * embedded JSON cannot inject markup.
+ */
+(function (global) {
+  "use strict";
+
+  // ---- schema constants mirrored from agent/knowledge (keep in sync by hand) ----
+  const KNOWN_PHASES = ["onset", "peak", "decline", "surge", "plateau", "approaching_peak", "off_season"];
+  const DEFAULT_QUERY_LIMIT = 30;
+  const DEFAULT_PROPOSAL_FACTS_LIMIT = 30;
+  const DEFAULT_PROPOSAL_EXPERIENTIAL_SLOTS = 6;
+  const MIN_SEASON_WEEKS = 40;
+  const DEFAULT_APPROACHING_PEAK_WEEKS = 6;
+
+  const TRUST = { curated: 3, derived: 2, experiential: 1 };
+  const CONF = { high: 3, medium: 2, low: 1 };
+  const TAG = { curated: "C", derived: "D", experiential: "E" };
+
+  // ---- tiny DOM helpers -------------------------------------------------------
+  function h(tag, props, ...children) {
+    const el = document.createElement(tag);
+    if (props) {
+      for (const [k, v] of Object.entries(props)) {
+        if (v == null || v === false) continue;
+        if (k === "class") el.className = v;
+        else if (k === "text") el.textContent = v;
+        else if (k.startsWith("on") && typeof v === "function") el.addEventListener(k.slice(2).toLowerCase(), v);
+        else if (k === "dataset") Object.assign(el.dataset, v);
+        else el.setAttribute(k, v === true ? "" : String(v));
+      }
+    }
+    for (const c of children.flat()) {
+      if (c == null || c === false) continue;
+      el.appendChild(typeof c === "string" || typeof c === "number" ? document.createTextNode(String(c)) : c);
+    }
+    return el;
+  }
+  function svgEl(n, attrs, text) {
+    const e = document.createElementNS("http://www.w3.org/2000/svg", n);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function code(text, cls) { return h("code", { class: cls || "inline", text }); }
+  function pre(text) { return h("pre", { class: "code-block" }, h("code", { text })); }
+  function card(titleText, bodyNodes, opts) {
+    const o = opts || {};
+    const header = h("div", { class: "card-header" + (o.compact ? " !p-4 !pb-2" : "") },
+      h("h4", { class: o.compact ? "card-title-sm" : "card-title", text: titleText }),
+      o.description ? h("p", { class: "card-description", text: o.description }) : null);
+    const content = h("div", { class: "card-content" + (o.compact ? " !p-4 !pt-0" : "") }, bodyNodes);
+    return h("div", { class: "card" }, header, content);
+  }
+  function field(labelText, control) {
+    return h("label", { class: "field" }, h("span", { class: "field-label", text: labelText }), control);
+  }
+  function select(options, value, onChange) {
+    const s = h("select", { class: "select", onChange });
+    for (const [v, label] of options) s.appendChild(h("option", { value: v, text: label, selected: v === value }));
+    return s;
+  }
+  function checkbox(labelText, checked, onChange) {
+    const input = h("input", { type: "checkbox", class: "checkbox", onChange });
+    input.checked = checked;
+    return h("label", { class: "checkbox-label" }, input, labelText);
+  }
+  function fmtNum(v, dec) { return typeof v === "number" ? v.toFixed(dec) : String(v); }
+
+  // ---- bank explorer ----------------------------------------------------------
+  function matches(e, ctx) {
+    for (const k of ["phase", "model", "metric"]) {
+      const want = ctx[k]; if (!want) continue;
+      const have = e.context && e.context[k];
+      if (have && have.length && !have.includes(want)) return false;
+    }
+    return true;
+  }
+  function orderKey(a, b) {
+    return (TRUST[b.provenance] - TRUST[a.provenance]) || (CONF[b.confidence] - CONF[a.confidence]) ||
+      (((b.evidence || {}).n_observations || 0) - ((a.evidence || {}).n_observations || 0)) || a.id.localeCompare(b.id);
+  }
+  function fmtParam(v) {
+    if (typeof v === "string" && !/^[\w.-]+$/.test(v)) return "'" + v + "'";
+    return JSON.stringify(v).replace(/^"|"$/g, "");
+  }
+  function recText(e) {
+    const r = e.payload && e.payload.recommendation; if (!r) return "";
+    if (r.action === "not_yet_available") return " -> no adapter action yet";
+    const ps = Object.entries(r.params || {}).map(([k, v]) => k + "=" + fmtParam(v)).join(", ");
+    return " -> try " + r.action + "(" + ps + ")";
+  }
+  function lineFor(e) {
+    const n = (e.evidence || {}).n_observations;
+    const tag = e.provenance === "experiential"
+      ? "[E, " + e.confidence + ", " + n + " run" + (n === 1 ? "" : "s") + "]"
+      : "[" + (TAG[e.provenance] || "?") + ", " + e.confidence + "]";
+    return { tag, text: e.statement + recText(e) };
+  }
+  // The orchestrator's representation guarantee, see Orchestrator._retrieve_for_proposal.
+  function applyProposalLimit(ranked, limit, slots) {
+    if (ranked.length <= limit) return { shown: ranked, omitted: 0 };
+    const experiential = ranked.filter(e => e.provenance === "experiential");
+    const others = ranked.filter(e => e.provenance !== "experiential");
+    if (!experiential.length) return { shown: ranked.slice(0, limit), omitted: ranked.length - limit };
+    let nExp = Math.min(experiential.length, slots);
+    const nOthers = Math.min(others.length, limit - nExp);
+    nExp = Math.min(experiential.length, limit - nOthers);
+    const shown = others.slice(0, nOthers).concat(experiential.slice(0, nExp));
+    return { shown, omitted: ranked.length - shown.length };
+  }
+  function entryDetail(e) {
+    const rows = [
+      ["id", e.id], ["provenance", e.provenance], ["category", e.category], ["statement", e.statement],
+      ["entities", JSON.stringify(e.entities)], ["context", JSON.stringify(e.context)],
+      ["payload", JSON.stringify(e.payload, null, 1)], ["evidence", JSON.stringify(e.evidence)],
+      ["confidence", e.confidence], ["created_at", e.created_at],
+    ];
+    const dl = h("dl");
+    for (const [k, v] of rows) { dl.appendChild(h("dt", { text: k })); dl.appendChild(h("dd", {}, h("code", { text: v == null ? "null" : String(v) }))); }
+    return h("div", { class: "entry-detail" }, dl);
+  }
+  function uniqueContextValues(entries, key) {
+    const s = new Set();
+    for (const e of entries) for (const v of ((e.context || {})[key] || [])) s.add(String(v));
+    return [...s].sort();
+  }
+
+  function bankExplorer(el, entries) {
+    entries = entries || [];
+    const provenances = [...new Set(entries.map(e => e.provenance))];
+    const models = uniqueContextValues(entries, "model");
+    const metrics = uniqueContextValues(entries, "metric");
+    const state = {
+      phase: "peak",
+      model: models.includes("xgboost_direct") ? "xgboost_direct" : "",
+      metric: "",
+      show: Object.fromEntries(provenances.map(p => [p, true])),
+      onlyRec: false,
+      applyLimit: false,
+      selectedId: null,
+    };
+    const countEl = h("div", { class: "muted text-sm" });
+    const out = h("div", { class: "facts", role: "list" });
+    const detailHost = h("div", { hidden: true });
+
+    function render() {
+      const ctx = { phase: state.phase, model: state.model, metric: state.metric };
+      const matching = entries.filter(e => matches(e, ctx)).sort(orderKey);
+      let rows = matching.filter(e => state.show[e.provenance] !== false).filter(e => !state.onlyRec || (e.payload && e.payload.recommendation));
+      let omitted = 0;
+      if (state.applyLimit) { const r = applyProposalLimit(rows, DEFAULT_PROPOSAL_FACTS_LIMIT, DEFAULT_PROPOSAL_EXPERIENTIAL_SLOTS); rows = r.shown; omitted = r.omitted; }
+      countEl.textContent = rows.length + " shown of " + matching.length + " matching entries (bank holds " + entries.length + ")";
+      out.textContent = "";
+      out.appendChild(h("div", { text: "KNOWN FACTS (knowledge bank; [C]=curated [D]=derived [E]=experiential):" }));
+      if (!rows.length) out.appendChild(h("div", { text: "(knowledge bank: no matching entries)" }));
+      for (const e of rows) {
+        const { tag, text } = lineFor(e);
+        const line = h("span", {
+          class: "fact-line" + (e.id === state.selectedId ? " is-selected" : ""), role: "listitem button", tabindex: "0",
+          onClick: () => { state.selectedId = e.id; render(); detailHost.hidden = false; detailHost.textContent = ""; detailHost.appendChild(card(e.id, [entryDetail(e)], { compact: true, description: "full entry as stored" })); },
+          onKeydown: ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); line.click(); } },
+        }, "- ", h("span", { class: "tag", text: tag }), " " + text);
+        out.appendChild(line);
+      }
+      if (omitted) out.appendChild(h("div", { class: "muted", text: "(" + omitted + " more matching entr" + (omitted === 1 ? "y" : "ies") + " not shown: proposal limit " + DEFAULT_PROPOSAL_FACTS_LIMIT + ", " + DEFAULT_PROPOSAL_EXPERIENTIAL_SLOTS + " experiential slots)" }));
+    }
+
+    const phaseOpts = [["", "any"]].concat(KNOWN_PHASES.map(p => [p, p]));
+    const controls = h("div", { class: "grid gap-3 sm:grid-cols-3" },
+      field("Phase", select(phaseOpts, state.phase, ev => { state.phase = ev.target.value; render(); })),
+      field("Model", select([["", "any"]].concat(models.map(m => [m, m])), state.model, ev => { state.model = ev.target.value; render(); })),
+      field("Metric", select([["", "any"]].concat(metrics.map(m => [m, m])), state.metric, ev => { state.metric = ev.target.value; render(); })));
+    const toggles = h("div", { class: "flex flex-wrap gap-x-5 gap-y-2" },
+      provenances.map(p => checkbox(p + " [" + (TAG[p] || "?") + "]", true, ev => { state.show[p] = ev.target.checked; render(); })),
+      checkbox("only entries with an action", false, ev => { state.onlyRec = ev.target.checked; render(); }),
+      checkbox("apply proposal limit (" + DEFAULT_PROPOSAL_FACTS_LIMIT + ", " + DEFAULT_PROPOSAL_EXPERIENTIAL_SLOTS + " experiential slots)", false, ev => { state.applyLimit = ev.target.checked; render(); }));
+    el.appendChild(h("div", { class: "space-y-4" },
+      h("p", { class: "text-sm muted", text: "The retrieval context the loop builds at proposal time. Entries whose context lacks a key, or lists the chosen value, match. Click a line to see the stored entry." }),
+      controls, toggles, countEl, out, detailHost));
+    render();
+  }
+
+  // ---- loop stepper -----------------------------------------------------------
+  function idChips(ids) {
+    if (!ids || !ids.length) return h("div", { class: "muted text-xs", text: "none" });
+    return h("div", { class: "ids" }, ids.map(i => h("span", { class: "chip " + (String(i).startsWith("exp-") ? "chip-e" : "chip-c"), text: i })));
+  }
+  function stageCard(eyebrow, headline, bodyNodes) {
+    return h("div", { class: "card" }, h("div", { class: "card-content !p-4 space-y-1.5" },
+      h("div", { class: "text-xs font-medium uppercase tracking-wide muted", text: eyebrow }),
+      headline ? h("div", { class: "text-sm font-semibold break-words", text: headline }) : null,
+      bodyNodes));
+  }
+  function runStepper(el, run, options, allData) {
+    const opts = options || {};
+    const entries = (allData && opts.entries && allData[opts.entries]) || [];
+    const byId = Object.fromEntries(entries.map(e => [e.id, e]));
+    const iterations = run.iterations || [];
+    const last = iterations.length - 1;
+    let step = Math.min(1, last);
+    const host = h("div", { class: "space-y-4" });
+    el.appendChild(host);
+
+    function explain(a) {
+      const cited = a.cited_entries || [], sup = a.supported_by || [], mis = a.supported_by_params_mismatch || [];
+      const parts = [];
+      if (cited.length) {
+        const kinds = cited.map(i => (byId[i] || {}).provenance || (String(i).startsWith("exp-") ? "experiential" : "curated"));
+        parts.push("Agent 2 cited " + cited.length + " entr" + (cited.length === 1 ? "y" : "ies") + " (" + [...new Set(kinds)].join(", ") + ").");
+      } else parts.push("Agent 2 cited no entries.");
+      if (sup.length) {
+        parts.push("A retrieved curated rule recommends this action, so the proposal is recorded as supported.");
+        if (mis.length) {
+          const rule = byId[mis[0]]; const rp = rule && rule.payload && rule.payload.recommendation && rule.payload.recommendation.params;
+          parts.push("The parameters differ from the rule's" + (rp ? " (rule: " + Object.entries(rp).map(([k, v]) => k + "=" + fmtParam(v)).join(", ") + ")" : "") + ", which is recorded in supported_by_params_mismatch.");
+        }
+      } else {
+        parts.push("No retrieved rule recommends this action. The loop allows it and logs an advisory override: exploration is permitted, but visible.");
+      }
+      return parts.join(" ");
+    }
+
+    function render() {
+      const it = iterations[step] || {}; const a = it.action || {}; const d = it.diagnosis || {};
+      const weakPhase = (d.weak_segments || []).find(w => w.dimension === "phase");
+      const params = Object.entries(a.params || {}).map(([k, v]) => k + "=" + fmtParam(v)).join(", ");
+      host.textContent = "";
+      host.appendChild(h("div", { class: "flex flex-wrap items-center gap-3" },
+        h("button", { type: "button", class: "btn btn-outline btn-sm", disabled: step <= 1, onClick: () => { step = Math.max(1, step - 1); render(); } }, "Previous"),
+        h("button", { type: "button", class: "btn btn-sm", disabled: step >= last, onClick: () => { step = Math.min(last, step + 1); render(); } }, "Next iteration"),
+        h("span", { class: "text-sm muted" }, "run ", code(run.run_id), ", cutoff " + run.cutoff + ", iteration " + step + " of " + last + " (iteration 0 is the baseline, WIS " + fmtNum((iterations[0] || {}).wis, 2) + ")")));
+      const summary = String(d.summary || "");
+      host.appendChild(h("div", { class: "grid gap-3 md:grid-cols-2" },
+        stageCard("1. Diagnosis (agent 1)", d.suggested_focus || "", [
+          h("p", { class: "text-sm", text: summary.length > 220 ? summary.slice(0, 220) + "..." : summary }),
+          h("p", { class: "text-xs muted" }, "weak phase named: ", h("b", { text: weakPhase ? weakPhase.value : "none" }))]),
+        stageCard("2. Retrieval context", "phase = " + (weakPhase ? weakPhase.value : "any") + ", model = xgboost_direct, metric = wis", [
+          h("p", { class: "text-sm", text: (a.retrieved_entry_ids || []).length + " entries shown to agent 2, each with its id" }),
+          h("p", { class: "text-xs muted", text: "curated first, then experiential; up to " + DEFAULT_PROPOSAL_EXPERIENTIAL_SLOTS + " experiential slots are reserved when the limit truncates" })]),
+        stageCard("3. Proposal (agent 2)", (a.name || "") + "(" + params + ")", [h("p", { class: "text-sm", text: a.rationale || "" })]),
+        stageCard("4. Citations recorded", null, [
+          h("div", { class: "text-xs muted", text: "cited_entries (what it says it relied on)" }), idChips(a.cited_entries),
+          h("div", { class: "text-xs muted mt-2", text: "supported_by (shown entries recommending this action)" }), idChips(a.supported_by),
+          h("div", { class: "text-xs muted mt-2", text: "supported_by_params_mismatch" }), idChips(a.supported_by_params_mismatch)]),
+        stageCard("5. Outcome", "WIS " + fmtNum(it.wis, 2) + " (unchanged: fake pipeline)", [h("p", { class: "text-sm", text: explain(a) })])));
+      host.appendChild(h("details", { class: "text-sm" }, h("summary", { class: "cursor-pointer muted", text: "retrieved_entry_ids for this iteration" }), idChips(a.retrieved_entry_ids)));
+    }
+    render();
+  }
+
+  // ---- charts -------------------------------------------------------------------
+  function tooltip() { return h("div", { class: "chart-tip", role: "tooltip" }); }
+  function placeTip(tip, host, target, text) {
+    tip.textContent = text; tip.style.opacity = 1;
+    const b = host.getBoundingClientRect(), r = target.getBoundingClientRect();
+    tip.style.left = (r.left - b.left + r.width / 2) + "px"; tip.style.top = (r.top - b.top) + "px";
+  }
+  function lineChart(host, series, opts) {
+    const W = 360, H = 230, m = { l: 44, r: 16, t: 12, b: 34 };
+    const svg = svgEl("svg", { viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": opts.aria });
+    const xs = [...new Set(series.flatMap(s => s.pts.map(p => p.x)))].sort((a, b) => a - b);
+    const ys = series.flatMap(s => s.pts.map(p => p.y)).concat(opts.ref != null ? [opts.ref] : []);
+    let y0 = Math.min(...ys), y1 = Math.max(...ys); const pad = (y1 - y0) * 0.15 || 1; y0 -= pad; y1 += pad;
+    if (opts.includeZero) { y0 = Math.min(y0, 0); y1 = Math.max(y1, 0); }
+    const x0 = Math.min(...xs), x1 = Math.max(...xs);
+    const X = v => m.l + (v - x0) / (x1 - x0 || 1) * (W - m.l - m.r), Y = v => H - m.b - (v - y0) / (y1 - y0) * (H - m.t - m.b);
+    const ticks = 5;
+    for (let i = 0; i <= ticks; i++) {
+      const v = y0 + (y1 - y0) * i / ticks;
+      svg.appendChild(svgEl("line", { x1: m.l, x2: W - m.r, y1: Y(v), y2: Y(v), stroke: "hsl(var(--border))", "stroke-width": 1 }));
+      svg.appendChild(svgEl("text", { x: m.l - 6, y: Y(v) + 3.5, "text-anchor": "end" }, v.toFixed(opts.dec ?? 0)));
+    }
+    for (const v of xs) svg.appendChild(svgEl("text", { x: X(v), y: H - m.b + 16, "text-anchor": "middle" }, String(v)));
+    svg.appendChild(svgEl("text", { x: (m.l + W - m.r) / 2, y: H - 4, "text-anchor": "middle" }, opts.xlabel));
+    if (opts.ref != null) {
+      svg.appendChild(svgEl("line", { x1: m.l, x2: W - m.r, y1: Y(opts.ref), y2: Y(opts.ref), stroke: "hsl(var(--muted-foreground))", "stroke-width": 1.5, "stroke-dasharray": "4 4" }));
+      svg.appendChild(svgEl("text", { x: W - m.r, y: Y(opts.ref) - 5, "text-anchor": "end", class: "lbl" }, opts.refLabel));
+    }
+    if (opts.includeZero) svg.appendChild(svgEl("line", { x1: m.l, x2: W - m.r, y1: Y(0), y2: Y(0), stroke: "hsl(var(--muted-foreground))", "stroke-width": 1 }));
+    const tip = tooltip();
+    series.forEach(s => {
+      const d = s.pts.map((p, i) => (i ? "L" : "M") + X(p.x) + "," + Y(p.y)).join(" ");
+      svg.appendChild(svgEl("path", { d, fill: "none", stroke: s.color, "stroke-width": 2, "stroke-linejoin": "round" }));
+      s.pts.forEach(p => {
+        svg.appendChild(svgEl("circle", { cx: X(p.x), cy: Y(p.y), r: 4.5, fill: s.color, stroke: "hsl(var(--card))", "stroke-width": 2 }));
+        const hit = svgEl("circle", { cx: X(p.x), cy: Y(p.y), r: 12, fill: "transparent" });
+        hit.addEventListener("mouseenter", () => placeTip(tip, host, hit, s.name + ": " + opts.xname + " " + p.x + " -> " + p.y.toFixed(opts.dec ?? 1)));
+        hit.addEventListener("mouseleave", () => { tip.style.opacity = 0; });
+        svg.appendChild(hit);
+      });
+      const lastPt = s.pts[s.pts.length - 1];
+      svg.appendChild(svgEl("text", { x: X(lastPt.x) + 7, y: Y(lastPt.y) + 3.5, class: "lbl" }, s.short));
+    });
+    host.appendChild(svg); host.appendChild(tip);
+    const legend = h("div", { class: "legend" }, series.map(s => h("span", {}, h("i", { style: "background:" + s.color }), s.name)));
+    if (opts.ref != null) legend.appendChild(h("span", {}, h("i", { class: "ref", style: "background:hsl(var(--muted-foreground))" }), opts.refLabel));
+    host.appendChild(legend);
+  }
+  function barChart(host, rows, opts) {
+    const W = 360, H = 230, m = { l: 44, r: 16, t: 12, b: 34 };
+    const svg = svgEl("svg", { viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": opts.aria });
+    const y1 = Math.max(...rows.map(r => r.v)) * 1.12, Y = v => H - m.b - (v / y1) * (H - m.t - m.b); const bw = (W - m.l - m.r) / rows.length;
+    for (let i = 0; i <= 4; i++) {
+      const v = y1 * i / 4;
+      svg.appendChild(svgEl("line", { x1: m.l, x2: W - m.r, y1: Y(v), y2: Y(v), stroke: "hsl(var(--border))" }));
+      svg.appendChild(svgEl("text", { x: m.l - 6, y: Y(v) + 3.5, "text-anchor": "end" }, v.toFixed(0)));
+    }
+    const tip = tooltip();
+    rows.forEach((r, i) => {
+      const x = m.l + i * bw + bw * 0.2, w = bw * 0.6, y = Y(r.v), hh = H - m.b - y;
+      const rect = svgEl("rect", { x, y, width: w, height: hh, fill: r.color, rx: 4 });
+      svg.appendChild(rect);
+      svg.appendChild(svgEl("rect", { x, y: H - m.b - 4, width: w, height: 4, fill: r.color }));
+      svg.appendChild(svgEl("text", { x: x + w / 2, y: y - 5, "text-anchor": "middle", class: "lbl" }, r.v.toFixed(1)));
+      svg.appendChild(svgEl("text", { x: x + w / 2, y: H - m.b + 16, "text-anchor": "middle" }, r.short));
+      rect.addEventListener("mouseenter", () => placeTip(tip, host, rect, r.label + ": " + opts.yname + " " + r.v.toFixed(2)));
+      rect.addEventListener("mouseleave", () => { tip.style.opacity = 0; });
+    });
+    svg.appendChild(svgEl("text", { x: (m.l + W - m.r) / 2, y: H - 4, "text-anchor": "middle" }, opts.xlabel));
+    host.appendChild(svg); host.appendChild(tip);
+  }
+  function chartCard(title, sub) {
+    const host = h("div", { class: "chart-host" });
+    return { host, node: card(title, [host], { compact: true, description: sub }) };
+  }
+  function numericSuffix(configId, prefix) { return +String(configId).slice(prefix.length); }
+  function sweepCharts(el, sweep) {
+    const base = sweep.find(r => r.config_id === "baseline");
+    if (!base) { el.appendChild(h("p", { class: "muted text-sm", text: "sweep.json has no baseline row; nothing to chart." })); return; }
+    const lam = sweep.filter(r => r.arm === "lambda").map(r => ({ x: numericSuffix(r.config_id, "lambda_"), r }));
+    const cal = sweep.filter(r => r.arm === "lambda_calendar").map(r => ({ x: numericSuffix(r.config_id, "lambda_calendar_"), r }));
+    const win = sweep.filter(r => r.arm === "window").map(r => ({ x: numericSuffix(r.config_id, "window_"), r }));
+    const grid = h("div", { class: "grid gap-4 md:grid-cols-2 xl:grid-cols-3" });
+    const biasRef = base.peak.bias, wisRef = base.peak.wis;
+    const c1 = chartCard("Peak bias against weight", "zero is unbiased; dashed line is the baseline, " + biasRef.toFixed(1));
+    lineChart(c1.host, [
+      { name: "approaching-peak label (" + DEFAULT_APPROACHING_PEAK_WEEKS + " weeks before max)", short: "approaching", color: "var(--chart-1)", pts: lam.map(p => ({ x: p.x, y: p.r.peak.bias })) },
+      { name: "calendar label (Dec-Jan)", short: "calendar", color: "var(--chart-2)", pts: cal.map(p => ({ x: p.x, y: p.r.peak.bias })) },
+    ].filter(s => s.pts.length), { aria: "peak bias by weight", xlabel: "weight on pre-peak rows", xname: "weight", includeZero: true, dec: 0, ref: biasRef, refLabel: "baseline " + biasRef.toFixed(1) });
+    const c2 = chartCard("Peak WIS against weight", "lower is better; dashed line is the baseline, " + wisRef.toFixed(1));
+    lineChart(c2.host, [
+      { name: "approaching-peak label", short: "approaching", color: "var(--chart-1)", pts: lam.map(p => ({ x: p.x, y: p.r.peak.wis })) },
+      { name: "calendar label", short: "calendar", color: "var(--chart-2)", pts: cal.map(p => ({ x: p.x, y: p.r.peak.wis })) },
+    ].filter(s => s.pts.length), { aria: "peak WIS by weight", xlabel: "weight on pre-peak rows", xname: "weight", dec: 1, ref: wisRef, refLabel: "baseline " + wisRef.toFixed(1) });
+    const c3 = chartCard("Training window", "peak WIS by rows kept; the baseline uses all history");
+    barChart(c3.host, [{ label: "all history (baseline)", short: "all history", v: base.peak.wis, color: "hsl(var(--muted-foreground))" }]
+      .concat(win.map(p => ({ label: p.x + " weeks", short: p.x + " weeks", v: p.r.peak.wis, color: "var(--chart-3)" }))),
+      { aria: "peak WIS by training window", xlabel: "training rows kept before each cutoff", yname: "peak WIS" });
+    grid.appendChild(c1.node); grid.appendChild(c2.node); grid.appendChild(c3.node);
+    el.appendChild(grid);
+  }
+
+  // ---- results table --------------------------------------------------------------
+  function get(o, path) { return path.split(".").reduce((x, k) => (x == null ? x : x[k]), o); }
+  function sweepTable(el, sweep) {
+    const base = sweep.find(r => r.config_id === "baseline");
+    if (!base) { el.appendChild(h("p", { class: "muted text-sm", text: "sweep.json has no baseline row." })); return; }
+    const METRICS = [
+      ["peak.wis", "peak WIS"], ["overall.wis", "overall WIS"], ["peak.bias", "peak bias"], ["peak.coverage_95", "peak coverage 95"],
+      ["peak.mae", "peak MAE"], ["onset.wis", "onset WIS"], ["decline.wis", "decline WIS"], ["by_horizon.4", "horizon-4 WIS"],
+    ].filter(([p]) => get(base, p) != null);
+    let path = METRICS[0][0];
+    const fmt = (v, p) => /coverage/.test(p) ? v.toFixed(3) : /bias/.test(p) ? v.toFixed(1) : v.toFixed(2);
+    const table = h("table", { class: "table table-compact" });
+    function render() {
+      const bv = get(base, path); const label = METRICS.find(m => m[0] === path)[1];
+      table.textContent = "";
+      table.appendChild(h("thead", {}, h("tr", {}, h("th", { text: "arm" }), h("th", { text: "config" }), h("th", { class: "num", text: label }),
+        h("th", { class: "num", text: "delta vs baseline" }), h("th", { class: "num", text: "peak WIS" }), h("th", { class: "num", text: "overall WIS" }),
+        h("th", { class: "num", text: "peak bias" }), h("th", { class: "num", text: "peak coverage 95" }))));
+      const tbody = h("tbody");
+      for (const r of sweep) {
+        const v = get(r, path); const d = v - bv; const isBase = r.config_id === "baseline";
+        const better = isBase ? null : (/bias/.test(path) ? Math.abs(v) < Math.abs(bv) : /coverage/.test(path) ? Math.abs(v - 0.95) < Math.abs(bv - 0.95) : d < 0);
+        tbody.appendChild(h("tr", { class: isBase ? "row-highlight" : "" },
+          h("td", { text: r.arm }), h("td", {}, code(r.config_id)), h("td", { class: "num" }, h("b", { text: fmt(v, path) })),
+          h("td", { class: "num " + (better == null ? "" : better ? "delta-good" : "delta-bad"), text: isBase ? "" : (d >= 0 ? "+" : "") + fmt(d, path) }),
+          h("td", { class: "num", text: r.peak.wis.toFixed(2) }), h("td", { class: "num", text: r.overall.wis.toFixed(2) }),
+          h("td", { class: "num", text: r.peak.bias.toFixed(1) }), h("td", { class: "num", text: r.peak.coverage_95.toFixed(3) })));
+      }
+      table.appendChild(tbody);
+    }
+    el.appendChild(h("div", { class: "space-y-3" },
+      h("div", { class: "max-w-xs" }, field("Table metric", select(METRICS, path, ev => { path = ev.target.value; render(); }))),
+      h("div", { class: "table-wrap rounded-md border" }, table),
+      h("p", { class: "text-xs muted", text: "Green deltas are improvements for the selected metric (lower WIS and MAE, bias nearer zero, coverage nearer 0.95). The highlighted row is the baseline." })));
+    render();
+  }
+
+  // ---- architecture diagram ---------------------------------------------------------
+  const ARCH_NODES = [
+    { id: "data", x: 16, y: 24, label: "CDC FluSight data", sub: "data/raw/", path: "src/data_loader.py",
+      text: "Weekly influenza hospitalization counts fetched from the CDC FluSight GitHub repository and cached locally for a week. Everything downstream, including the experiment and the bank's experiential entries, is scored against this series." },
+    { id: "pipeline", x: 16, y: 148, label: "Forecast pipeline", sub: "src/pipeline.py", path: "src/pipeline.py, src/direct_forecast.py",
+      text: "Feature engineering plus the XGBoost direct ensemble (or any registered model family). It takes a config dict and returns a forecast CSV; the two new knobs (approaching-peak sample weights, post-feature training window) live here and are what the seventh action set_training_window drives." },
+    { id: "curated", x: 300, y: 24, label: "Curated YAML", sub: "knowledge/curated/*.yaml", path: "knowledge/curated/, agent/knowledge/curated.py",
+      text: "Human-authored guardrails: the five rectification actions, training-strategy rules and the migrated domain context (18 entries). Each file is validated against the schema; a pull request is the review step. The store rebuilds these rows from YAML every time it opens, so the YAML is the source of truth." },
+    { id: "db", x: 300, y: 148, label: "knowledge.db", sub: "agent/knowledge/store.py", path: "knowledge/knowledge.db, agent/knowledge/store.py",
+      text: "SQLite store with one row per entry. Curated rows are replaced on every open; experiential rows persist. Retrieval is a context match (an entry matches when its context lacks the key or lists the value) ordered by provenance trust, confidence, n_observations and id, capped at 30." },
+    { id: "explog", x: 584, y: 24, label: "Experiment log", sub: "outputs/experiments/.../log.jsonl", path: "scripts/experiments/peak_rectification.py, agent/knowledge/experiment_import.py",
+      text: "One JSON line per configuration from the controlled sweep (10 configs x 9 cutoffs). `knowledge import-experiment` turns each outcome into an experiential entry: statement, reward delta against the baseline, bias and coverage before and after, confidence low with one observation." },
+    { id: "loop", x: 300, y: 272, label: "Improve loop", sub: "agent/orchestrator.py", path: "agent/orchestrator.py, agent/prompt_templates.py",
+      text: "Evaluate, diagnose (agent 1), propose (agent 2), validate, apply, retrain. Before every proposal the loop queries the bank with the diagnosed phase and renders a KNOWN FACTS block with entry ids. The proposal must cite what it relied on; the loop records cited_entries, supported_by and a params mismatch, and logs an advisory override when no retrieved rule backs the action." },
+    { id: "runs", x: 584, y: 272, label: "runs.db + report", sub: "outputs/agent_runs/", path: "agent/run_tracker.py, agent/run_report.py",
+      text: "Every iteration, with its action, metrics, citations and retrieved ids, goes into SQLite. The end-of-run report (report.md and report.json) prints a cites: line per iteration so a reviewer can trace each move back to a bank entry." },
+  ];
+  const NODE_W = 196, NODE_H = 56;
+  const ARCH_EDGES = [
+    { from: "data", to: "pipeline", label: "" },
+    { from: "curated", to: "db", label: "rebuild on open" },
+    { from: "explog", to: "db", label: "import-experiment" },
+    { from: "db", to: "loop", label: "KNOWN FACTS in prompts" },
+    { from: "pipeline", to: "loop", label: "retrain, re-evaluate", both: true },
+    { from: "loop", to: "runs", label: "cited_entries, report" },
+  ];
+  function nodeCenter(n) { return { cx: n.x + NODE_W / 2, cy: n.y + NODE_H / 2 }; }
+  function edgePath(a, b) {
+    // Straight connectors that leave from the nearest side of a box.
+    const A = nodeCenter(a), B = nodeCenter(b);
+    const dx = B.cx - A.cx, dy = B.cy - A.cy;
+    if (Math.abs(dx) < 1) return { x1: A.cx, y1: dy > 0 ? a.y + NODE_H : a.y, x2: B.cx, y2: dy > 0 ? b.y : b.y + NODE_H };
+    if (Math.abs(dy) < 1) return { x1: dx > 0 ? a.x + NODE_W : a.x, y1: A.cy, x2: dx > 0 ? b.x : b.x + NODE_W, y2: B.cy };
+    // diagonal: leave horizontally, arrive on the top/bottom or side depending on direction
+    return { x1: dx > 0 ? a.x + NODE_W : a.x, y1: A.cy, x2: dx > 0 ? b.x : b.x + NODE_W, y2: B.cy };
+  }
+  function architectureDiagram(el) {
+    const W = 800, H = 352;
+    const byId = Object.fromEntries(ARCH_NODES.map(n => [n.id, n]));
+    const svg = svgEl("svg", { viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": "How the knowledge bank sits between the data, the pipeline and the improve loop" });
+    const defs = svgEl("defs");
+    const marker = svgEl("marker", { id: "arch-arrow", viewBox: "0 0 10 10", refX: "9", refY: "5", markerWidth: "7", markerHeight: "7", orient: "auto-start-reverse" });
+    marker.appendChild(svgEl("path", { d: "M 0 0 L 10 5 L 0 10 z", class: "arrow" }));
+    defs.appendChild(marker); svg.appendChild(defs);
+    for (const e of ARCH_EDGES) {
+      const p = edgePath(byId[e.from], byId[e.to]);
+      const attrs = { x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2, class: "edge", "marker-end": "url(#arch-arrow)" };
+      if (e.both) attrs["marker-start"] = "url(#arch-arrow)";
+      svg.appendChild(svgEl("line", attrs));
+      if (e.label) {
+        const mx = (p.x1 + p.x2) / 2, my = (p.y1 + p.y2) / 2;
+        const vertical = Math.abs(p.x1 - p.x2) < 1;
+        svg.appendChild(svgEl("text", { x: vertical ? mx + 8 : mx, y: vertical ? my + 3 : my - 7, "text-anchor": vertical ? "start" : "middle", class: "edge-label" }, e.label));
+      }
+    }
+    const detail = h("div", { class: "card" });
+    const groups = {};
+    function show(id) {
+      const n = byId[id];
+      for (const [k, g] of Object.entries(groups)) g.classList.toggle("is-active", k === id);
+      detail.textContent = "";
+      detail.appendChild(h("div", { class: "card-header !p-4 !pb-2" }, h("h4", { class: "card-title-sm", text: n.label }), h("p", { class: "card-description" }, code(n.path))));
+      detail.appendChild(h("div", { class: "card-content !p-4 !pt-0" }, h("p", { class: "text-sm", text: n.text })));
+    }
+    for (const n of ARCH_NODES) {
+      const g = svgEl("g", { class: "node", role: "button", tabindex: "0", "aria-label": n.label });
+      g.appendChild(svgEl("rect", { x: n.x, y: n.y, width: NODE_W, height: NODE_H, rx: 8 }));
+      g.appendChild(svgEl("text", { x: n.x + 14, y: n.y + 24 }, n.label));
+      g.appendChild(svgEl("text", { x: n.x + 14, y: n.y + 42, class: "sub" }, n.sub));
+      g.addEventListener("click", () => show(n.id));
+      g.addEventListener("keydown", ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); show(n.id); } });
+      groups[n.id] = g; svg.appendChild(g);
+    }
+    el.appendChild(h("div", { class: "space-y-4 diagram-host" },
+      h("p", { class: "text-sm muted", text: "Click a box for what it is and where it lives." }),
+      h("div", { class: "overflow-x-auto" }, h("div", { style: "min-width: 560px" }, svg)),
+      detail));
+    show("db");
+  }
+
+  // ---- bank lifecycle -----------------------------------------------------------
+  const LIFECYCLE = [
+    { id: "add", label: "Add", title: "Add an entry",
+      text: "Curated knowledge is authored by hand in knowledge/curated/*.yaml, validated against the schema and reviewed in a pull request. Experiential knowledge is not hand-written: `knowledge import-experiment` reads an experiment log and writes one entry per outcome.",
+      command: "python -m agent knowledge validate\npython -m agent knowledge import-experiment --log outputs/experiments/peak_rectification/log.jsonl" },
+    { id: "rebuild", label: "Rebuild on open", title: "Rebuild on open",
+      text: "Whenever the store opens, every curated row is deleted and re-read from YAML, so the YAML files are the source of truth and a stale database cannot disagree with them. Experiential rows are left alone and survive the rebuild.",
+      command: "python -m agent knowledge rebuild" },
+    { id: "retrieve", label: "Retrieve", title: "Retrieve for a context",
+      text: "A query names phase, model, metric (and optionally season_week). An entry matches when its context lacks the key or lists the value. Matches are ordered by provenance trust, confidence, n_observations and id, and capped at 30. When the cap truncates, up to 6 slots are reserved for experiential entries so the loop's own history is never crowded out by curated rules.",
+      command: "python -m agent knowledge query --phase peak --model xgboost_direct" },
+    { id: "cite", label: "Cite", title: "Cite in the loop",
+      text: "The proposal prompt shows the retrieved entries with their ids as a KNOWN FACTS block. Agent 2 must list the ids it relied on; the loop records cited_entries, computes supported_by (retrieved rules recommending the chosen action) and supported_by_params_mismatch, and logs an advisory override when nothing supports the action. The run report prints a cites: line per iteration.",
+      command: "python -m agent improve --cutoff-date 2025-12-06 --auto-apply\npython -m agent report <run_id>" },
+    { id: "remove", label: "Remove", title: "Remove an entry",
+      text: "Curated: delete it from the YAML file and rebuild (or just reopen the store). Experiential: `knowledge remove --id` deletes the row; `--dry-run` shows what would go first. Removal is deliberate and leaves no tombstone, so the git history of the YAML and the experiment log remain the audit trail.",
+      command: "python -m agent knowledge remove --id exp-window-12-2025 --dry-run\npython -m agent knowledge remove --id exp-window-12-2025" },
+  ];
+  function bankLifecycle(el) {
+    const buttons = {};
+    const panel = h("div", { class: "card" });
+    function show(id) {
+      const s = LIFECYCLE.find(x => x.id === id);
+      for (const [k, b] of Object.entries(buttons)) b.setAttribute("aria-pressed", k === id ? "true" : "false");
+      panel.textContent = "";
+      panel.appendChild(h("div", { class: "card-header !p-4 !pb-2" }, h("h4", { class: "card-title-sm", text: s.title })));
+      panel.appendChild(h("div", { class: "card-content !p-4 !pt-0 space-y-3" }, h("p", { class: "text-sm", text: s.text }), pre(s.command)));
+    }
+    const flow = h("div", { class: "flow" });
+    LIFECYCLE.forEach((s, i) => {
+      if (i) flow.appendChild(h("span", { class: "flow-arrow", "aria-hidden": "true", text: "->" }));
+      const b = h("button", { type: "button", class: "btn btn-outline btn-sm", "aria-pressed": "false", onClick: () => show(s.id) }, s.label);
+      buttons[s.id] = b; flow.appendChild(b);
+    });
+    el.appendChild(h("div", { class: "space-y-4" }, h("p", { class: "text-sm muted", text: "The five things that can happen to an entry. Click a stage for the rule and the command." }), flow, panel));
+    show("add");
+  }
+
+  // ---- schema reference -----------------------------------------------------------
+  const SCHEMA_FIELDS = [
+    ["id", "slug", "Unique, stable, lower-case with dashes. Experiential ids are generated from the experiment config and season (exp-lambda-3-2025)."],
+    ["provenance", "curated | derived | experiential", "Who produced it: a person, a scheduled derivation job, or the loop/experiment harness. Drives the trust rank 3 / 2 / 1."],
+    ["category", "model_characteristics | input_data | forecasts | domain_dynamics", "What the statement is about."],
+    ["statement", "single line", "The fact as the LLM reads it. One sentence, no newline."],
+    ["entities", "keys: model, phase, data_source, season, metric", "What the statement is about, as single values. Descriptive, not used for matching."],
+    ["context", "keys: phase, model, metric, season_week", "When the entry applies. phase/model/metric are lists; season_week is a [start, end] range. An absent key means 'always'. Phases: " + KNOWN_PHASES.join(", ") + "."],
+    ["payload", "free-form object", "Structured detail. Convention for actionable entries: recommendation = {action, params, note} where action is an adapter action or not_yet_available. Experiential entries carry state, action, reward, bias/coverage before and after, and a guard metric."],
+    ["evidence", "{source, n_observations, reward_delta}", "Where it came from (person and date, or log path and run_at), how many observations back it, and the measured delta on the reward metric when there is one."],
+    ["confidence", "low | medium | high", "Second sort key after provenance. Imported experiment outcomes start low with one observation."],
+    ["created_at", "YYYY-MM-DD", "When the entry was written. Not a sort key."],
+  ];
+  const SCHEMA_CONSTANTS = [
+    ["DEFAULT_QUERY_LIMIT", String(DEFAULT_QUERY_LIMIT), "agent/knowledge/store.py", "most entries one query returns"],
+    ["DEFAULT_PROPOSAL_FACTS_LIMIT", String(DEFAULT_PROPOSAL_FACTS_LIMIT), "agent/orchestrator.py", "entries shown per proposal; pinned to the query limit"],
+    ["DEFAULT_PROPOSAL_EXPERIENTIAL_SLOTS", String(DEFAULT_PROPOSAL_EXPERIENTIAL_SLOTS), "agent/orchestrator.py", "experiential entries always shown when the limit truncates"],
+    ["MIN_SEASON_WEEKS", String(MIN_SEASON_WEEKS), "src/direct_forecast.py", "a season needs this many weeks before its peak counts for approaching-peak weights"],
+    ["DEFAULT_APPROACHING_PEAK_WEEKS", String(DEFAULT_APPROACHING_PEAK_WEEKS), "src/direct_forecast.py", "K: weeks before each eligible season's peak labelled approaching-peak"],
+  ];
+  function simpleTable(headers, rows) {
+    return h("div", { class: "table-wrap rounded-md border" }, h("table", { class: "table table-compact" },
+      h("thead", {}, h("tr", {}, headers.map(t => h("th", { text: t })))),
+      h("tbody", {}, rows.map(r => h("tr", {}, r.map((cell, i) => h("td", {}, i === 0 ? code(cell) : (typeof cell === "string" ? cell : cell))))))));
+  }
+  function schemaReference(el, entries, options) {
+    const opts = options || {};
+    const exampleIds = opts.examples || ["rectify-peak-loss-weight-approaching-peak", "exp-lambda-3-2025"];
+    const byId = Object.fromEntries((entries || []).map(e => [e.id, e]));
+    const examples = exampleIds.map(id => {
+      const e = byId[id];
+      if (!e) return card(id, [h("p", { class: "text-sm muted", text: "not present in the embedded data" })], { compact: true });
+      const header = h("div", { class: "card-header !p-4 !pb-2" },
+        h("div", { class: "flex flex-wrap items-center gap-2" }, h("h4", { class: "card-title-sm break-all", text: e.id }),
+          h("span", { class: "badge " + (e.provenance === "curated" ? "" : "badge-secondary"), text: e.provenance }),
+          h("span", { class: "badge badge-outline", text: e.confidence })),
+        h("p", { class: "card-description", text: e.statement }));
+      return h("div", { class: "card" }, header, h("div", { class: "card-content !p-4 !pt-0" }, pre(JSON.stringify(e, null, 2))));
+    });
+    el.appendChild(h("div", { class: "space-y-6" },
+      h("div", { class: "space-y-2" }, h("h4", { class: "text-sm font-semibold", text: "Fields" }), simpleTable(["field", "type or values", "notes"], SCHEMA_FIELDS)),
+      h("div", { class: "space-y-2" }, h("h4", { class: "text-sm font-semibold", text: "Ordering rule" }),
+        h("p", { class: "text-sm", text: "Matches are sorted by provenance trust (curated 3, derived 2, experiential 1) descending, then confidence (high 3, medium 2, low 1) descending, then evidence.n_observations descending, then id ascending. The order is deterministic, so two runs with the same bank see the same KNOWN FACTS block." })),
+      h("div", { class: "space-y-2" }, h("h4", { class: "text-sm font-semibold", text: "Constants" }), simpleTable(["constant", "value", "where", "meaning"], SCHEMA_CONSTANTS)),
+      h("div", { class: "space-y-2" }, h("h4", { class: "text-sm font-semibold", text: "Two entries in full" }),
+        h("p", { class: "text-sm muted", text: "A curated rule and the experiential entry the experiment produced for the same action, as stored." }),
+        h("div", { class: "grid gap-4 xl:grid-cols-2" }, examples))));
+  }
+
+  // ---- tabs -----------------------------------------------------------------------
+  function initTabs(root) {
+    root.querySelectorAll("[data-tabs]").forEach(tabs => {
+      const triggers = [...tabs.querySelectorAll(":scope > .tabs-list > .tabs-trigger")];
+      const panels = [...tabs.querySelectorAll(":scope > .tabs-content")];
+      function activate(name, focus) {
+        triggers.forEach(t => { const on = t.dataset.tab === name; t.dataset.state = on ? "active" : "inactive"; t.setAttribute("aria-selected", on ? "true" : "false"); t.tabIndex = on ? 0 : -1; if (on && focus) t.focus(); });
+        panels.forEach(p => { const on = p.dataset.tab === name; p.dataset.state = on ? "active" : "inactive"; p.hidden = !on; });
+      }
+      triggers.forEach((t, i) => {
+        t.addEventListener("click", () => activate(t.dataset.tab, false));
+        t.addEventListener("keydown", ev => {
+          if (ev.key !== "ArrowRight" && ev.key !== "ArrowLeft") return;
+          ev.preventDefault();
+          const j = (i + (ev.key === "ArrowRight" ? 1 : triggers.length - 1)) % triggers.length;
+          activate(triggers[j].dataset.tab, true);
+        });
+      });
+      const initial = triggers.find(t => t.dataset.state === "active") || triggers[0];
+      if (initial) activate(initial.dataset.tab, false);
+    });
+  }
+
+  // ---- mount ------------------------------------------------------------------------
+  const WIDGETS = { bankExplorer, runStepper, sweepCharts, sweepTable, bankLifecycle, schemaReference, architectureDiagram };
+  function init(data) {
+    document.querySelectorAll("[data-widget]").forEach(el => {
+      const name = el.dataset.widget; const fn = WIDGETS[name];
+      let options = {};
+      try { options = el.dataset.options ? JSON.parse(el.dataset.options) : {}; } catch (e) { options = {}; }
+      if (!fn) { el.appendChild(h("div", { class: "alert" }, h("div", { class: "alert-title", text: "Unknown widget" }), h("div", { class: "alert-description", text: name }))); return; }
+      try {
+        fn(el, el.dataset.source ? data[el.dataset.source] : undefined, options, data);
+      } catch (err) {
+        el.appendChild(h("div", { class: "alert" }, h("div", { class: "alert-title", text: "Widget failed: " + name }), h("div", { class: "alert-description", text: String(err && err.message || err) })));
+      }
+    });
+    initTabs(document);
+  }
+
+  global.ReportWidgets = Object.assign({ init, initTabs, matches, orderKey, lineFor, applyProposalLimit }, WIDGETS);
+})(window);
+
+</script>
+<script>
+  (function () {
+    // Theme toggle: pins the choice on <html data-theme> and remembers it.
+    var root = document.documentElement;
+    var btn = document.getElementById("theme-toggle");
+    if (btn) btn.addEventListener("click", function () {
+      var next = root.classList.contains("dark") ? "light" : "dark";
+      root.setAttribute("data-theme", next);
+      root.classList.toggle("dark", next === "dark");
+      try { localStorage.setItem("report-theme", next); } catch (e) { /* storage unavailable */ }
+    });
+    // Mount every widget and wire the tabs.
+    if (window.ReportWidgets) window.ReportWidgets.init(window.REPORT_DATA || {});
+    // Highlight the section in view in the sidebar.
+    var links = Array.prototype.slice.call(document.querySelectorAll(".toc a[href^='#']"));
+    if ("IntersectionObserver" in window && links.length) {
+      var byId = {};
+      links.forEach(function (a) { byId[a.getAttribute("href").slice(1)] = a; });
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) {
+          if (!en.isIntersecting) return;
+          links.forEach(function (a) { a.classList.remove("is-current"); });
+          var a = byId[en.target.id]; if (a) a.classList.add("is-current");
+        });
+      }, { rootMargin: "-20% 0px -70% 0px" });
+      document.querySelectorAll("main section[id]").forEach(function (s) { io.observe(s); });
+    }
+  })();
+</script>
+</body>
+</html>

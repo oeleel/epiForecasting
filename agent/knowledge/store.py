@@ -54,6 +54,14 @@ Invariants
 - Connections open with `timeout=DEFAULT_BUSY_TIMEOUT_S` and foreign keys on,
   so parallel pytest workers or a concurrent CLI never see "database is
   locked" and cascade deletes actually cascade.
+- `remove` deletes one derived or experiential entry with its context rows in
+  one transaction and returns what it removed. It refuses curated ids: the
+  YAML files are the source of truth for curated rows, so a row deleted here
+  would come back on the next `rebuild_curated` (every `KnowledgeBank.open()`).
+  Curated entries are removed by deleting them from `knowledge/curated/*.yaml`
+  and rebuilding. Experiential rows are likewise re-creatable from their
+  source log by `import-experiment`; the removal is the only thing that is
+  not re-run automatically.
 """
 
 from __future__ import annotations
@@ -96,6 +104,11 @@ DEFAULT_BUSY_TIMEOUT_S = 30.0
 
 # Bounds the KNOWN FACTS block as the bank grows.
 DEFAULT_QUERY_LIMIT = 30
+
+# The provenance whose rows are owned by the YAML files, not the DB: `remove`
+# refuses it and `rebuild_curated` replaces it wholesale.
+_CURATED_PROVENANCE = "curated"
+assert _CURATED_PROVENANCE in PROVENANCES, "_CURATED_PROVENANCE must be a known provenance"
 
 # Higher ranks first. Human guardrails outrank machine observations.
 TRUST_RANK: Mapping[str, int] = {"curated": 3, "derived": 2, "experiential": 1}
@@ -331,6 +344,41 @@ class KnowledgeBank:
         with self._connect() as conn:
             cur = conn.execute("DELETE FROM entries WHERE provenance = ?", (provenance,))
             return int(cur.rowcount)
+
+    def remove(self, entry_id: str, *, dry_run: bool = False) -> KnowledgeEntry:
+        """Delete one non-curated entry (and its context rows); return the removed entry.
+
+        Raises ValueError when no entry has `entry_id`, and when the entry is
+        curated: curated rows live in the YAML files and are re-created by
+        every rebuild, so deleting the row alone would be undone silently.
+        With `dry_run` every check runs and the entry is returned, but nothing
+        is deleted, so a dry run predicts the real run exactly.
+        """
+        if not isinstance(entry_id, str) or not entry_id:
+            raise ValueError(f"remove: entry_id must be a non-empty string, got {entry_id!r}")
+        if not isinstance(dry_run, bool):
+            raise ValueError(f"remove: dry_run must be a bool, got {dry_run!r}")
+        with self._connect() as conn:
+            row = conn.execute("SELECT * FROM entries WHERE id = ?", (entry_id,)).fetchone()
+            if row is None:
+                raise ValueError(f"remove: no entry with id {entry_id!r}")
+            entry = _row_to_entry(row)
+            if entry.provenance == _CURATED_PROVENANCE:
+                raise ValueError(
+                    f"remove: {entry_id!r} is a curated entry; curated entries are removed "
+                    f"by deleting them from knowledge/curated/*.yaml and running "
+                    f"`python -m agent knowledge rebuild` (a rebuild would re-create a "
+                    f"row deleted here)"
+                )
+            if dry_run:
+                return entry
+            # Explicit delete of the context rows rather than relying on the
+            # cascade alone: the removal is then correct even on a connection
+            # where foreign keys were not enabled.
+            conn.execute("DELETE FROM entry_context WHERE entry_id = ?", (entry_id,))
+            conn.execute("DELETE FROM entries WHERE id = ?", (entry_id,))
+        _log.info("Removed %s entry %s from %s", entry.provenance, entry_id, self.db_path)
+        return entry
 
     def rebuild_curated(self, curated_dir: str | Path = DEFAULT_CURATED_DIR) -> int:
         """Replace all curated rows with the YAML files' entries, in one transaction.

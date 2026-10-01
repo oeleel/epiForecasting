@@ -18,7 +18,10 @@ Commands:
                  block the loop would see for a retrieval context,
                  `import-experiment` writes the peak-rectification harness log
                  into the bank as experiential entries (design section 5, no
-                 LLM involved). Every action except `validate` re-reads the
+                 LLM involved), `remove --id ID [--dry-run]` deletes one
+                 derived/experiential entry (curated entries are removed by
+                 editing the YAML and rebuilding, since a rebuild would
+                 re-create the row). Every action except `validate` re-reads the
                  repo's curated dir into the repo DB first, so the bank can
                  never be stale relative to the YAML. `--dir` belongs to
                  `validate` only: the other actions always reflect
@@ -43,6 +46,7 @@ Usage examples:
     python -m agent knowledge list --provenance curated --category model_characteristics
     python -m agent knowledge query --phase peak --model xgboost_direct
     python -m agent knowledge import-experiment --log outputs/experiments/peak_rectification/log.jsonl
+    python -m agent knowledge remove --id exp-window-26-2025 --dry-run
 """
 
 from __future__ import annotations
@@ -749,23 +753,34 @@ def cmd_report(args) -> None:
 
 
 # ----------------------------------------------------------------------------
-# Knowledge bank: validate / rebuild / list / query / import-experiment
+# Knowledge bank: validate / rebuild / list / query / import-experiment / remove
 # ----------------------------------------------------------------------------
 
-KNOWLEDGE_ACTIONS = ("validate", "rebuild", "list", "query", "import-experiment")
+KNOWLEDGE_ACTIONS = ("validate", "rebuild", "list", "query", "import-experiment", "remove")
 
 # Which flags each action reads. Anything else passed with that action is a
-# user mistake and is rejected up front rather than silently ignored.
+# user mistake and is rejected up front rather than silently ignored. Every
+# flag defaults to None (including the store_true `--dry-run`) so "was it
+# passed" is one uniform `is not None` test.
 KNOWLEDGE_FLAGS_BY_ACTION = {
     "validate": ("dir",),
     "rebuild": (),
     "list": ("provenance", "category"),
     "query": ("phase", "model", "metric", "season_week"),
     "import-experiment": ("log",),
+    "remove": ("id", "dry_run"),
 }
 _KNOWLEDGE_ALL_FLAGS = (
     "dir", "provenance", "category", "phase", "model", "metric", "season_week", "log",
+    "id", "dry_run",
 )
+# Flags an action cannot run without; checked after the stray-flag check.
+KNOWLEDGE_REQUIRED_FLAGS_BY_ACTION = {
+    "remove": ("id",),
+}
+
+# The provenance whose rows are re-created from a source log by `import-experiment`.
+_RECREATABLE_PROVENANCE = "experiential"
 
 # `knowledge list` column widths. Statements are truncated to fit one line so
 # the table stays scannable; `query` prints statements in full.
@@ -925,6 +940,33 @@ def _knowledge_import_experiment(log_path: str | Path) -> None:
     )
 
 
+def _knowledge_remove(bank: KnowledgeBank, entry_id: str, dry_run: bool) -> None:
+    """Remove one non-curated entry from `bank`, or with `dry_run` only print it.
+
+    Takes the bank as an argument (unlike the other handlers) so the dry-run
+    branch is testable against a temporary DB; `cmd_knowledge` passes the
+    repo bank. Exit 1 on an unknown or curated id, with the store's message
+    (the store runs the same checks on a dry run, so the dry run predicts the
+    real run exactly).
+    """
+    try:
+        entry = bank.remove(entry_id, dry_run=dry_run)
+    except ValueError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"\ndb: {bank.db_path}")
+    print(f"id:         {entry.id}")
+    print(f"provenance: {entry.provenance}")
+    print(f"statement:  {entry.statement}")
+    print("\ndry run: nothing changed" if dry_run else "\nremoved")
+    if entry.provenance == _RECREATABLE_PROVENANCE:
+        print(
+            "note: re-running `python -m agent knowledge import-experiment` re-creates "
+            "experiential entries from the log"
+        )
+
+
 def cmd_knowledge(args: argparse.Namespace) -> None:
     """Dispatch `knowledge <action>`; reject flags the action does not read."""
     allowed = KNOWLEDGE_FLAGS_BY_ACTION[args.action]
@@ -940,6 +982,17 @@ def cmd_knowledge(args: argparse.Namespace) -> None:
             file=sys.stderr,
         )
         sys.exit(1)
+    missing = [
+        f"--{flag.replace('_', '-')}"
+        for flag in KNOWLEDGE_REQUIRED_FLAGS_BY_ACTION.get(args.action, ())
+        if getattr(args, flag) is None
+    ]
+    if missing:
+        print(
+            f"Error: knowledge {args.action} requires {', '.join(missing)}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     if args.action == "validate":
         _knowledge_validate(args.dir if args.dir is not None else DEFAULT_CURATED_DIR)
@@ -951,6 +1004,8 @@ def cmd_knowledge(args: argparse.Namespace) -> None:
         _knowledge_query(args.phase, args.model, args.metric, args.season_week)
     elif args.action == "import-experiment":
         _knowledge_import_experiment(args.log if args.log is not None else DEFAULT_EXPERIMENT_LOG)
+    elif args.action == "remove":
+        _knowledge_remove(_open_bank(), args.id, dry_run=args.dry_run is True)
     else:
         print(f"Unknown knowledge action: {args.action}", file=sys.stderr)
         sys.exit(1)
@@ -1218,7 +1273,7 @@ def main():
     knowledge_parser = subparsers.add_parser(
         "knowledge",
         help="Knowledge bank: validate curated YAML, rebuild the DB, list or query entries, "
-             "import an experiment log",
+             "import an experiment log, remove an entry",
     )
     knowledge_parser.add_argument(
         "action", choices=KNOWLEDGE_ACTIONS,
@@ -1226,7 +1281,8 @@ def main():
              "rebuild: reload them into the SQLite bank and print counts; "
              "list: table of stored entries; "
              "query: print the KNOWN FACTS block for a retrieval context; "
-             "import-experiment: write the peak-rectification log as experiential entries",
+             "import-experiment: write the peak-rectification log as experiential entries; "
+             "remove: delete one derived/experiential entry by --id",
     )
     knowledge_parser.add_argument(
         "--dir", default=None,
@@ -1260,6 +1316,15 @@ def main():
     knowledge_parser.add_argument(
         "--log", default=None,
         help=f"import-experiment: harness JSONL log to import (default: {DEFAULT_EXPERIMENT_LOG})",
+    )
+    knowledge_parser.add_argument(
+        "--id", default=None,
+        help="remove: id of the derived/experiential entry to delete (required); curated "
+             "entries are removed by editing knowledge/curated/*.yaml and running rebuild",
+    )
+    knowledge_parser.add_argument(
+        "--dry-run", dest="dry_run", action="store_true", default=None,
+        help="remove: print what would be removed and change nothing",
     )
 
     args = parser.parse_args()

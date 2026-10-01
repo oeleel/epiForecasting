@@ -1,0 +1,1179 @@
+[
+{
+"id": "bias-sign-convention",
+"provenance": "curated",
+"category": "forecasts",
+"statement": "Positive bias = the model over-predicts; negative bias = the model under-predicts.",
+"entities": {
+"metric": "bias"
+},
+"context": {},
+"payload": {
+"definition": "bias = mean(predicted - actual)"
+},
+"evidence": {
+"source": "migrated from agent/adapters/flu_forecast.py get_domain_context, 2026-09-30",
+"n_observations": null,
+"reward_delta": null
+},
+"confidence": "high",
+"llm_gloss": null,
+"created_at": "2026-09-30"
+},
+{
+"id": "calendar-phase-decline",
+"provenance": "curated",
+"category": "domain_dynamics",
+"statement": "Decline phase (Feb-Apr): activity decreasing.",
+"entities": {
+"phase": "decline"
+},
+"context": {
+"phase": [
+"decline"
+],
+"season_week": [
+5,
+17
+]
+},
+"payload": {
+"months": [
+2,
+3,
+4
+],
+"source_of_truth": "agent/phase_evaluator.py PhaseEvaluator.PHASE_MAP"
+},
+"evidence": {
+"source": "migrated from agent/adapters/flu_forecast.py get_domain_context, 2026-09-30",
+"n_observations": null,
+"reward_delta": null
+},
+"confidence": "high",
+"llm_gloss": null,
+"created_at": "2026-09-30"
+},
+{
+"id": "calendar-phase-onset",
+"provenance": "curated",
+"category": "domain_dynamics",
+"statement": "Onset phase (Oct-Nov): flu activity begins rising.",
+"entities": {
+"phase": "onset"
+},
+"context": {
+"phase": [
+"onset"
+],
+"season_week": [
+40,
+48
+]
+},
+"payload": {
+"months": [
+10,
+11
+],
+"source_of_truth": "agent/phase_evaluator.py PhaseEvaluator.PHASE_MAP"
+},
+"evidence": {
+"source": "migrated from agent/adapters/flu_forecast.py get_domain_context, 2026-09-30",
+"n_observations": null,
+"reward_delta": null
+},
+"confidence": "high",
+"llm_gloss": null,
+"created_at": "2026-09-30"
+},
+{
+"id": "calendar-phase-peak",
+"provenance": "curated",
+"category": "domain_dynamics",
+"statement": "Peak phase (Dec-Jan): highest hospitalization rates.",
+"entities": {
+"phase": "peak"
+},
+"context": {
+"phase": [
+"peak"
+]
+},
+"payload": {
+"months": [
+12,
+1
+],
+"source_of_truth": "agent/phase_evaluator.py PhaseEvaluator.PHASE_MAP"
+},
+"evidence": {
+"source": "migrated from agent/adapters/flu_forecast.py get_domain_context, 2026-09-30",
+"n_observations": null,
+"reward_delta": null
+},
+"confidence": "high",
+"llm_gloss": null,
+"created_at": "2026-09-30"
+},
+{
+"id": "error-grows-with-horizon",
+"provenance": "curated",
+"category": "forecasts",
+"statement": "Error typically increases with horizon (week 1 best, week 4 worst).",
+"entities": {},
+"context": {},
+"payload": {
+"horizons_weeks": [
+1,
+2,
+3,
+4
+]
+},
+"evidence": {
+"source": "migrated from agent/adapters/flu_forecast.py get_domain_context, 2026-09-30",
+"n_observations": null,
+"reward_delta": null
+},
+"confidence": "high",
+"llm_gloss": null,
+"created_at": "2026-09-30"
+},
+{
+"id": "peak-is-hardest-to-forecast",
+"provenance": "curated",
+"category": "forecasts",
+"statement": "Peak periods are the hardest to forecast because of rapid changes.",
+"entities": {
+"phase": "peak"
+},
+"context": {},
+"payload": {},
+"evidence": {
+"source": "migrated from agent/adapters/flu_forecast.py get_domain_context, 2026-09-30",
+"n_observations": null,
+"reward_delta": null
+},
+"confidence": "high",
+"llm_gloss": null,
+"created_at": "2026-09-30"
+},
+{
+"id": "rectify-peak-add-examples-other-seasons",
+"provenance": "curated",
+"category": "model_characteristics",
+"statement": "When a model fails at the peak, add more training examples from the failing phase drawn from other seasons, locations, or outbreaks (data is limited, so every extra peak counts).",
+"entities": {
+"phase": "peak"
+},
+"context": {
+"phase": [
+"peak",
+"approaching_peak"
+]
+},
+"payload": {
+"recommendation": {
+"action": "not_yet_available",
+"params": {},
+"note": "The cached CDC series starts 2022-02-05, so the only lever is admitting earlier seasons; whether the 2020-22 seasons are admissible is an open question for the lab. Other locations are already pooled in the training set.\n"
+},
+"rank": 1
+},
+"evidence": {
+"source": "A. Adiga, Teams follow-up, ~2026-09-27",
+"n_observations": null,
+"reward_delta": null
+},
+"confidence": "high",
+"llm_gloss": null,
+"created_at": "2026-09-30"
+},
+{
+"id": "rectify-peak-loss-weight-approaching-peak",
+"provenance": "curated",
+"category": "model_characteristics",
+"statement": "Otherwise reweight the loss: weight approaching-peak training rows by lambda > 1 (value to be learned) and every other row by 1, so the fit is pulled toward the rise into the peak.",
+"entities": {
+"phase": "peak"
+},
+"context": {
+"phase": [
+"peak",
+"approaching_peak"
+]
+},
+"payload": {
+"recommendation": {
+"action": "reweight_training_samples",
+"params": {
+"dimension": "approaching_peak",
+"weight": ">1, to be learned"
+},
+"note": "`value` = weeks before each eligible season's peak that count as approaching-peak (guardrail [2, 12], default 6); `weight` = lambda in [1.0, 5.0]. Lambda is the peak-rectification experiment's sweep variable.\n"
+},
+"rank": 5,
+"loss": "L = 1/N sum w_i l(yhat_i, y_i); w_i = lambda if approaching-peak else 1"
+},
+"evidence": {
+"source": "A. Adiga, Teams follow-up, ~2026-09-27",
+"n_observations": null,
+"reward_delta": null
+},
+"confidence": "high",
+"llm_gloss": null,
+"created_at": "2026-09-30"
+},
+{
+"id": "rectify-peak-oversample-windows",
+"provenance": "curated",
+"category": "model_characteristics",
+"statement": "If failing-phase samples are limited, oversample the training windows from that phase (e.g. the weeks leading into each season's peak) so the fit sees them more often.",
+"entities": {
+"phase": "peak"
+},
+"context": {
+"phase": [
+"peak",
+"approaching_peak"
+]
+},
+"payload": {
+"recommendation": {
+"action": "not_yet_available",
+"params": {
+"factor": ">1"
+},
+"note": "For XGBoost, integer sample weights are equivalent to row duplication except under `subsample`; either fold into the loss-weight action or duplicate rows literally to keep the two arms distinct. Planned experiment arm, not run yet.\n"
+},
+"rank": 2
+},
+"evidence": {
+"source": "A. Adiga, Teams follow-up, ~2026-09-27",
+"n_observations": null,
+"reward_delta": null
+},
+"confidence": "high",
+"llm_gloss": null,
+"created_at": "2026-09-30"
+},
+{
+"id": "rectify-peak-shorter-window-on-divergence",
+"provenance": "curated",
+"category": "model_characteristics",
+"statement": "If the current season at the forecast week differs from past seasons (no future data is available), rely less on seasonal history and fit on a shorter window (6 or 12 weeks instead of 52).",
+"entities": {
+"phase": "peak"
+},
+"context": {
+"phase": [
+"peak",
+"approaching_peak"
+]
+},
+"payload": {
+"recommendation": {
+"action": "set_training_window",
+"params": {
+"weeks": 12
+},
+"note": "6 or 12 weeks; 12 is the safer first move (the minimum is FORECAST_HORIZON + 4 = 8, so 6 is not admissible today). Writes `data.train_window_weeks`. The \"current season diverges from past seasons\" trigger is a future derived entry, not yet defined.\n"
+},
+"rank": 4,
+"config_key": "data.train_window_weeks"
+},
+"evidence": {
+"source": "A. Adiga, Teams follow-up, ~2026-09-27",
+"n_observations": null,
+"reward_delta": null
+},
+"confidence": "high",
+"llm_gloss": null,
+"created_at": "2026-09-30"
+},
+{
+"id": "seasonality-needs-two-plus-years",
+"provenance": "curated",
+"category": "input_data",
+"statement": "Seasonality detection needs more than two years of history; with less, a model cannot tell a seasonal cycle from a one-off trend and seasonal features should not be trusted.",
+"entities": {
+"data_source": "cdc_flusight"
+},
+"context": {},
+"payload": {
+"minimum_history_years": 2,
+"note": "The cached CDC series starts 2022-02-05, so the pinned split barely clears this bar."
+},
+"evidence": {
+"source": "A. Adiga, meetings 2026-09-09, 2026-09-24",
+"n_observations": null,
+"reward_delta": null
+},
+"confidence": "high",
+"llm_gloss": null,
+"created_at": "2026-09-30"
+},
+{
+"id": "train-long-window-in-lull",
+"provenance": "curated",
+"category": "model_characteristics",
+"statement": "In a lull (plateau or off-season) use a long fit window of 52 or 104 weeks so the model can draw on seasonal history rather than a flat recent stretch.",
+"entities": {
+"phase": "plateau"
+},
+"context": {
+"phase": [
+"plateau",
+"off_season"
+]
+},
+"payload": {
+"recommendation": {
+"action": "set_training_window",
+"params": {
+"weeks": 52
+},
+"note": "52 or 104 weeks (104 = 2 seasons, the catalog maximum); writes `data.train_window_weeks`."
+},
+"config_key": "data.train_window_weeks"
+},
+"evidence": {
+"source": "A. Adiga, meetings 2026-09-03, 2026-09-09, 2026-09-24",
+"n_observations": null,
+"reward_delta": null
+},
+"confidence": "high",
+"llm_gloss": null,
+"created_at": "2026-09-30"
+},
+{
+"id": "train-short-window-on-takeoff",
+"provenance": "curated",
+"category": "model_characteristics",
+"statement": "In a sharp takeoff (entering a growth phase), fit on a short window of roughly the last 12 weeks instead of relying on 52-week seasonality; short windows keep the model agile.",
+"entities": {
+"phase": "surge"
+},
+"context": {
+"phase": [
+"surge",
+"onset",
+"approaching_peak"
+]
+},
+"payload": {
+"recommendation": {
+"action": "set_training_window",
+"params": {
+"weeks": 12
+},
+"note": "Writes `data.train_window_weeks` (minimum FORECAST_HORIZON + 4 = 8 weeks, maximum 104); the experiment harness sets the same key directly.\n"
+},
+"config_key": "data.train_window_weeks"
+},
+"evidence": {
+"source": "A. Adiga, meetings 2026-09-03, 2026-09-09, 2026-09-24",
+"n_observations": null,
+"reward_delta": null
+},
+"confidence": "high",
+"llm_gloss": null,
+"created_at": "2026-09-30"
+},
+{
+"id": "window-length-is-a-search-dimension",
+"provenance": "curated",
+"category": "model_characteristics",
+"statement": "The training-window length is itself an optimization the agent should run, not a fixed setting: start from the phase rule (12 weeks on takeoff, 52/104 in a lull) and explore past it.",
+"entities": {},
+"context": {},
+"payload": {
+"search_space": {
+"train_window_weeks": [
+8,
+12,
+26,
+52,
+104
+]
+}
+},
+"evidence": {
+"source": "A. Adiga, meetings 2026-09-09, 2026-09-24",
+"n_observations": null,
+"reward_delta": null
+},
+"confidence": "high",
+"llm_gloss": null,
+"created_at": "2026-09-30"
+},
+{
+"id": "growth-starts-october-rate-varies",
+"provenance": "curated",
+"category": "domain_dynamics",
+"statement": "Epidemic curves start growing around October every season, but the growth rate varies from season to season, so the onset date and the steepness of the rise are not fixed.",
+"entities": {
+"phase": "onset"
+},
+"context": {
+"season_week": [
+36,
+48
+]
+},
+"payload": {
+"typical_onset_month": 10
+},
+"evidence": {
+"source": "A. Adiga, meetings 2026-09-03, 2026-09-09",
+"n_observations": null,
+"reward_delta": null
+},
+"confidence": "medium",
+"llm_gloss": null,
+"created_at": "2026-09-30"
+},
+{
+"id": "mape-quality-bands",
+"provenance": "curated",
+"category": "forecasts",
+"statement": "MAPE < 40% is good, 40-60% is acceptable, > 60% indicates problems.",
+"entities": {
+"metric": "mape"
+},
+"context": {
+"metric": [
+"mape"
+]
+},
+"payload": {
+"bands": {
+"good_below_pct": 40,
+"acceptable_below_pct": 60
+}
+},
+"evidence": {
+"source": "migrated from agent/adapters/flu_forecast.py get_domain_context, 2026-09-30",
+"n_observations": null,
+"reward_delta": null
+},
+"confidence": "medium",
+"llm_gloss": null,
+"created_at": "2026-09-30"
+},
+{
+"id": "onset-definition-v1",
+"provenance": "curated",
+"category": "domain_dynamics",
+"statement": "Season onset = 3 consecutive weeks of increase above threshold T (T still to be fixed by the lab).",
+"entities": {
+"phase": "onset"
+},
+"context": {
+"season_week": [
+38,
+46
+]
+},
+"payload": {
+"rule": {
+"consecutive_weeks": 3,
+"threshold": "TBD"
+}
+},
+"evidence": {
+"source": "A. Adiga, meetings 2026-09-09, 2026-09-24",
+"n_observations": null,
+"reward_delta": null
+},
+"confidence": "medium",
+"llm_gloss": null,
+"created_at": "2026-09-30"
+},
+{
+"id": "rectify-peak-smote",
+"provenance": "curated",
+"category": "model_characteristics",
+"statement": "SMOTE-style synthetic oversampling of failing-phase rows is a candidate rectification but is expected to fail on this data; lowest priority of the five.",
+"entities": {
+"phase": "peak"
+},
+"context": {
+"phase": [
+"peak",
+"approaching_peak"
+]
+},
+"payload": {
+"recommendation": {
+"action": "not_yet_available",
+"params": {},
+"note": "A. Adiga expects it to fail (\"likely to fail\"); planned arm, run last if at all."
+},
+"rank": 3
+},
+"evidence": {
+"source": "A. Adiga, Teams follow-up, ~2026-09-27",
+"n_observations": null,
+"reward_delta": null
+},
+"confidence": "low",
+"llm_gloss": null,
+"created_at": "2026-09-30"
+},
+{
+"id": "exp-lambda-1-5-2025",
+"provenance": "experiential",
+"category": "model_characteristics",
+"statement": "approaching_peak weight 1.5 (weeks_before 6): peak WIS 123.74 vs 121.01 baseline (+2.73, worse); peak bias -58.8 -> -35.7; peak coverage_95 0.855 -> 0.835",
+"entities": {
+"model": "xgboost_direct",
+"phase": "peak",
+"metric": "wis"
+},
+"context": {
+"phase": [
+"peak"
+],
+"model": [
+"xgboost_direct"
+],
+"metric": [
+"wis"
+]
+},
+"payload": {
+"state": {
+"model": "xgboost_direct",
+"target_phase": "peak",
+"metric": "wis",
+"split": {
+"train_start_date": "2022-02-05",
+"eval_start_date": "2025-10-01",
+"eval_end_date": "2026-05-31",
+"stride_weeks": 4
+},
+"n_cutoffs": 9
+},
+"action": {
+"name": "reweight_training_samples",
+"params": {
+"dimension": "approaching_peak",
+"value": 6,
+"weight": 1.5
+},
+"config_delta": {
+"sample_weights.approaching_peak": {
+"weeks_before": 6,
+"weight": 1.5
+}
+}
+},
+"reward": {
+"metric": "wis",
+"phase": "peak",
+"baseline": 121.01,
+"value": 123.74,
+"delta": 2.73,
+"better": false
+},
+"bias_before": -58.8,
+"bias_after": -35.7,
+"coverage_95_before": 0.855,
+"coverage_95_after": 0.835,
+"guard": {
+"metric": "overall_wis",
+"baseline_value": 50.05,
+"value": 50.92
+}
+},
+"evidence": {
+"source": "/Users/leolee/UVA/Year3-2526/epiForecasting/outputs/experiments/peak_rectification/log.jsonl#lambda_1.5 run_at 2026-09-30T20:17:23+00:00",
+"n_observations": 1,
+"reward_delta": 2.73
+},
+"confidence": "low",
+"llm_gloss": null,
+"created_at": "2026-10-01"
+},
+{
+"id": "exp-lambda-2-2025",
+"provenance": "experiential",
+"category": "model_characteristics",
+"statement": "approaching_peak weight 2.0 (weeks_before 6): peak WIS 123.54 vs 121.01 baseline (+2.53, worse); peak bias -58.8 -> -17.9; peak coverage_95 0.855 -> 0.821",
+"entities": {
+"model": "xgboost_direct",
+"phase": "peak",
+"metric": "wis"
+},
+"context": {
+"phase": [
+"peak"
+],
+"model": [
+"xgboost_direct"
+],
+"metric": [
+"wis"
+]
+},
+"payload": {
+"state": {
+"model": "xgboost_direct",
+"target_phase": "peak",
+"metric": "wis",
+"split": {
+"train_start_date": "2022-02-05",
+"eval_start_date": "2025-10-01",
+"eval_end_date": "2026-05-31",
+"stride_weeks": 4
+},
+"n_cutoffs": 9
+},
+"action": {
+"name": "reweight_training_samples",
+"params": {
+"dimension": "approaching_peak",
+"value": 6,
+"weight": 2.0
+},
+"config_delta": {
+"sample_weights.approaching_peak": {
+"weeks_before": 6,
+"weight": 2.0
+}
+}
+},
+"reward": {
+"metric": "wis",
+"phase": "peak",
+"baseline": 121.01,
+"value": 123.54,
+"delta": 2.53,
+"better": false
+},
+"bias_before": -58.8,
+"bias_after": -17.9,
+"coverage_95_before": 0.855,
+"coverage_95_after": 0.821,
+"guard": {
+"metric": "overall_wis",
+"baseline_value": 50.05,
+"value": 50.64
+}
+},
+"evidence": {
+"source": "/Users/leolee/UVA/Year3-2526/epiForecasting/outputs/experiments/peak_rectification/log.jsonl#lambda_2 run_at 2026-09-30T20:22:17+00:00",
+"n_observations": 1,
+"reward_delta": 2.53
+},
+"confidence": "low",
+"llm_gloss": null,
+"created_at": "2026-10-01"
+},
+{
+"id": "exp-lambda-3-2025",
+"provenance": "experiential",
+"category": "model_characteristics",
+"statement": "approaching_peak weight 3.0 (weeks_before 6): peak WIS 123.71 vs 121.01 baseline (+2.70, worse); peak bias -58.8 -> -6.4; peak coverage_95 0.855 -> 0.808",
+"entities": {
+"model": "xgboost_direct",
+"phase": "peak",
+"metric": "wis"
+},
+"context": {
+"phase": [
+"peak"
+],
+"model": [
+"xgboost_direct"
+],
+"metric": [
+"wis"
+]
+},
+"payload": {
+"state": {
+"model": "xgboost_direct",
+"target_phase": "peak",
+"metric": "wis",
+"split": {
+"train_start_date": "2022-02-05",
+"eval_start_date": "2025-10-01",
+"eval_end_date": "2026-05-31",
+"stride_weeks": 4
+},
+"n_cutoffs": 9
+},
+"action": {
+"name": "reweight_training_samples",
+"params": {
+"dimension": "approaching_peak",
+"value": 6,
+"weight": 3.0
+},
+"config_delta": {
+"sample_weights.approaching_peak": {
+"weeks_before": 6,
+"weight": 3.0
+}
+}
+},
+"reward": {
+"metric": "wis",
+"phase": "peak",
+"baseline": 121.01,
+"value": 123.71,
+"delta": 2.7,
+"better": false
+},
+"bias_before": -58.8,
+"bias_after": -6.4,
+"coverage_95_before": 0.855,
+"coverage_95_after": 0.808,
+"guard": {
+"metric": "overall_wis",
+"baseline_value": 50.05,
+"value": 50.4
+}
+},
+"evidence": {
+"source": "/Users/leolee/UVA/Year3-2526/epiForecasting/outputs/experiments/peak_rectification/log.jsonl#lambda_3 run_at 2026-09-30T20:18:13+00:00",
+"n_observations": 1,
+"reward_delta": 2.7
+},
+"confidence": "low",
+"llm_gloss": null,
+"created_at": "2026-10-01"
+},
+{
+"id": "exp-lambda-5-2025",
+"provenance": "experiential",
+"category": "model_characteristics",
+"statement": "approaching_peak weight 5.0 (weeks_before 6): peak WIS 123.87 vs 121.01 baseline (+2.86, worse); peak bias -58.8 -> 7.9; peak coverage_95 0.855 -> 0.769",
+"entities": {
+"model": "xgboost_direct",
+"phase": "peak",
+"metric": "wis"
+},
+"context": {
+"phase": [
+"peak"
+],
+"model": [
+"xgboost_direct"
+],
+"metric": [
+"wis"
+]
+},
+"payload": {
+"state": {
+"model": "xgboost_direct",
+"target_phase": "peak",
+"metric": "wis",
+"split": {
+"train_start_date": "2022-02-05",
+"eval_start_date": "2025-10-01",
+"eval_end_date": "2026-05-31",
+"stride_weeks": 4
+},
+"n_cutoffs": 9
+},
+"action": {
+"name": "reweight_training_samples",
+"params": {
+"dimension": "approaching_peak",
+"value": 6,
+"weight": 5.0
+},
+"config_delta": {
+"sample_weights.approaching_peak": {
+"weeks_before": 6,
+"weight": 5.0
+}
+}
+},
+"reward": {
+"metric": "wis",
+"phase": "peak",
+"baseline": 121.01,
+"value": 123.87,
+"delta": 2.86,
+"better": false
+},
+"bias_before": -58.8,
+"bias_after": 7.9,
+"coverage_95_before": 0.855,
+"coverage_95_after": 0.769,
+"guard": {
+"metric": "overall_wis",
+"baseline_value": 50.05,
+"value": 50.53
+}
+},
+"evidence": {
+"source": "/Users/leolee/UVA/Year3-2526/epiForecasting/outputs/experiments/peak_rectification/log.jsonl#lambda_5 run_at 2026-09-30T20:24:12+00:00",
+"n_observations": 1,
+"reward_delta": 2.86
+},
+"confidence": "low",
+"llm_gloss": null,
+"created_at": "2026-10-01"
+},
+{
+"id": "exp-lambda-calendar-2-2025",
+"provenance": "experiential",
+"category": "model_characteristics",
+"statement": "phase peak weight 2.0: peak WIS 123.70 vs 121.01 baseline (+2.69, worse); peak bias -58.8 -> -29.8; peak coverage_95 0.855 -> 0.827",
+"entities": {
+"model": "xgboost_direct",
+"phase": "peak",
+"metric": "wis"
+},
+"context": {
+"phase": [
+"peak"
+],
+"model": [
+"xgboost_direct"
+],
+"metric": [
+"wis"
+]
+},
+"payload": {
+"state": {
+"model": "xgboost_direct",
+"target_phase": "peak",
+"metric": "wis",
+"split": {
+"train_start_date": "2022-02-05",
+"eval_start_date": "2025-10-01",
+"eval_end_date": "2026-05-31",
+"stride_weeks": 4
+},
+"n_cutoffs": 9
+},
+"action": {
+"name": "reweight_training_samples",
+"params": {
+"dimension": "phase",
+"value": "peak",
+"weight": 2.0
+},
+"config_delta": {
+"sample_weights.by_phase.peak": 2.0
+}
+},
+"reward": {
+"metric": "wis",
+"phase": "peak",
+"baseline": 121.01,
+"value": 123.7,
+"delta": 2.69,
+"better": false
+},
+"bias_before": -58.8,
+"bias_after": -29.8,
+"coverage_95_before": 0.855,
+"coverage_95_after": 0.827,
+"guard": {
+"metric": "overall_wis",
+"baseline_value": 50.05,
+"value": 50.6
+}
+},
+"evidence": {
+"source": "/Users/leolee/UVA/Year3-2526/epiForecasting/outputs/experiments/peak_rectification/log.jsonl#lambda_calendar_2 run_at 2026-09-30T20:17:04+00:00",
+"n_observations": 1,
+"reward_delta": 2.69
+},
+"confidence": "low",
+"llm_gloss": null,
+"created_at": "2026-10-01"
+},
+{
+"id": "exp-lambda-calendar-3-2025",
+"provenance": "experiential",
+"category": "model_characteristics",
+"statement": "phase peak weight 3.0: peak WIS 122.66 vs 121.01 baseline (+1.65, worse); peak bias -58.8 -> -6.2; peak coverage_95 0.855 -> 0.806",
+"entities": {
+"model": "xgboost_direct",
+"phase": "peak",
+"metric": "wis"
+},
+"context": {
+"phase": [
+"peak"
+],
+"model": [
+"xgboost_direct"
+],
+"metric": [
+"wis"
+]
+},
+"payload": {
+"state": {
+"model": "xgboost_direct",
+"target_phase": "peak",
+"metric": "wis",
+"split": {
+"train_start_date": "2022-02-05",
+"eval_start_date": "2025-10-01",
+"eval_end_date": "2026-05-31",
+"stride_weeks": 4
+},
+"n_cutoffs": 9
+},
+"action": {
+"name": "reweight_training_samples",
+"params": {
+"dimension": "phase",
+"value": "peak",
+"weight": 3.0
+},
+"config_delta": {
+"sample_weights.by_phase.peak": 3.0
+}
+},
+"reward": {
+"metric": "wis",
+"phase": "peak",
+"baseline": 121.01,
+"value": 122.66,
+"delta": 1.65,
+"better": false
+},
+"bias_before": -58.8,
+"bias_after": -6.2,
+"coverage_95_before": 0.855,
+"coverage_95_after": 0.806,
+"guard": {
+"metric": "overall_wis",
+"baseline_value": 50.05,
+"value": 50.21
+}
+},
+"evidence": {
+"source": "/Users/leolee/UVA/Year3-2526/epiForecasting/outputs/experiments/peak_rectification/log.jsonl#lambda_calendar_3 run_at 2026-09-30T20:21:29+00:00",
+"n_observations": 1,
+"reward_delta": 1.65
+},
+"confidence": "low",
+"llm_gloss": null,
+"created_at": "2026-10-01"
+},
+{
+"id": "exp-window-12-2025",
+"provenance": "experiential",
+"category": "model_characteristics",
+"statement": "train_window_weeks 12: peak WIS 238.26 vs 121.01 baseline (+117.25, worse); peak bias -58.8 -> -193.0; peak coverage_95 0.855 -> 0.746",
+"entities": {
+"model": "xgboost_direct",
+"phase": "peak",
+"metric": "wis"
+},
+"context": {
+"phase": [
+"peak"
+],
+"model": [
+"xgboost_direct"
+],
+"metric": [
+"wis"
+]
+},
+"payload": {
+"state": {
+"model": "xgboost_direct",
+"target_phase": "peak",
+"metric": "wis",
+"split": {
+"train_start_date": "2022-02-05",
+"eval_start_date": "2025-10-01",
+"eval_end_date": "2026-05-31",
+"stride_weeks": 4
+},
+"n_cutoffs": 9
+},
+"action": {
+"name": "set_training_window",
+"params": {
+"weeks": 12
+},
+"config_delta": {
+"data.train_window_weeks": 12
+}
+},
+"reward": {
+"metric": "wis",
+"phase": "peak",
+"baseline": 121.01,
+"value": 238.26,
+"delta": 117.25,
+"better": false
+},
+"bias_before": -58.8,
+"bias_after": -193.0,
+"coverage_95_before": 0.855,
+"coverage_95_after": 0.746,
+"guard": {
+"metric": "overall_wis",
+"baseline_value": 50.05,
+"value": 96.02
+}
+},
+"evidence": {
+"source": "/Users/leolee/UVA/Year3-2526/epiForecasting/outputs/experiments/peak_rectification/log.jsonl#window_12 run_at 2026-09-30T20:10:03+00:00",
+"n_observations": 1,
+"reward_delta": 117.25
+},
+"confidence": "low",
+"llm_gloss": null,
+"created_at": "2026-10-01"
+},
+{
+"id": "exp-window-26-2025",
+"provenance": "experiential",
+"category": "model_characteristics",
+"statement": "train_window_weeks 26: peak WIS 240.24 vs 121.01 baseline (+119.23, worse); peak bias -58.8 -> -188.2; peak coverage_95 0.855 -> 0.709",
+"entities": {
+"model": "xgboost_direct",
+"phase": "peak",
+"metric": "wis"
+},
+"context": {
+"phase": [
+"peak"
+],
+"model": [
+"xgboost_direct"
+],
+"metric": [
+"wis"
+]
+},
+"payload": {
+"state": {
+"model": "xgboost_direct",
+"target_phase": "peak",
+"metric": "wis",
+"split": {
+"train_start_date": "2022-02-05",
+"eval_start_date": "2025-10-01",
+"eval_end_date": "2026-05-31",
+"stride_weeks": 4
+},
+"n_cutoffs": 9
+},
+"action": {
+"name": "set_training_window",
+"params": {
+"weeks": 26
+},
+"config_delta": {
+"data.train_window_weeks": 26
+}
+},
+"reward": {
+"metric": "wis",
+"phase": "peak",
+"baseline": 121.01,
+"value": 240.24,
+"delta": 119.23,
+"better": false
+},
+"bias_before": -58.8,
+"bias_after": -188.2,
+"coverage_95_before": 0.855,
+"coverage_95_after": 0.709,
+"guard": {
+"metric": "overall_wis",
+"baseline_value": 50.05,
+"value": 92.16
+}
+},
+"evidence": {
+"source": "/Users/leolee/UVA/Year3-2526/epiForecasting/outputs/experiments/peak_rectification/log.jsonl#window_26 run_at 2026-09-30T20:11:31+00:00",
+"n_observations": 1,
+"reward_delta": 119.23
+},
+"confidence": "low",
+"llm_gloss": null,
+"created_at": "2026-10-01"
+},
+{
+"id": "exp-window-52-2025",
+"provenance": "experiential",
+"category": "model_characteristics",
+"statement": "train_window_weeks 52: peak WIS 197.99 vs 121.01 baseline (+76.98, worse); peak bias -58.8 -> 67.5; peak coverage_95 0.855 -> 0.829",
+"entities": {
+"model": "xgboost_direct",
+"phase": "peak",
+"metric": "wis"
+},
+"context": {
+"phase": [
+"peak"
+],
+"model": [
+"xgboost_direct"
+],
+"metric": [
+"wis"
+]
+},
+"payload": {
+"state": {
+"model": "xgboost_direct",
+"target_phase": "peak",
+"metric": "wis",
+"split": {
+"train_start_date": "2022-02-05",
+"eval_start_date": "2025-10-01",
+"eval_end_date": "2026-05-31",
+"stride_weeks": 4
+},
+"n_cutoffs": 9
+},
+"action": {
+"name": "set_training_window",
+"params": {
+"weeks": 52
+},
+"config_delta": {
+"data.train_window_weeks": 52
+}
+},
+"reward": {
+"metric": "wis",
+"phase": "peak",
+"baseline": 121.01,
+"value": 197.99,
+"delta": 76.98,
+"better": false
+},
+"bias_before": -58.8,
+"bias_after": 67.5,
+"coverage_95_before": 0.855,
+"coverage_95_after": 0.829,
+"guard": {
+"metric": "overall_wis",
+"baseline_value": 50.05,
+"value": 71.85
+}
+},
+"evidence": {
+"source": "/Users/leolee/UVA/Year3-2526/epiForecasting/outputs/experiments/peak_rectification/log.jsonl#window_52 run_at 2026-09-30T20:15:00+00:00",
+"n_observations": 1,
+"reward_delta": 76.98
+},
+"confidence": "low",
+"llm_gloss": null,
+"created_at": "2026-10-01"
+}
+]

@@ -1,0 +1,176 @@
+{
+"run_id": "20261001-084414-7d97",
+"cutoff": "2025-12-06",
+"iterations": [
+{
+"iteration": 0,
+"wis": 50.05,
+"action": null,
+"diagnosis": null
+},
+{
+"iteration": 1,
+"wis": 50.05,
+"action": {
+"name": "reweight_training_samples",
+"params": {
+"dimension": "phase",
+"value": "peak",
+"weight": 3.0
+},
+"rationale": "The model under-predicts the peak phase (as shown in exp-lambda-calendar-3-2025), so upweighting peak samples will force the model to prioritize accurate predictions during this critical phase.",
+"expected_effect": "Wis should decrease as the model focuses more on learning patterns during the peak phase, which currently contributes to under-prediction.",
+"cited_entries": [
+"exp-lambda-calendar-3-2025"
+],
+"supported_by": [
+"rectify-peak-loss-weight-approaching-peak"
+],
+"supported_by_params_mismatch": [
+"rectify-peak-loss-weight-approaching-peak"
+],
+"retrieved_entry_ids": [
+"bias-sign-convention",
+"calendar-phase-peak",
+"error-grows-with-horizon",
+"peak-is-hardest-to-forecast",
+"rectify-peak-add-examples-other-seasons",
+"rectify-peak-loss-weight-approaching-peak",
+"rectify-peak-oversample-windows",
+"rectify-peak-shorter-window-on-divergence",
+"seasonality-needs-two-plus-years",
+"window-length-is-a-search-dimension",
+"growth-starts-october-rate-varies",
+"onset-definition-v1",
+"rectify-peak-smote",
+"exp-lambda-1-5-2025",
+"exp-lambda-2-2025",
+"exp-lambda-3-2025",
+"exp-lambda-5-2025",
+"exp-lambda-calendar-2-2025",
+"exp-lambda-calendar-3-2025",
+"exp-window-12-2025",
+"exp-window-26-2025",
+"exp-window-52-2025"
+]
+},
+"diagnosis": {
+"summary": "The model exhibits significant underprediction bias and severe performance degradation at longer horizons, with peak phase predictions being particularly unreliable. Overall MAPE of 66.5% exceeds acceptable thresholds, and the worst individual predictions show errors exceeding -70%.",
+"suggested_focus": "peak_underprediction",
+"weak_segments": [
+{
+"dimension": "horizon",
+"value": "4",
+"metric": "mape",
+"delta_vs_overall": 26.2,
+"severity": "high"
+},
+{
+"dimension": "phase",
+"value": "peak",
+"metric": "bias",
+"delta_vs_overall": 32.4,
+"severity": "high"
+},
+{
+"dimension": "location",
+"value": "06",
+"metric": "mape",
+"delta_vs_overall": 61.7,
+"severity": "medium"
+},
+{
+"dimension": "location",
+"value": "36",
+"metric": "bias",
+"delta_vs_overall": 248.3,
+"severity": "medium"
+}
+]
+}
+},
+{
+"iteration": 2,
+"wis": 50.05,
+"action": {
+"name": "change_target_transform",
+"params": {
+"transform": "raw"
+},
+"rationale": "The log transform compresses upper tails and may under-predict peaks, while raw transform allows better capture of peak values as hypothesized in the diagnosis",
+"expected_effect": "Reduced under-prediction during peak phases should lower WIS by improving prediction accuracy for high-value outcomes",
+"cited_entries": [
+"exp-lambda-calendar-3-2025",
+"exp-window-12-2025"
+],
+"supported_by": [],
+"supported_by_params_mismatch": [],
+"retrieved_entry_ids": [
+"bias-sign-convention",
+"calendar-phase-peak",
+"error-grows-with-horizon",
+"peak-is-hardest-to-forecast",
+"rectify-peak-add-examples-other-seasons",
+"rectify-peak-loss-weight-approaching-peak",
+"rectify-peak-oversample-windows",
+"rectify-peak-shorter-window-on-divergence",
+"seasonality-needs-two-plus-years",
+"window-length-is-a-search-dimension",
+"growth-starts-october-rate-varies",
+"onset-definition-v1",
+"rectify-peak-smote",
+"exp-lambda-1-5-2025",
+"exp-lambda-2-2025",
+"exp-lambda-3-2025",
+"exp-lambda-5-2025",
+"exp-lambda-calendar-2-2025",
+"exp-lambda-calendar-3-2025",
+"exp-window-12-2025",
+"exp-window-26-2025",
+"exp-window-52-2025"
+]
+},
+"diagnosis": {
+"summary": "The model exhibits severe underprediction bias (-26.4) with MAPE exceeding 66%, particularly worsening with forecast horizon (week 4 MAPE 92.7%) and during peak phases (peak MAPE 47.7% but -58.8 bias). Critical failures occur in high-impact regions like New York and Florida during peak periods, with errors exceeding -76% in individual predictions.",
+"suggested_focus": "peak_underprediction",
+"weak_segments": [
+{
+"dimension": "phase",
+"value": "peak",
+"metric": "bias",
+"delta_vs_overall": -32.4,
+"severity": "high"
+},
+{
+"dimension": "horizon",
+"value": "4",
+"metric": "mape",
+"delta_vs_overall": 26.1,
+"severity": "high"
+},
+{
+"dimension": "location",
+"value": "06",
+"metric": "mape",
+"delta_vs_overall": 25.6,
+"severity": "medium"
+},
+{
+"dimension": "location",
+"value": "36",
+"metric": "mape",
+"delta_vs_overall": 23.1,
+"severity": "medium"
+},
+{
+"dimension": "location",
+"value": "48",
+"metric": "mape",
+"delta_vs_overall": 21.1,
+"severity": "medium"
+}
+]
+}
+}
+]
+}

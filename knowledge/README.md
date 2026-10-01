@@ -7,7 +7,7 @@ free-form notes; every entry is a single validated fact with retrieval keys, and
 cites the entry it acts on but is still free to explore past it (A. Adiga, 2026-09-24).
 
 Design: `documentation/knowledge-bank-design.md`. Code: `agent/knowledge/` (read
-`schema.py` first). CLI: `python -m agent knowledge {validate,rebuild,list,query,import-experiment}`.
+`schema.py` first). CLI: `python -m agent knowledge {validate,rebuild,list,query,import-experiment,remove}`.
 
 ## Three provenances
 
@@ -78,6 +78,17 @@ render as `[E, low, 1 run]` lines after the curated ones. The lab never hand-wri
 provenance `experiential`; it is reserved for code. Merging repeated observations of the
 same action into one entry (and raising confidence) is future work: the end-of-run
 bank-writer, design doc unit 5.
+
+## How to remove an entry
+
+Removal follows provenance. A curated entry is removed by deleting it from its
+`curated/*.yaml` file and running `python -m agent knowledge rebuild` (or just opening the
+bank); the DB row alone cannot be deleted, because the next rebuild would re-create it. A
+derived or experiential entry is removed with
+`python -m agent knowledge remove --id <id> [--dry-run]`: `--dry-run` prints the entry and
+changes nothing, and the real run prints `removed`. Re-running `knowledge import-experiment`
+re-creates the experiential entries its log describes, so a removal is not permanent for
+those; delete the log row (or drop the config from the harness) to make it stick.
 
 ## How the loop uses the bank
 

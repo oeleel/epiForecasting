@@ -1,0 +1,301 @@
+# Weekly meeting report, 2026-10-01. Rendered by scripts/reports/build_report.py.
+# Section kinds and the markdown subset are documented in ../README.md.
+title: "Weekly report - 2026-10-01"
+date: "2026-10-01"
+summary: >-
+  Knowledge bank v1 is in the loop: 27 entries (18 lab-authored, 9 learned from a
+  controlled peak-rectification experiment), cited on every proposal. The loss-weight
+  rectification fixes the peak bias but not the peak score; shorter windows are worse
+  everywhere.
+
+sections:
+  - id: summary
+    heading: Summary
+    kind: stack
+    blocks:
+      - kind: callout
+        title: This week in one paragraph
+        body: >-
+          The knowledge bank asked for on 2026-09-24 exists and is wired into the improve
+          loop: curated YAML is the source of truth, every proposal sees a **KNOWN FACTS**
+          block and must cite what it relied on, and exploration is still allowed but logged.
+          The five rectification actions from the 2026-09-27 Teams follow-up are seeded as
+          curated entries. A controlled experiment on XGBoost's worst phase (peak) swept the
+          loss weight and the training window over 9 cutoffs; its 9 outcomes were imported
+          back into the bank as experiential entries. Result: the approaching-peak weight moves
+          peak bias from -58.8 to about zero without improving peak WIS, and short windows hurt
+          at every phase.
+      - kind: stats
+        stats:
+          - value: "27"
+            label: bank entries (18 lab-authored, 9 learned from the experiment)
+          - value: "10 x 9"
+            label: experiment configurations x cutoffs, deterministic
+          - value: "7"
+            label: constrained actions the loop can take
+          - value: "369"
+            label: tests passing
+
+  - id: asked
+    heading: What was asked
+    kind: cards
+    columns: 3
+    cards:
+      - title: Knowledge bank as human-authored guardrails first
+        badge: 2026-09-24 sync
+        body: >-
+          Build the bank from lab-authored rules before any learned knowledge. The agent must
+          cite the entry it acted on, and it must still be free to explore beyond the rules.
+      - title: A principled, controlled experiment on the worst phase
+        badge: 2026-09-24 sync
+        body: >-
+          Take XGBoost's failing phase, hold everything else fixed and make the fixed-vs-varied
+          split explicit, so any gain can be attributed to one change.
+      - title: Five rectification actions for a failing phase
+        badge: 2026-09-27 Teams
+        body: |-
+          From A. Adiga's follow-up, with the instruction to "pick the phase where it fails most":
+          - add examples from other seasons
+          - oversample failing-phase windows
+          - SMOTE
+          - shorter window when the season diverges
+          - loss weight lambda on approaching-peak rows
+      - title: Summarize the best strategy from the logs
+        badge: later
+        body: >-
+          Once experiments produce logs, run an agent over them to summarize which strategy
+          worked best and why.
+
+  - id: delivered
+    heading: What was delivered
+    kind: stack
+    blocks:
+      - kind: table
+        columns: [Ask, Delivered, Where]
+        rows:
+          - - Knowledge bank v1
+            - "Schema, SQLite store, YAML intake rebuilt on open, trust-ranked retrieval, a **KNOWN FACTS** block in every prompt, CLI `validate` / `rebuild` / `list` / `query` / `import-experiment` / `remove`"
+            - "`agent/knowledge/`, `knowledge/`"
+          - - Guardrails first
+            - Five rectification actions seeded as curated entries, plus training-strategy rules and the migrated domain context (18 entries)
+            - "`knowledge/curated/`"
+          - - Agent cites what it acted on, still explores
+            - "The loop retrieves facts per proposal keyed on the diagnosed phase, records `cited_entries` / `supported_by` / `retrieved_entry_ids`, keeps an advisory override log, and the run report shows a `cites:` line"
+            - "`agent/orchestrator.py`"
+          - - Learned knowledge
+            - Experiment outcomes imported as 9 experiential entries, one per configuration
+            - "`knowledge import-experiment`"
+          - - Loss weight and window as real knobs
+            - "Two knobs (approaching-peak sample weights with a season-eligibility rule; post-feature training-row window) and a seventh action `set_training_window`"
+            - "`src/`, adapter"
+          - - Controlled experiment
+            - "Sweep run: 10 configs x 9 cutoffs, five identical baselines confirm determinism"
+            - "`scripts/experiments/`, `documentation/experiments/`"
+          - - Show it working
+            - Demo script that walks the bank, a retrieval and a cited proposal
+            - "`scripts/demo_knowledge_bank.py`"
+          - - Per-model-class strategies
+            - Intake stub ready for the lab to fill
+            - "`knowledge/curated/_training-strategy-by-model-class.yaml`"
+      - kind: callout
+        title: Not done
+        body: |-
+          - oversampling and SMOTE arms of the experiment
+          - derived-knowledge jobs (the `derived` provenance has no producer yet)
+          - a bank-writer that merges repeated observations into one entry with higher confidence
+          - the log summarizer agent
+
+  - id: proof
+    heading: Proof of concept
+    kind: tabs
+    intro: >-
+      Four interactive panels built from this week's real artefacts: the bank as stored, a
+      recorded improve run, the experiment log, and the bank's design.
+    tabs:
+      - id: explorer
+        label: Bank explorer
+        blocks:
+          - kind: markdown
+            body: >-
+              The 27 entries exactly as the store ranks them. Change the retrieval context to see
+              what the proposal prompt would contain; the line format is the real renderer's.
+          - kind: widget
+            name: bankExplorer
+            data: data/bank_entries.json
+      - id: loop
+        label: Loop step-through
+        blocks:
+          - kind: markdown
+            body: >-
+              Run `20261001-084414-7d97`, cutoff 2025-12-06, with a fake pipeline so WIS never
+              moves. **Iteration 1** cited an experiential entry and was supported by a curated rule,
+              with a parameter mismatch (the rule weights approaching-peak rows; the agent weighted the
+              calendar peak phase). **Iteration 2** chose an action no retrieved rule recommends; it
+              was allowed and logged as an advisory override.
+          - kind: widget
+            name: runStepper
+            data: data/live_run.json
+            options:
+              entries: bank_entries
+      - id: experiment
+        label: Experiment
+        blocks:
+          - kind: markdown
+            body: >-
+              Peak rectification on `xgboost_direct`, 9 cutoffs on the pinned 2025-26 split. The
+              dashed line is the baseline; zero bias is drawn where it applies.
+          - kind: widget
+            name: sweepCharts
+            data: data/sweep.json
+          - kind: widget
+            name: sweepTable
+            data: data/sweep.json
+      - id: design
+        label: Bank design
+        blocks:
+          - kind: markdown
+            body: "**Where the bank sits.** Click a box for what it is and where it lives."
+          - kind: widget
+            name: architectureDiagram
+          - kind: markdown
+            body: "**Lifecycle of an entry.** Add, rebuild, retrieve, cite, remove."
+          - kind: widget
+            name: bankLifecycle
+          - kind: markdown
+            body: "**Schema.** Field by field, the constants that shape retrieval, and two entries in full."
+          - kind: widget
+            name: schemaReference
+            data: data/bank_entries.json
+            options:
+              examples: [rectify-peak-loss-weight-approaching-peak, exp-lambda-3-2025]
+
+  - id: results
+    heading: Results in brief
+    kind: stack
+    blocks:
+      - kind: markdown
+        body: |-
+          Baseline peak WIS **121.01**, bias **-58.8**, coverage **0.855**.
+
+          - **Loss weight on approaching-peak rows.** Peak WIS 123.5-123.9 at every lambda (about +2.5,
+            no improvement). Bias moves -35.7 / -17.9 / -6.4 / +7.9 for lambda 1.5 / 2 / 3 / 5. Coverage
+            falls to 0.769 at lambda 5.
+          - **Calendar label instead of the curve label.** Matches at matched bias: lambda 3 gives 122.66
+            with bias -6.2.
+          - **Training window 12 / 26 / 52 weeks.** Peak WIS 238.26 / 240.24 / 197.99, worse at every phase.
+
+          **Interpretation.** The weight fixes the level, not the score: the median moves up but the
+          intervals do not widen with it, so WIS does not improve and coverage drops. The short-window
+          rule is a per-series statistical-model rule and does not transfer to pooled XGBoost, which is
+          the per-model-class point behind the new intake stub. Five baselines are identical, and the
+          harness lands within 1.4 WIS of the 09-02 selection run.
+
+          **Caveats.** One split and one seed; calendar phases for scoring; K = 6 assumed; the weight acts
+          on `sample_weight` only.
+      - kind: table
+        columns: [Configuration, Peak WIS, Peak bias, Peak coverage 95, Overall WIS]
+        rows:
+          - ["baseline", "121.01", "-58.8", "0.855", "50.05"]
+          - ["lambda 1.5 (approaching-peak label)", "123.74", "-35.7", "0.835", "50.92"]
+          - ["lambda 2", "123.54", "-17.9", "0.821", "50.64"]
+          - ["lambda 3", "123.71", "-6.4", "0.808", "50.40"]
+          - ["lambda 5", "123.87", "+7.9", "0.769", "50.53"]
+          - ["lambda 2 (calendar label)", "123.70", "-29.8", "0.827", "50.60"]
+          - ["lambda 3 (calendar label)", "122.66", "-6.2", "0.806", "50.21"]
+          - ["window 12 weeks", "238.26", "-193.0", "0.746", "96.02"]
+          - ["window 26 weeks", "240.24", "-188.2", "0.709", "92.16"]
+          - ["window 52 weeks", "197.99", "+67.5", "0.829", "71.85"]
+        note: Full per-phase and per-horizon numbers are in the Experiment tab above and in `documentation/experiments/2026-10-peak-rectification-results.md`.
+
+  - id: open-questions
+    heading: Open questions
+    kind: accordion
+    items:
+      - title: How should approaching-peak be defined, and what is K?
+        body: >-
+          The experiment labels the K = 6 weeks before each eligible season's maximum. Is the
+          definition right (relative to the max, or to a growth threshold), and should K be
+          learned per season rather than fixed?
+      - title: Are the 2020-2022 seasons admissible as training examples?
+        body: >-
+          "Add examples from other seasons" needs a rule for which seasons count. The pandemic
+          seasons have unusual shapes; the season-eligibility rule currently only requires 40
+          weeks of data.
+      - title: What lambda range, and should it vary per season or per location?
+        body: >-
+          The sweep used 1.5 to 5 with one global weight. A per-season or per-location lambda
+          could follow the divergence of the current season instead of a fixed guess.
+      - title: "Warm-start versus retrain: a bank category or an experiment arm?"
+        body: >-
+          Re-fitting from the previous model versus training fresh at each cutoff changes what
+          "shorter window" even means. It could be a model_characteristics entry or its own arm.
+      - title: Calendar or curve-based phases for scoring?
+        body: >-
+          Scoring uses calendar phases (Dec-Jan is peak). The curve-based segmentation
+          (surge / plateau / decline) exists; switching the reward to it changes which entries
+          match and which configuration wins.
+
+  - id: next
+    heading: Next steps
+    kind: cards
+    columns: 3
+    cards:
+      - title: Make the weight act on the intervals
+        badge: experiment
+        body: >-
+          Weight the quantile loss so the intervals widen with the median, add a bias-only
+          post-correction as a control, and replicate with more seeds.
+      - title: Per-model-class strategies from the lab
+        badge: bank
+        body: >-
+          Fill `knowledge/curated/_training-strategy-by-model-class.yaml` with which rules apply to
+          pooled tree models, per-series statistical models and neural families.
+      - title: Model-class context on entries
+        badge: bank
+        body: >-
+          Add a model-class key to `context` so a rule written for ARIMA-style models is not
+          retrieved for XGBoost.
+      - title: Derived onset-dates job
+        badge: bank
+        body: >-
+          First derived-knowledge producer: onset dates per season and location, once the threshold
+          T is fixed.
+      - title: Bank-writer and log summarizer
+        badge: agent
+        body: >-
+          Merge repeated observations into one entry with higher confidence, and run an agent over
+          the experiment logs to write the strategy summary.
+      - title: Calendar
+        badge: planning
+        body: >-
+          October for the items above; November is exams; the paper draft is due in January.
+
+  - id: reproduce
+    heading: Reproduce
+    kind: code
+    intro: All commands run from the repo root with the project `.venv` active.
+    code: |-
+      # macOS: xgboost + torch each bundle libomp; avoid the duplicate-runtime segfault
+      export KMP_DUPLICATE_LIB_OK=TRUE OMP_NUM_THREADS=1
+
+      # knowledge bank
+      python -m agent knowledge validate
+      python -m agent knowledge query --phase peak --model xgboost_direct
+      python -m agent knowledge import-experiment --log outputs/experiments/peak_rectification/log.jsonl
+      python -m agent knowledge remove --id <id> --dry-run
+
+      # demo (add --live to call the LLM)
+      python scripts/demo_knowledge_bank.py
+      python scripts/demo_knowledge_bank.py --live
+
+      # experiment (add --summary-only to re-read the log without training)
+      python scripts/experiments/peak_rectification.py
+      python scripts/experiments/peak_rectification.py --summary-only
+
+      # improve loop with the bank, then the run report
+      python -m agent improve --cutoff-date 2025-12-06 --auto-apply
+      python -m agent report <run_id>
+
+      # this page
+      python scripts/reports/build_report.py documentation/reports/2026-10-01
+      python scripts/reports/build_report.py --index
