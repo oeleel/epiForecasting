@@ -34,6 +34,8 @@ MODULES = [
     "tests.agent.test_knowledge_bank",
     "tests.agent.test_experiment_import",
     "tests.agent.test_peak_rectification",
+    "tests.agent.test_oversampling",
+    "tests.agent.test_phase_scheme",
     "tests.agent.test_demo_knowledge_bank",
     "tests.agent.test_report_builder",
 ]

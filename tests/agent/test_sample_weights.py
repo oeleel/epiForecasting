@@ -92,7 +92,8 @@ def test_none_or_empty_returns_none():
 
 def test_phase_weighting_only_affects_peak_rows():
     w = _compute_sample_weights(_meta(), {"by_phase": {"peak": 2.0}})
-    # Dec 15 + Dec 22 are peak (idx 1, 2). Oct 15 = onset, Feb 10 = decline.
+    # Labelled by target date (origin + 4 weeks) under adiga_2026_10:
+    # Nov 12 = growth, Jan 12 + Jan 19 = peak, Mar 10 = decline.
     assert w.tolist() == [1.0, 2.0, 2.0, 1.0]
 
 
@@ -110,7 +111,8 @@ def test_combined_weights_multiply():
     w = _compute_sample_weights(
         _meta(), {"by_phase": {"peak": 2.0}, "by_location": {"12": 4.0}}
     )
-    # Row 0: onset/06 -> 1*1=1
+    # Target-date phases (origin + 4 weeks):
+    # Row 0: growth/06 -> 1*1=1
     # Row 1: peak/06 -> 2*1=2
     # Row 2: peak/12 -> 2*4=8
     # Row 3: decline/12 -> 1*4=4
@@ -118,8 +120,8 @@ def test_combined_weights_multiply():
 
 
 def test_returns_none_when_all_weights_uniform():
-    # Apply a non-matching weight (no row qualifies) - should return None
-    w = _compute_sample_weights(_meta(), {"by_phase": {"summer": 5.0}})
+    # A valid phase no row's target date falls in (plateau = Apr 16 - May 31)
+    w = _compute_sample_weights(_meta(), {"by_phase": {"plateau": 5.0}})
     assert w is None
 
 
@@ -196,12 +198,14 @@ def test_approaching_peak_multiplies_with_by_phase():
     frame = _season_frame()
     cfg = {"by_phase": {"peak": 2.0}, "approaching_peak": {"weeks_before": K_WEEKS, "weight": LAMBDA}}
     w = _compute_sample_weights(frame, cfg)
-    # 2022-12-17: December (peak phase) and inside 06's window -> 2 * 3
-    assert _weight_at(frame, w, "06", "2022-12-17") == 2.0 * LAMBDA
-    # 2022-11-12: November (onset) and inside 06's window -> 1 * 3
-    assert _weight_at(frame, w, "06", "2022-11-12") == LAMBDA
-    # 2022-12-31: December, after the peak -> 2 * 1
-    assert _weight_at(frame, w, "06", "2022-12-31") == 2.0
+    # 12 peaks 2023-01-14, so its K=6 window is 2022-12-03 .. 2023-01-07.
+    # by_phase labels the target date (origin + 4 weeks); approaching_peak the origin.
+    # 2023-01-07: target 2023-02-04 (peak) and inside 12's window -> 2 * 3
+    assert _weight_at(frame, w, "12", "2023-01-07") == 2.0 * LAMBDA
+    # 2022-12-03: target 2022-12-31 (growth) and inside 12's window -> 1 * 3
+    assert _weight_at(frame, w, "12", "2022-12-03") == LAMBDA
+    # 2023-01-21: target 2023-02-18 (peak), after the peak -> 2 * 1
+    assert _weight_at(frame, w, "12", "2023-01-21") == 2.0
 
 
 def test_approaching_peak_weeks_before_defaults_when_omitted():

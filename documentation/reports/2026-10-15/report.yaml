@@ -1,0 +1,367 @@
+# Weekly meeting report, 2026-10-15. Rendered by scripts/reports/build_report.py.
+# Section kinds and the markdown subset are documented in ../README.md.
+title: "Weekly report - 2026-10-15"
+date: "2026-10-15"
+summary: >-
+  Round 2 of the peak experiment ran on A. Adiga's phase windows with an oversampling arm and
+  3 seeds. Pooled, nothing beats the baseline beyond seed noise. By horizon, emphasising the
+  peak improves 1- and 2-week forecasts and worsens 4-week forecasts in every seed. A draft
+  paper outline is ready for sign-off.
+
+sections:
+  - id: summary
+    heading: Summary
+    kind: stack
+    blocks:
+      - kind: callout
+        title: This week in one paragraph
+        body: >-
+          The 2026-10-15 asks are done except onboarding an in-house model. Scoring now uses
+          A. Adiga's phase windows by date, every number is broken out by phase and by forecast
+          horizon, the oversampling arm exists, and every configuration ran with 3 seeds so a
+          difference can be told apart from seed noise. Result: [[-pooled over horizons, no
+          change beats the baseline by more than seed noise]], but [[*weighting or oversampling
+          peak rows cuts 1- and 2-week peak WIS by 4-13 and raises 4-week peak WIS by 9-22, in
+          every seed]]. The pooled score was hiding two opposite effects. Because XGBoost trains
+          one model per horizon, the next experiment applies the peak emphasis to the short
+          horizons only.
+      - kind: stats
+        stats:
+          - value: "11 x 3"
+            label: configurations x seeds, 9 forecast dates each
+          - value: "1.2"
+            label: seed-to-seed sd of baseline peak WIS (mean 107.3)
+          - value: "-8 to -13"
+            label: peak WIS at 1-2 weeks ahead, peak rows oversampled 5x
+            tone: success
+          - value: "+22"
+            label: peak WIS at 4 weeks ahead, same configuration
+            tone: destructive
+
+  - id: asked
+    heading: What was asked
+    kind: cards
+    columns: 3
+    tone: info
+    cards:
+      - title: Break WIS out by horizon
+        badge: 2026-10-15 sync
+        body: >-
+          Report WIS separately for 1, 2, 3 and 4 weeks ahead, so it is clear where the error
+          comes from, and let the agent produce performance by horizon.
+      - title: Try oversampling the peak phase
+        badge: 2026-10-15 sync
+        body: >-
+          Besides the loss weight, oversample training rows from the peak phase.
+      - title: Fixed phase windows
+        badge: 2026-10-15 sync
+        body: |-
+          - growth: Nov 1 - Dec 31
+          - peak: Jan 1 - end of Feb
+          - decline: Mar 1 - mid-April
+          - plateau: mid-April - May 31
+      - title: Start a draft paper
+        badge: 2026-10-15 sync
+        body: >-
+          Objective, framework components, where the human is in the loop; results to follow
+          (models tried, best performers, vanilla vs refined).
+      - title: Onboard an in-house model
+        badge: success metric
+        body: >-
+          Plug one of the lab's own models into the framework and compare it with the existing
+          bank.
+
+  - id: delivered
+    heading: What was delivered
+    kind: stack
+    blocks:
+      - kind: table
+        columns:
+          - Ask
+          - Delivered
+          - label: Status
+            format: badge
+            tones: { done: success, partial: warning, blocked: warning }
+          - Where
+        rows:
+          - - WIS by horizon
+            - "Every experiment row logs WIS by phase x horizon; the summary has peak and overall tables per horizon with paired deltas. The agent's prompts and run report already showed WIS by horizon."
+            - done
+            - "`scripts/experiments/peak_rectification.py`"
+          - - Phase windows
+            - "Named phase schemes assigned by date. `adiga_2026_10` is the default; the old month-based `calendar_v1` stays selectable. Every metrics record names its scheme, and reports refuse to compare numbers across schemes. Training-side phase weights use the same labels as scoring."
+            - done
+            - "`agent/phase_evaluator.py`"
+          - - Oversampling arm
+            - "`data.oversample = {phase, factor}` copies training rows whose target date falls in the phase, kept inside each location's block so XGBoost's validation split is unchanged. Factors 2, 3, 5."
+            - done
+            - "`src/pipeline.py`"
+          - - Seeds
+            - "`--seeds` with per-seed baselines and paired deltas; per-seed runs in parallel, then `--merge`. The manifest pins seeds, phase scheme and a hash of the data snapshot."
+            - done
+            - harness
+          - - Round 1 re-scored
+            - "`--rescore` re-scores saved forecasts under the new windows without retraining; the horizon pattern was already visible in round 1."
+            - done
+            - harness
+          - - Draft paper
+            - "Outline with each component's status (exists / in progress / planned), evaluation protocol, placeholder results and open questions."
+            - partial
+            - "`documentation/paper/outline.md`"
+          - - In-house model
+            - "Plug-in path exists (dotted path, no repo edit). Waiting for a model name and code access."
+            - blocked
+            - "`documentation/MODEL_BANK.md`"
+        note: "Status: [[+done]] landed this week; [[!partial]] drafted, needs sign-off; [[!blocked]] waiting on the lab."
+
+  - id: proof
+    heading: Proof of concept
+    kind: tabs
+    intro: >-
+      Interactive panels built from the round-2 log: the new phase windows, and every
+      configuration's WIS by phase and horizon against the baseline of the same seed.
+    tabs:
+      - id: horizons
+        label: Phase x horizon explorer
+        blocks:
+          - kind: markdown
+            body: >-
+              Pick a phase and up to four configurations. The chart shows how much each one
+              changes WIS relative to the baseline trained with the same seed; the band is the
+              spread over the 3 seeds. In the peak phase every peak-emphasis arm sits below the
+              baseline at 1-2 weeks and above it at 4 weeks.
+          - kind: widget
+            name: horizonExplorer
+            data: data/round2.json
+            options:
+              phase: peak
+              defaults: [lambda_calendar_2, lambda_calendar_3, oversample_5, lambda_5]
+              labels:
+                lambda_1.5: "approaching-peak weight 1.5x"
+                lambda_2: "approaching-peak weight 2x"
+                lambda_3: "approaching-peak weight 3x"
+                lambda_5: "approaching-peak weight 5x"
+                lambda_calendar_2: "peak weight 2x"
+                lambda_calendar_3: "peak weight 3x"
+                oversample_2: "peak oversample 2x"
+                oversample_3: "peak oversample 3x"
+                oversample_5: "peak oversample 5x"
+                window_52: "52-week window"
+              short:
+                lambda_1.5: "approach 1.5x"
+                lambda_2: "approach 2x"
+                lambda_3: "approach 3x"
+                lambda_5: "approach 5x"
+                lambda_calendar_2: "weight 2x"
+                lambda_calendar_3: "weight 3x"
+                oversample_2: "oversample 2x"
+                oversample_3: "oversample 3x"
+                oversample_5: "oversample 5x"
+                window_52: "window 52"
+      - id: phases
+        label: Phase windows
+        blocks:
+          - kind: markdown
+            body: >-
+              The old scheme assigned whole months; the new one assigns by date because April is
+              split. Peak moved from Dec-Jan to Jan-Feb, so round-1 and round-2 peak numbers are
+              not comparable and the reports refuse to compare them.
+          - kind: widget
+            name: phaseTimeline
+            options:
+              notes:
+                calendar_v1: "round 1, by month"
+                adiga_2026_10: "round 2 onward, by date"
+          - kind: callout
+            tone: warning
+            title: October
+            body: >-
+              The windows leave October unassigned. It is [[!treated as off-season until
+              confirmed]]; changing it is one constant, and saved forecasts can be re-scored
+              without retraining.
+
+  - id: results
+    heading: Results in brief
+    kind: stack
+    blocks:
+      - kind: markdown
+        body: |-
+          XGBoost, 2025-26 season, 9 forecast dates, US excluded, peak = Jan 1 - end of Feb, 3 seeds.
+
+          - **Pooled.** Baseline peak WIS **107.3** with a seed sd of **1.2**. The best arm, peak
+            weight 2x, is 1.9 lower, and lower in every seed, but that is under 2%. [[-Approaching-peak
+            weights are slightly worse]] at every value; [[-the 52-week window is much worse]] (+68).
+          - **By horizon.** Peak weight and peak oversampling [[+cut 1- and 2-week peak WIS by 4-13]]
+            and [[-raise 4-week peak WIS by 9-22]], with every seed agreeing on the direction. The
+            3-week horizon is roughly unchanged.
+          - **Oversampling vs weighting.** They behave almost the same, as expected for XGBoost:
+            k copies of a row act like weight k unless rows are subsampled.
+          - **Overall WIS** stays within 1 of baseline for every arm except the window.
+
+          [[*The pooled score hid a horizon trade-off.]] The per-horizon models make it actionable:
+          keep the baseline for 3-4 weeks and use peak emphasis for 1-2 weeks.
+      - kind: callout
+        tone: warning
+        title: Caveats
+        body: >-
+          One evaluation season; each peak cell rests on 2-3 forecast dates. The
+          "short horizons only" combination was spotted on this season, so it is a hypothesis
+          until it is tested on a season it was not chosen on.
+      - kind: table
+        intro: >-
+          Pooled peak WIS, mean of 3 seeds. The paired delta is config minus baseline at the same
+          seed, mean and (min..max) over seeds; it is coloured only when [[+every seed is lower]] or
+          [[-every seed is higher]]. Per-horizon numbers for every arm and phase are in the explorer
+          above.
+        columns:
+          - Configuration
+          - { label: Peak WIS, format: num }
+          - Paired delta (seed range)
+          - { label: Overall WIS, format: num }
+        rows:
+          - ["baseline", "107.28", "-", "50.33"]
+          - ["approaching-peak weight 1.5x", "108.85", "[[-+1.6 (+1.4..+1.7)]]", "50.60"]
+          - ["approaching-peak weight 2x", "109.39", "[[-+2.1 (+1.4..+2.8)]]", "50.56"]
+          - ["approaching-peak weight 3x", "108.70", "+1.4 (-1.7..+3.0)", "50.16"]
+          - ["approaching-peak weight 5x", "111.28", "[[-+4.0 (+3.2..+4.6)]]", "50.56"]
+          - ["peak weight 2x", "105.43", "[[+-1.9 (-3.0..-0.5)]]", "49.59"]
+          - ["peak weight 3x", "106.96", "[[+-0.3 (-0.9..-0.01)]]", "50.15"]
+          - ["peak oversample 2x", "106.47", "-0.8 (-2.4..+0.2)", "50.12"]
+          - ["peak oversample 3x", "106.62", "-0.7 (-2.4..+1.5)", "50.26"]
+          - ["peak oversample 5x", "107.20", "-0.1 (-1.8..+1.3)", "50.19"]
+          - ["52-week window", "175.79", "[[-+68.5 (+66.1..+73.0)]]", "71.75"]
+        note: "Full table: `outputs/experiments/peak_rectification_round2/summary.md`."
+
+  - id: paper
+    heading: Draft paper outline
+    kind: stack
+    blocks:
+      - kind: markdown
+        body: >-
+          Working title: **An Agentic Test Bench for Evaluating and Refining Epidemic Forecasting
+          Models**. The outline marks what exists, what is in progress and what is planned;
+          the full draft is `documentation/paper/outline.md`.
+      - kind: cards
+        columns: 3
+        cards:
+          - title: Model bank and selection
+            badge: exists
+            tone: success
+            body: >-
+              One model contract, 9 families, in-house models plug in by dotted path; rolling-origin
+              comparison on the pinned split, incumbent chosen by metric and phase.
+          - title: Constrained improvement loop
+            badge: exists
+            tone: success
+            body: >-
+              Diagnose, propose one validated action, retrain, keep or revert; every step logged.
+              The LLM edits configuration, never model code.
+          - title: Knowledge bank
+            badge: exists (v1)
+            tone: success
+            body: >-
+              Lab rules as curated entries, experiment outcomes as experiential entries, cited at
+              every proposal; can be switched off for an ablation.
+          - title: Phase x horizon evaluation
+            badge: exists
+            tone: success
+            body: >-
+              WIS by phase window and horizon, multi-seed, with re-scoring of saved forecasts
+              under any phase scheme.
+          - title: Vanilla vs refined results
+            badge: planned
+            tone: warning
+            body: >-
+              Needs the in-house model and an agreed protocol: refine on one season, score on
+              another.
+          - title: Comparison against non-agent search
+            badge: planned
+            tone: warning
+            body: >-
+              The same retrain budget spent by random or Optuna search, and by a rule-based policy
+              that applies the bank's recommendations, to show what the agent adds.
+
+  - id: open-questions
+    heading: Open questions
+    kind: accordion
+    items:
+      - title: Is October off-season or growth?
+        body: >-
+          Currently off-season. Growth would make the window Oct 1 - Dec 31. Saved forecasts can be
+          re-scored either way.
+      - title: Which in-house model first, and who can grant code access?
+        body: >-
+          This is the agreed success metric and the main blocker for the paper's results section.
+      - title: Venue and deadline?
+        body: >-
+          The plan assumes a January venue with a February fallback; the page limit decides how much
+          of the system description survives.
+      - title: How should vanilla vs refined be measured?
+        body: >-
+          Proposal: let the agent refine on 2024-25 forecast dates, then score the vanilla and
+          refined models on the 2025-26 dates, so no model is scored on the season it was tuned on.
+      - title: What should the agent be compared against?
+        body: >-
+          Proposal: the same number of retrains spent by random or Optuna search over the same
+          actions, and by a rule-based policy that applies the knowledge bank directly.
+      - title: How many models should the paper report?
+        body: >-
+          The 9 repo families include untuned Nixtla examples; the framing ("we tried N models")
+          depends on how many lab models can be onboarded before the deadline.
+
+  - id: next
+    heading: Next steps
+    kind: cards
+    columns: 3
+    tone: info
+    cards:
+      - title: Peak emphasis on short horizons only
+        badge: experiment
+        body: >-
+          Apply peak weight or oversampling to the 1- and 2-week models only, chosen on 2024-25
+          and scored on 2025-26.
+      - title: Onboard the first in-house model
+        badge: framework
+        body: >-
+          As soon as a model and code access are named: plug in, run the comparison against the
+          bank, run one improvement loop.
+      - title: Paper outline sign-off
+        badge: paper
+        body: >-
+          Agree title, scope, protocol and comparison baselines, then start writing the system
+          and protocol sections.
+      - title: Vanilla vs refined protocol
+        badge: framework
+        body: >-
+          Make the improvement loop refine across several forecast dates of one season and report
+          on another, so the result is not scored on the data it was tuned on.
+      - title: Agent comparison baselines
+        badge: paper
+        body: >-
+          Random and Optuna search over the same action catalog with the same retrain budget.
+      - title: Calendar
+        badge: planning
+        body: >-
+          Late October for the items above; November is exams; writing and experiments over winter
+          break for the January draft.
+
+  - id: reproduce
+    heading: Reproduce
+    kind: code
+    intro: All commands run from the repo root with the project `.venv` active.
+    code: |-
+      # macOS: xgboost + torch each bundle libomp; avoid the duplicate-runtime segfault
+      export KMP_DUPLICATE_LIB_OK=TRUE OMP_NUM_THREADS=1
+
+      # round 2: one process per seed, then merge
+      for s in 42 43 44; do
+        python scripts/experiments/peak_rectification.py --seeds $s --windows 52 --out outputs/experiments/pr2-seed$s &
+      done; wait
+      python scripts/experiments/peak_rectification.py --merge outputs/experiments/pr2-seed42 outputs/experiments/pr2-seed43 outputs/experiments/pr2-seed44 --out outputs/experiments/peak_rectification_round2
+
+      # re-score saved forecasts under the current phase windows (trains nothing)
+      python scripts/experiments/peak_rectification.py --rescore --out <copy of an output dir>
+
+      # this page
+      python scripts/reports/build_report.py documentation/reports/2026-10-15
+      python scripts/reports/build_report.py --index

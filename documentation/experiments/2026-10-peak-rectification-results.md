@@ -1,5 +1,7 @@
 # Peak rectification - results
 
+> Superseded by [round 2](2026-10-peak-rectification-round2-results.md) (A. Adiga's phase windows, oversampling, 3 seeds). This round used the old month-based phases (peak = Dec-Jan) and one seed; its numbers are not comparable with round 2.
+
 This is the findings doc for the controlled XGBoost peak-rectification sweep designed in [`2026-10-peak-rectification-design.md`](2026-10-peak-rectification-design.md): 10 configs, 9 cutoffs each, finished 2026-09-30. It is written for the 2026-10-01 meeting with A. Adiga and stands alone; every number below is a row in `outputs/experiments/peak_rectification/log.jsonl` (mirrored in `summary.md` next to it), except the 09-02 demo numbers, which are labelled as such.
 
 ## Headline

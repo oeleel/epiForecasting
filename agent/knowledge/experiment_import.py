@@ -52,6 +52,17 @@ Invariants
 - Every missing or malformed field raises `ValueError` naming the row
   (`config_id`) and the field. A bank with a half-imported log is worse than
   an import that stopped loudly.
+- Phase schemes are never mixed silently. A row's phase numbers mean the
+  dates of the scheme it was scored under: `metrics.phase_scheme`, or
+  `LEGACY_PHASE_SCHEME` (calendar_v1) when the key is absent, which is every
+  round-1 row (scored before schemes existed, with the Dec-Jan "peak"). Each
+  entry records it in `payload.phase_scheme` and as a `[phase scheme X]`
+  prefix of its statement,
+  so a retrieved fact says which "peak" it means. A row and its baseline must
+  share a scheme, or the import raises. Entries scored under the legacy scheme
+  keep their original ids; any other scheme appends its slug to the id, so a
+  later sweep under the new windows adds entries instead of overwriting the
+  round-1 ones.
 """
 
 from __future__ import annotations
@@ -71,6 +82,7 @@ __all__ = [
     "DEFAULT_EXPERIMENT_LOG",
     "ENTRY_ID_PREFIX",
     "EXPERIMENT_CATEGORY",
+    "LEGACY_PHASE_SCHEME",
     "SINGLE_OBSERVATION_CONFIDENCE",
     "ImportResult",
     "import_experiment_log",
@@ -79,6 +91,11 @@ __all__ = [
 ]
 
 DEFAULT_EXPERIMENT_LOG = Path("outputs/experiments/peak_rectification/log.jsonl")
+
+# Rows without metrics.phase_scheme predate the key and were scored under the
+# month map now named calendar_v1 (agent.phase_evaluator.LEGACY_PHASE_SCHEME).
+# Literal, not imported: the knowledge package stays free of pandas.
+LEGACY_PHASE_SCHEME = "calendar_v1"
 
 # Design section 5 step 3: a single observation is low confidence, full stop.
 SINGLE_OBSERVATION_CONFIDENCE = "low"
@@ -211,6 +228,13 @@ def _phase_metrics(row: Mapping[str, Any], phase: str, where: str) -> Mapping[st
     return block
 
 
+def _phase_scheme(row: Mapping[str, Any], where: str) -> str:
+    scheme = row["metrics"].get("phase_scheme", LEGACY_PHASE_SCHEME)
+    if not isinstance(scheme, str) or not scheme:
+        raise ValueError(f"{where}.metrics.phase_scheme: expected a scheme name, got {scheme!r}")
+    return scheme
+
+
 def _eval_start_year(row: Mapping[str, Any], where: str) -> str:
     eval_start = row["state"]["split"]["eval_start_date"]
     if not isinstance(eval_start, str) or not re.match(r"^\d{4}-\d{2}-\d{2}", eval_start):
@@ -230,8 +254,11 @@ def _slugify(text: str) -> str:
     return slug
 
 
-def _entry_id(config_id: str, eval_start_year: str) -> str:
-    return _SLUG_SEPARATOR.join((ENTRY_ID_PREFIX, _slugify(config_id), eval_start_year))
+def _entry_id(config_id: str, eval_start_year: str, phase_scheme: str) -> str:
+    parts = [ENTRY_ID_PREFIX, _slugify(config_id), eval_start_year]
+    if phase_scheme != LEGACY_PHASE_SCHEME:
+        parts.append(_slugify(phase_scheme))
+    return _SLUG_SEPARATOR.join(parts)
 
 
 # ---- action description -----------------------------------------------------
@@ -321,11 +348,21 @@ def _row_to_entry(
     reward = row["reward"]
     phase = reward["phase"]
     metric = reward["metric"]
+    scheme = _phase_scheme(row, where)
+    baseline_scheme = _phase_scheme(baseline, f"baseline for {where}")
+    if scheme != baseline_scheme:
+        raise ValueError(
+            f"{where}: scored under phase scheme {scheme!r} but its baseline under "
+            f"{baseline_scheme!r}; phase numbers across schemes cover different dates"
+        )
     before = _phase_metrics(baseline, phase, where=f"baseline for {where}")
     after = _phase_metrics(row, phase, where=where)
     action_text, action = _describe_delta(row["config_delta"])
 
+    # Scheme first, not as a trailing note: the reader must know which dates
+    # "peak" means before reading any number, and a truncated line keeps it.
     statement = (
+        f"[phase scheme {scheme}] "
         f"{action_text}: {phase} {metric.upper()} "
         f"{_METRIC_FORMAT.format(reward['value'])} vs "
         f"{_METRIC_FORMAT.format(reward['baseline_value'])} baseline "
@@ -351,12 +388,13 @@ def _row_to_entry(
         "bias_after": after["bias"],
         "coverage_95_before": before["coverage_95"],
         "coverage_95_after": after["coverage_95"],
+        "phase_scheme": scheme,
     }
     if reward.get("guard") is not None:
         payload["guard"] = json.loads(json.dumps(reward["guard"]))
 
     return KnowledgeEntry(
-        id=_entry_id(row["config_id"], _eval_start_year(row, where)),
+        id=_entry_id(row["config_id"], _eval_start_year(row, where), scheme),
         provenance=EXPERIMENT_PROVENANCE,
         category=EXPERIMENT_CATEGORY,
         statement=statement,

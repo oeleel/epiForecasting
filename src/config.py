@@ -318,6 +318,12 @@ def get_default_config() -> Dict[str, Any]:
             # harness ("fit on the last 12 weeks"); see src/pipeline.py.
             # Must be >= src.pipeline.MIN_TRAIN_WINDOW_WEEKS when set.
             "train_window_weeks": None,
+            # Phase oversampling: {"phase": P, "factor": k} fits every
+            # training row whose target date (origin + h weeks) is in phase P
+            # k times (k >= 2), the rows the evaluator scores as P.
+            # None = off. xgboost_direct quantile path only; set by the
+            # peak-rectification harness's oversample arm; see src/pipeline.py.
+            "oversample": None,
         },
     })
 

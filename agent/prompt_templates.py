@@ -45,6 +45,7 @@ from typing import Any, Dict, Iterable, List, Optional
 
 from agent.knowledge.render import render_entry_line
 from agent.knowledge.schema import KnowledgeEntry
+from agent.phase_evaluator import describe_phase_scheme, metrics_phase_scheme, phase_order
 
 
 # ----------------------------------------------------------------------------
@@ -108,7 +109,7 @@ Write a concise performance analysis report for the engineering team. Structure 
 
 3. **Temporal Patterns**: Which epidemic phases have the highest error? Does error grow significantly with forecast horizon?
 
-4. **Bias Analysis**: Is the model systematically over-predicting or under-predicting? Does the bias direction change by phase (e.g., over-predicting during peaks, under-predicting during onset)?
+4. **Bias Analysis**: Is the model systematically over-predicting or under-predicting? Does the bias direction change by phase (e.g., over-predicting during peaks, under-predicting during growth)?
 
 5. **Areas for Investigation** (2-3 bullet points): Based on the patterns above, what specific aspects of the model should the team investigate to improve performance? Be concrete — reference specific phases, locations, or horizons.
 
@@ -146,24 +147,25 @@ def format_summary_prompt(metrics: dict, domain_context: str) -> str:
         )
     horizon_str = "\n".join(horizon_lines)
 
-    # Phase metrics
-    phase_order = ["onset", "peak", "decline"]
-    phase_lines = []
-    for phase in phase_order:
+    # Phase metrics, in the season order of the scheme they were scored under
+    scheme = metrics_phase_scheme(metrics)
+    phases = phase_order(scheme)
+    phase_lines = [f"(phase scheme: {describe_phase_scheme(scheme)})"]
+    for phase in phases:
         if phase in metrics["by_phase"]:
             m = metrics["by_phase"][phase]
             phase_lines.append(
                 f"- {phase.capitalize()}: MAPE={m['mape']}%, MAE={m['mae']}, "
                 f"Bias={m['bias']:+.1f}, n={m['n']}"
             )
-    phase_str = "\n".join(phase_lines) if phase_lines else "No phase data available"
+    phase_str = "\n".join(phase_lines) if len(phase_lines) > 1 else "No phase data available"
 
     # Bias summary
     bias_lines = [
         f"Overall bias: {overall['bias']:+.1f} "
         f"({'over-predicting' if overall['bias'] > 0 else 'under-predicting'})"
     ]
-    for phase in phase_order:
+    for phase in phases:
         if phase in metrics["by_phase"]:
             b = metrics["by_phase"][phase]["bias"]
             direction = "over-predicting" if b > 0 else "under-predicting"
@@ -328,15 +330,18 @@ def format_structured_diagnosis_prompt(metrics: dict, domain_context: str) -> st
     ]
     horizon_str = "\n".join(horizon_lines)
 
-    phase_order = ["onset", "peak", "decline"]
+    scheme = metrics_phase_scheme(metrics)
     phase_lines = [
         f"- {p.capitalize()}: MAPE={metrics['by_phase'][p]['mape']}%, "
         f"MAE={metrics['by_phase'][p]['mae']}, "
         f"Bias={metrics['by_phase'][p]['bias']:+.1f}, "
         f"n={metrics['by_phase'][p]['n']}"
-        for p in phase_order if p in metrics["by_phase"]
+        for p in phase_order(scheme) if p in metrics["by_phase"]
     ]
-    phase_str = "\n".join(phase_lines) if phase_lines else "(no phase data)"
+    phase_str = (
+        "\n".join([f"(phase scheme: {describe_phase_scheme(scheme)})", *phase_lines])
+        if phase_lines else "(no phase data)"
+    )
 
     worst_lines = [
         f"- {loc['location']} (FIPS {loc['fips']}): MAPE={loc['mape']}%, "

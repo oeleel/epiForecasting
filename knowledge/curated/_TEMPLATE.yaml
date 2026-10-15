@@ -22,11 +22,12 @@
   statement: >
     Season onset = 3 consecutive weeks of increase above threshold T.
   entities:                         # optional. Typed references (graph-ready). Keys:
-    phase: onset                    #   model, phase, data_source, season, metric.
-                                    #   `phase` must be one of: onset, peak, decline,
-                                    #   surge, plateau, approaching_peak, off_season.
+    phase: growth                   #   model, phase, data_source, season, metric.
+                                    #   `phase` must be one of: growth, peak, decline,
+                                    #   plateau, onset (calendar_v1 legacy), surge,
+                                    #   approaching_peak, off_season.
   context:                          # optional. WHEN the entry is relevant = retrieval
-    phase: [onset]                  #   keys. Omit a key to mean "applies always".
+    phase: [growth]                 #   keys. Omit a key to mean "applies always".
     # model: [xgboost_direct]       #   phase/model/metric are LISTS (never bare strings,
     # metric: [wis]                 #   never empty). model/metric are free strings.
     season_week: [38, 46]           #   Inclusive epi-week-of-year window, 1 <= lo <= hi <= 53

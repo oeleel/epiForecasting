@@ -13,7 +13,8 @@
     In a sharp takeoff (entering a growth phase), fit on a short window of roughly the last
     12 weeks instead of relying on 52-week seasonality; short windows keep the model agile.
   entities: {phase: surge}
-  context: {phase: [surge, onset, approaching_peak]}
+  # growth: the adiga_2026_10 calendar takeoff phase; onset kept for calendar_v1 retrieval.
+  context: {phase: [surge, growth, onset, approaching_peak]}
   payload:
     recommendation:
       action: set_training_window
@@ -114,7 +115,9 @@
   statement: >
     Epidemic curves start growing around October every season, but the growth rate varies
     from season to season, so the onset date and the steepness of the rise are not fixed.
-  entities: {phase: onset}
+  # The fact is about the growth phase (adiga_2026_10 calls Nov-Dec growth); it was tagged
+  # with calendar_v1's onset until 2026-10-15.
+  entities: {phase: growth}
   context: {season_week: [36, 48]}
   payload:
     typical_onset_month: 10

@@ -33,10 +33,14 @@ Invariants
 - Entries hash by `id` alone (the mapping fields are excluded from the
   generated `__hash__`), so they can live in sets and as dict keys; equality
   still compares every field.
-- `KNOWN_PHASES` accepts both phase vocabularies in the repo (calendar phases
-  from `PhaseEvaluator.PHASE_MAP`, curve phases from `phase_segmentation`)
-  plus `approaching_peak`. They are deliberately not unified here; that is an
-  open question for the lab.
+- `KNOWN_PHASES` accepts every phase vocabulary in the repo: the calendar
+  phases of `agent.phase_evaluator.PHASE_SCHEMES` (adiga_2026_10: growth,
+  peak, decline, plateau; the legacy calendar_v1 adds `onset`), the curve
+  phases of `phase_segmentation` (surge, plateau, decline), `approaching_peak`,
+  and `off_season`. `plateau` and `decline` are shared strings: a calendar
+  plateau (Apr 16 - May 31) and a curve plateau (a flat segment) are both
+  lulls, which is how the curated entries use the word. The vocabularies are
+  deliberately not unified here; that is an open question for the lab.
 - `payload` is free JSON, with one validated convention:
   `payload.recommendation = {action, params, note?}` for "what to do"
   entries. `action` is an adapter action name or the literal
@@ -78,9 +82,18 @@ PROVENANCES = ("curated", "derived", "experiential")
 CATEGORIES = ("model_characteristics", "input_data", "forecasts", "domain_dynamics")
 CONFIDENCES = ("low", "medium", "high")
 
-# Calendar phases (PhaseEvaluator.PHASE_MAP) + curve phases (phase_segmentation)
-# + the approaching-peak label used by the peak-rectification experiment.
-KNOWN_PHASES = ("onset", "peak", "decline", "surge", "plateau", "approaching_peak", "off_season")
+# Calendar phases of the default scheme (growth, peak, decline, plateau), the
+# calendar_v1 legacy phase (onset), curve phases (surge; plateau and decline are
+# shared), the approaching-peak label of the peak-rectification experiment, and
+# off_season. Kept literal so this module stays domain-agnostic; a test checks
+# it covers agent.phase_evaluator.PHASE_SCHEMES and phase_segmentation.
+KNOWN_PHASES = (
+    "growth", "peak", "decline", "plateau",
+    "onset",
+    "surge",
+    "approaching_peak",
+    "off_season",
+)
 
 # Typed references: the graph-ready part of an entry (design section 7).
 ENTITY_KEYS = ("model", "phase", "data_source", "season", "metric")

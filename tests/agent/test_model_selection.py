@@ -116,7 +116,7 @@ def test_goal_value_reads_overall_or_phase():
     m = _metrics(10.0, peak_wis=25.0)
     assert goal_value(m, SelectionGoal()) == 10.0
     assert goal_value(m, SelectionGoal(phase="peak")) == 25.0
-    assert goal_value(m, SelectionGoal(phase="onset")) is None
+    assert goal_value(m, SelectionGoal(phase="growth")) is None
 
 
 # ---- select_incumbent -------------------------------------------------------

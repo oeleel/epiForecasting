@@ -220,8 +220,9 @@ def test_approaching_peak_statement_is_exact():
     entries = rows_to_entries(_three_rows(), created_at=CREATED_AT)
 
     assert entries[0].statement == (
-        "approaching_peak weight 3.0 (weeks_before 6): peak WIS 123.71 vs 121.01 baseline "
-        "(+2.70, worse); peak bias -58.8 -> -6.4; peak coverage_95 0.855 -> 0.808"
+        "[phase scheme calendar_v1] approaching_peak weight 3.0 (weeks_before 6): "
+        "peak WIS 123.71 vs 121.01 baseline (+2.70, worse); peak bias -58.8 -> -6.4; "
+        "peak coverage_95 0.855 -> 0.808"
     )
 
 
@@ -229,8 +230,8 @@ def test_window_statement_is_exact():
     entries = rows_to_entries(_three_rows(), created_at=CREATED_AT)
 
     assert entries[1].statement == (
-        "train_window_weeks 12: peak WIS 238.26 vs 121.01 baseline (+117.25, worse); "
-        "peak bias -58.8 -> -120.3; peak coverage_95 0.855 -> 0.602"
+        "[phase scheme calendar_v1] train_window_weeks 12: peak WIS 238.26 vs 121.01 "
+        "baseline (+117.25, worse); peak bias -58.8 -> -120.3; peak coverage_95 0.855 -> 0.602"
     )
 
 
@@ -242,7 +243,7 @@ def test_calendar_phase_weight_statement_and_action():
     entries = rows_to_entries(rows, created_at=CREATED_AT)
 
     assert entries[0].id == "exp-lambda-calendar-2-2025"
-    assert entries[0].statement.startswith("phase peak weight 2.0: peak WIS")
+    assert entries[0].statement.startswith("[phase scheme calendar_v1] phase peak weight 2.0: peak WIS")
     assert entries[0].payload["action"] == {
         "name": ACTION_REWEIGHT,
         "params": {"dimension": "phase", "value": "peak", "weight": 2.0},
@@ -350,7 +351,7 @@ def test_unknown_config_path_falls_back_to_raw_path_and_set_config():
     entries = rows_to_entries(rows, created_at=CREATED_AT)
 
     assert entries[0].id == "exp-mystery-7-2025"
-    assert entries[0].statement.startswith("model.params.max_depth=7: peak WIS")
+    assert entries[0].statement.startswith("[phase scheme calendar_v1] model.params.max_depth=7: peak WIS")
     assert entries[0].payload["action"] == {
         "name": ACTION_SET_CONFIG,
         "params": {"path": "model.params.max_depth", "value": 7},
@@ -369,7 +370,7 @@ def test_multi_path_delta_is_recorded_as_composite():
     entries = rows_to_entries(rows, created_at=CREATED_AT)
 
     assert entries[0].statement.startswith(
-        "phase peak weight 2.0, train_window_weeks 52: peak WIS"
+        "[phase scheme calendar_v1] phase peak weight 2.0, train_window_weeks 52: peak WIS"
     )
     action = entries[0].payload["action"]
     assert action["name"] == "composite"
@@ -656,9 +657,9 @@ def test_imported_entries_render_as_single_run_experiential_lines():
         text = render_known_facts(bank.query(RetrievalContext(phase="peak")))
 
         assert text.splitlines()[1] == (
-            "- [E, low, 1 run] approaching_peak weight 3.0 (weeks_before 6): peak WIS 123.71 vs "
-            "121.01 baseline (+2.70, worse); peak bias -58.8 -> -6.4; "
-            "peak coverage_95 0.855 -> 0.808"
+            "- [E, low, 1 run] [phase scheme calendar_v1] approaching_peak weight 3.0 "
+            "(weeks_before 6): peak WIS 123.71 vs 121.01 baseline (+2.70, worse); "
+            "peak bias -58.8 -> -6.4; peak coverage_95 0.855 -> 0.808"
         )
 
 

@@ -49,7 +49,7 @@ Everything fixed is written to `manifest.json` in the output directory. Values b
 | horizon | 4 weeks | `FORECAST_HORIZON` |
 | floor | enabled, 30% of last value, decays 0.05 per horizon | `get_default_config()["floor"]` |
 | validation split | positional 80/20 over (location, date)-sorted rows | `src/direct_forecast.py`, `train(validation_split=0.2)` |
-| phase labels for scoring | calendar, by forecast (target) date | `PhaseEvaluator.PHASE_MAP` |
+| phase labels for scoring | calendar, by forecast (target) date | `PhaseEvaluator.PHASE_MAP` in round 1 (now `PHASE_SCHEMES["calendar_v1"]`); round 2 uses `adiga_2026_10` (section 10) |
 | provenance | git SHA, dirty flag, data-cache mtime, host, python / xgboost / pandas versions | `build_manifest` |
 
 | varied | one knob per config, all others stock |
@@ -223,3 +223,38 @@ The sweep finished on 2026-09-30: all 10 configs over 9 cutoffs, merged into `ou
 3. **Lambda range.** Current sweep is 1.5 / 2 / 3 / 5, capped at 5 by the adapter guardrail. Wider, finer, or learned per season or per location?
 4. **Warm-start vs retrain.** Raised 08-27, not in the five actions. Add it as a bank category now and an experiment arm later?
 5. **Calendar vs curve phases for scoring.** Every number here scores by calendar phase (Dec-Jan = peak, by target date). Keep both vocabularies, or switch scoring to curve phases? The pooled forecasts are kept, so any arm can be re-scored either way.
+
+## 10. Round 2 (2026-10-15)
+
+Requested by A. Adiga at the 2026-10-15 meeting. Round 1 used one seed and reported WIS pooled over horizons 1-4, which hid the main effect: upweighting peak rows helps h1/h2 and hurts h3/h4. Round 2 changes the harness, not the question.
+
+**What changed in `scripts/experiments/peak_rectification.py`**
+
+- **Phase x horizon.** Every metrics block gains `by_phase_horizon[phase][horizon]`: the adapter's own `compute_metrics` run on each horizon's subset of the pooled forecasts (same fields as `by_phase`), and `phase_scheme` (rows from before the adapter recorded it are `calendar_v1`). `summary.md` gains a target-phase WIS by horizon table and an overall WIS by horizon table, each with the per-horizon delta vs baseline.
+- **Phase scheme.** Scoring follows `agent.phase_evaluator.DEFAULT_PHASE_SCHEME`, now Adiga's: growth Nov 1 - Dec 31, peak Jan 1 - end of Feb, decline Mar 1 - Apr 15, plateau Apr 16 - May 31, off-season Jun 1 - Oct 31. October is off-season by ASSUMPTION, pending Adiga. The manifest pins the scheme; a resumed run under another scheme fails loudly.
+- **Seeds.** `--seeds` (default `[42]`, round 1's seed) sets `xgboost.random_state`, which `run_pipeline` passes as `xgb_params_override` to the ensemble it builds, stock or oversampled (tests: `test_with_seed_random_state_reaches_the_ensemble_run_pipeline_builds`, `..._oversampled_ensemble_...`). Every round-2 config id gets `__seed<N>`, even with one seed, so per-seed runs never collide. Each reward pairs with the same seed's baseline. The summary reports mean, sd, delta vs the baseline mean and per-seed paired deltas for pooled peak WIS, and in both by-horizon tables each cell carries the min..max of the same-seed paired deltas, so a horizon effect can be read against seed noise.
+- **Parallel seeds + `--merge`.** One process per seed (`--seeds 42 --out <dir42>`, and so on), each on one core, then `--merge <dir42> <dir43> <dir44> [--out <dir>]`. A merge refuses sources that differ in cutoffs, phase scheme, data-cache sha256 or git SHA, or that share seeds; it writes the union of seeds and `merged_from` into the manifest and copies rows and forecasts unchanged (rewards were already paired within each source).
+- **Data vintage.** `FluDataLoader` refetches the CDC cache once it is older than 168 h, and CDC backfill moves past weeks (refreshing the cache on 2026-10-15 moved round 1's baseline peak WIS from 106.3 to 106.6 with no code change). A fresh run refreshes a stale cache once, then the manifest pins the cache's sha256. For the rest of the run the loader's refresh is switched off, actuals are loaded after the check, and the hash is re-checked after every config. A resume against a different cache fails loudly. `--rescore` records the hash it scored against. In the 1-cutoff smoke, seeds 42 and 43 alone moved baseline overall WIS 5.59 -> 5.81 (4%), the same size as several round-1 arm effects, so single-seed deltas below a few percent are not evidence.
+- **Oversampling arm (action 2).** `data.oversample = {"phase": "peak", "factor": k}`, k in (2, 3, 5): every training row whose TARGET date (origin + h weeks) is in the phase under the default scheme is fitted k times. Target date, not origin date, because the evaluator scores each forecast by its target date: under origin labels, half the h4 copies would be February origins that target March (decline), and half the December origins that the h4 peak score covers would get no copy. Implemented in `src/pipeline.py` (`PhaseOversampledQuantileEnsemble`), xgboost_direct quantile path only; any other family or the point ensemble raises `ValueError`. Two constraints decided where the copies are made:
+  1. Not on the feature frame. The target is a per-location `shift(-h)` inside `prepare_horizon_data`; a duplicated row would become its original's h-step-ahead neighbour and corrupt the target. Copies are taken from the already-shifted rows.
+  2. Not before the train/validation split. The split is positional (last ~20% of (location, date)-sorted rows, i.e. the last locations) and early stopping runs on it. Extra rows would move about 20% of the copy count from the boundary location into validation. The split index is taken on the original rows, only the training side is oversampled, copies sit directly after their original (inside its location block), and the validation rows are passed through unchanged.
+  In XGBoost, k copies of a row give the same gradient and hessian sums as sample weight k, so this arm differs from `lambda_calendar = k` (same labels: `by_phase` weights also label by target date under the evaluator's scheme) only through row subsampling (`subsample` 0.7 draws each copy independently). Expect the two to agree within seed noise; a gap larger than that is the finding.
+- **`--rescore`.** Recomputes every logged config from `forecasts/<config_id>.csv` against the current actuals and phase scheme, training nothing. Writes `log.rescored.jsonl` and `summary.rescored.md`; `log.jsonl` and `summary.md` are only read. Each row records the scheme, the data-cache mtime and the original scheme.
+- **Output directory.** Default `outputs/experiments/peak_rectification_round2/`. Round 1's directory is untouched: round 2's config ids (`baseline`, `lambda_2`, ...) would otherwise be skipped as already logged.
+
+**Round 1 re-scored under Adiga's phases** (a copy of round 1's directory, `--rescore`, against the data cache refreshed 2026-10-15; no retraining). Baseline peak WIS is 106.6 (121.0 under calendar_v1, where peak was Dec-Jan; 106.3 against round 1's 2026-09-30 cache, the gap is CDC backfill). No arm beats baseline on pooled peak WIS; `lambda_calendar_3` comes closest (+1.2). By horizon, `lambda_calendar_3` is -10.3 / -10.4 at h1 / h2 and +16.8 / +14.2 at h3 / h4, and `lambda_5` is -10.7 / -6.2 and +22.3 / +21.1: the pooled number averages a real short-horizon gain with a long-horizon loss. Single seed, so these deltas carry the seed noise noted above. Rescoring changes only the scoring labels, not the training weights: round 1's `lambda_calendar_*` rows were trained with calendar_v1 Dec-Jan rows weighted by ORIGIN month, while round 2's `lambda_calendar_*` (same config id, different directory) weights Jan-Feb rows by target date. They are different treatments; do not pool or compare them as one arm. Round 2's `describe` field names the labelling (`by target date ... under adiga_2026_10`).
+
+**Reproduce**
+
+```bash
+.venv/bin/python scripts/experiments/peak_rectification.py --windows 52 --seeds 42 43 44     # 11 configs x 9 cutoffs x 3 seeds, ~1.5-2.5 h sequential
+# or one process per seed, ~35-50 min each when they do not contend for cores, then merge:
+for s in 42 43 44; do .venv/bin/python scripts/experiments/peak_rectification.py --windows 52 --seeds $s --out outputs/experiments/pr2-seed$s & done; wait
+.venv/bin/python scripts/experiments/peak_rectification.py --merge outputs/experiments/pr2-seed42 outputs/experiments/pr2-seed43 outputs/experiments/pr2-seed44
+.venv/bin/python scripts/experiments/peak_rectification.py --cutoffs 1 --arms baseline oversample --oversample-factors 2 --seeds 42 43   # smoke, ~85 s
+.venv/bin/python scripts/experiments/peak_rectification.py --rescore --out <copy of a results dir>
+```
+
+Runtime basis: the uncontended 2026-10-15 smoke ran ~20 s per config per cutoff (baseline 19.5-19.8 s, oversample_2 21.3-21.4 s); 297 config-cutoffs x ~20 s is ~1.65 h, with margin for later cutoffs (more training rows) and oversample_5 (~1.6x the rows). Round 1's 2856 s is the sum of per-config seconds across 5 parallel, CPU-contended processes, not wall time; its wall time was ~21 min.
+
+Tests: `tests/agent/test_peak_rectification.py` (seeds through `run_pipeline`, phase x horizon, summary tables, rescore, merge, data-vintage pin), `tests/agent/test_oversampling.py` (validation, target-date labels at h4, row counts, location-block placement, unchanged validation block).

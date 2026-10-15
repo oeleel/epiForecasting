@@ -47,6 +47,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from agent.adapters.flu_forecast import FluForecastAdapter  # noqa: E402
+from agent.phase_evaluator import DEFAULT_PHASE_SCHEME, metrics_phase_scheme, phase_order  # noqa: E402
 from agent.model_selection import (  # noqa: E402
     SelectionGoal,
     evaluate_candidates,
@@ -110,11 +111,15 @@ def show_window(cutoffs: list[str], locations, full: bool) -> None:
 
 
 def print_ranking(result, label: str) -> None:
-    print(f"\n  goal: {label}")
-    header = (f"  {'rank':<5}{'family':<18}{'WIS':>8}{'MAPE':>8}{'cov95':>7}"
-              f"{'onset':>9}{'peak':>9}{'decline':>9}{'fit s':>8}")
-    print(header)
     by_family = {c.family: c for c in result.candidates}
+    # select_incumbent refuses mixed schemes, so any ranked candidate's scheme labels every row.
+    ranked_metrics = by_family[result.ranking[0]["family"]].metrics if result.ranking else None
+    scheme = metrics_phase_scheme(ranked_metrics) if ranked_metrics else DEFAULT_PHASE_SCHEME
+    phases = phase_order(scheme)
+    print(f"\n  goal: {label}  (phase scheme: {scheme})")
+    header = (f"  {'rank':<5}{'family':<18}{'WIS':>8}{'MAPE':>8}{'cov95':>7}"
+              + "".join(f"{phase:>9}" for phase in phases) + f"{'fit s':>8}")
+    print(header)
     for rank, row in enumerate(result.ranking, start=1):
         cand = by_family[row["family"]]
         o = cand.metrics.get("overall", {})
@@ -122,10 +127,8 @@ def print_ranking(result, label: str) -> None:
         mark = "  <- incumbent" if cand.family == result.incumbent else ""
         print(f"  {rank:<5}{cand.family:<18}{_fmt(o.get('wis')):>8}{_fmt(o.get('mape')):>8}"
               f"{_fmt(o.get('coverage_95'), 2):>7}"
-              f"{_fmt((ph.get('onset') or {}).get('wis')):>9}"
-              f"{_fmt((ph.get('peak') or {}).get('wis')):>9}"
-              f"{_fmt((ph.get('decline') or {}).get('wis')):>9}"
-              f"{_fmt(cand.fit_seconds_total):>8}{mark}")
+              + "".join(f"{_fmt((ph.get(phase) or {}).get('wis')):>9}" for phase in phases)
+              + f"{_fmt(cand.fit_seconds_total):>8}{mark}")
     for cand in result.candidates:
         if not cand.ok:
             print(f"  {'-':<5}{cand.family:<18}FAILED: {cand.error}")

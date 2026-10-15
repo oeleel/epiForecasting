@@ -13,7 +13,8 @@ design doc, rectification action 5 "loss weight lambda on approaching-peak
 rows"): `_compute_sample_weights` turns the config's `sample_weights` section
 into a per-row weight vector. Four dimensions multiply together:
 
-    by_phase          calendar phase of the row's origin date (onset/peak/decline)
+    by_phase          phase of the row's target date (origin + horizon weeks)
+                      under agent.phase_evaluator.DEFAULT_PHASE_SCHEME
     by_horizon        the horizon the row trains
     by_location       zero-padded FIPS
     approaching_peak  {"weeks_before": K, "weight": lambda} - rows whose origin
@@ -222,7 +223,8 @@ def _compute_sample_weights(
         np.ndarray of shape (len(meta_df),) or None.
 
     Raises:
-        ValueError: if approaching_peak is malformed or meta lacks 'value'.
+        ValueError: if approaching_peak is malformed or meta lacks 'value', or
+            by_phase names a phase outside the default scheme or meta lacks 'horizon'.
     """
     if not sample_weights_config:
         return None
@@ -247,11 +249,34 @@ def _compute_sample_weights(
 
     if by_phase and "date" in meta_df.columns:
         # Lazy import to avoid circular dep at module load
-        from agent.phase_evaluator import PhaseEvaluator
-        months = pd.to_datetime(meta_df["date"]).dt.month.values
-        phases = np.array(
-            [PhaseEvaluator.PHASE_MAP.get(int(m), "off_season") for m in months]
+        from agent.phase_evaluator import (
+            DEFAULT_PHASE_SCHEME, LEGACY_PHASE_SCHEME, OFF_SEASON, assign_phases, phase_order,
         )
+        # An unknown key would match no row and train unweighted without a
+        # word; "onset" was valid before the scheme change, so stored configs
+        # can still carry it.
+        valid_phases = (*phase_order(DEFAULT_PHASE_SCHEME), OFF_SEASON)
+        unknown = sorted(set(by_phase) - set(valid_phases))
+        if unknown:
+            raise ValueError(
+                f"sample_weights.by_phase has unknown phase(s) {unknown}; phase scheme "
+                f"{DEFAULT_PHASE_SCHEME!r} has {list(valid_phases)} ('onset' exists only "
+                f"in the legacy {LEGACY_PHASE_SCHEME!r} scheme)"
+            )
+        if "horizon" not in meta_df.columns:
+            raise ValueError(
+                f"by_phase weighting needs meta column 'horizon' to find each row's "
+                f"target date; got columns {list(meta_df.columns)}"
+            )
+        # Label by TARGET date (origin + horizon weeks) under the scheme the
+        # evaluator scores with, because the evaluator labels each forecast by
+        # its target date. Origin-date labels would miss about half the h4
+        # rows that evaluation scores as peak.
+        target_dates = (
+            pd.to_datetime(meta_df["date"])
+            + pd.to_timedelta(pd.to_numeric(meta_df["horizon"]) * DAYS_PER_WEEK, unit="D")
+        )
+        phases = assign_phases(target_dates, DEFAULT_PHASE_SCHEME)
         for ph_name, ph_w in by_phase.items():
             mask = phases == ph_name
             if mask.any():

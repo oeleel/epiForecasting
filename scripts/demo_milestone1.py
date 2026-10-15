@@ -28,7 +28,12 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from agent.adapters.flu_forecast import FluForecastAdapter
-from agent.phase_evaluator import PhaseEvaluator
+from agent.phase_evaluator import (
+    PhaseEvaluator,
+    describe_phase_scheme,
+    metrics_phase_scheme,
+    phase_order,
+)
 from agent.prompt_templates import format_summary_prompt
 
 # --- Config ----------------------------------------------------------------
@@ -76,9 +81,10 @@ def demo_metrics_only(adapter, forecasts, actuals, metrics):
         m = metrics["by_horizon"][h]
         print(f"    Week {h:<8} {m['mape']:>7.1f}% {m['mae']:>10.1f} {m['bias']:>+10.1f}")
 
-    print(f"\n  By Epidemic Phase:")
+    scheme = metrics_phase_scheme(metrics)
+    print(f"\n  By Epidemic Phase ({describe_phase_scheme(scheme)}):")
     print(f"    {'Phase':<12} {'MAPE':>8} {'MAE':>10} {'Bias':>10}")
-    for phase in ["onset", "peak", "decline"]:
+    for phase in phase_order(scheme):
         if phase in metrics["by_phase"]:
             m = metrics["by_phase"][phase]
             print(f"    {phase.capitalize():<12} {m['mape']:>7.1f}% {m['mae']:>10.1f} {m['bias']:>+10.1f}")
@@ -96,7 +102,7 @@ def demo_metrics_only(adapter, forecasts, actuals, metrics):
           f"-> Week 4 MAPE={metrics['by_horizon'][4]['mape']}%")
     bias_by_phase = {
         phase: metrics["by_phase"][phase]["bias"]
-        for phase in ["onset", "peak", "decline"]
+        for phase in phase_order(scheme)
         if phase in metrics["by_phase"]
     }
     worst_phase = max(bias_by_phase, key=lambda p: abs(bias_by_phase[p]))

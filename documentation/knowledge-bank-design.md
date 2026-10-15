@@ -147,10 +147,10 @@ context accept exactly `KNOWN_PHASES`:
 
 | Phase | Vocabulary it comes from |
 |---|---|
-| `onset`, `peak`, `decline` | Calendar phases (`PhaseEvaluator.PHASE_MAP`) |
-| `surge`, `plateau` | Curve phases (`agent/phase_segmentation.py`); `decline` is shared |
+| `growth`, `peak`, `decline`, `plateau` | Calendar phases of the default scheme `adiga_2026_10` (`agent/phase_evaluator.py` `PHASE_SCHEMES`); `onset` is kept for the legacy `calendar_v1` scheme |
+| `surge` | Curve phases (`agent/phase_segmentation.py`); `plateau` and `decline` are shared |
 | `approaching_peak` | Hindsight label on training rows (K weeks before an eligible season's max), used by the peak-rectification experiment |
-| `off_season` | Calendar gap (May-Sep), skipped by evaluation |
+| `off_season` | Calendar gap (Jun-Oct under `adiga_2026_10`, May-Sep under `calendar_v1`), skipped by evaluation |
 
 Both vocabularies are accepted and deliberately not unified in v1. Which one
 the bank should key on is an open question (§10).

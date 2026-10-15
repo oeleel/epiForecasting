@@ -62,17 +62,23 @@ python scripts/demo_knowledge_bank.py [--live] [--json PATH]           # lab dem
 
 ### Experiment harness (peak rectification)
 ```bash
-# Full sweep: pinned split, 9 stride-4 cutoffs, baseline + lambda + lambda_calendar + window arms.
-# ~70 s per config per cutoff, so run it in the background.
-.venv/bin/python scripts/experiments/peak_rectification.py
+# Round 2 sweep: pinned split, 9 stride-4 cutoffs, baseline + lambda + lambda_calendar + window + oversample
+# arms, per seed. ~20 s per config per cutoff uncontended, so run it in the background.
+.venv/bin/python scripts/experiments/peak_rectification.py --seeds 42 43 44
 
 # Smoke run: first cutoff only (writes to a -smoke-<N>cutoffs sibling dir)
-.venv/bin/python scripts/experiments/peak_rectification.py --cutoffs 1 --arms baseline lambda --lambdas 2
+.venv/bin/python scripts/experiments/peak_rectification.py --cutoffs 1 --arms baseline oversample --oversample-factors 2
 
 # Regenerate summary.md from log.jsonl, trains nothing
 .venv/bin/python scripts/experiments/peak_rectification.py --summary-only
+
+# Re-score saved forecasts under the current phase scheme and data cache (writes *.rescored.*), trains nothing
+.venv/bin/python scripts/experiments/peak_rectification.py --rescore --out <dir>
+
+# Merge per-seed directories run in parallel (same cutoffs, scheme, data sha256, git SHA)
+.venv/bin/python scripts/experiments/peak_rectification.py --merge <dir42> <dir43> <dir44> --out <merged>
 ```
-Other flags: `--arms {baseline,lambda,lambda_calendar,window}`, `--lambdas`, `--calendar-lambdas`, `--windows`, `--out`, `--verbose`. Resumable (logged `config_id`s are skipped). Output in `outputs/experiments/peak_rectification/` (`manifest.json`, `log.jsonl`, `forecasts/`, `summary.md`). Script docstring has the design.
+Other flags: `--arms {baseline,lambda,lambda_calendar,window,oversample}`, `--lambdas`, `--calendar-lambdas`, `--windows`, `--oversample-factors`, `--seeds`, `--out`. Resumable (logged `config_id`s are skipped; config ids end in `__seed<N>`); the manifest pins cutoffs, seeds, phase scheme and the data-cache sha256, and a mismatched resume fails. Round 1 output (calendar_v1, seed 42) is `outputs/experiments/peak_rectification/`; round 2 defaults to `outputs/experiments/peak_rectification_round2/` (`manifest.json`, `log.jsonl`, `forecasts/`, `summary.md` with peak and overall WIS by horizon). `config["data"]["oversample"]` (xgboost_direct only) copies training rows whose target date falls in a phase. Script docstring has the design.
 
 ### Forecasting Pipeline (underlying model)
 ```bash
@@ -94,10 +100,10 @@ python -m src.data_loader update
 
 ### Testing
 ```bash
-.venv/bin/python -m pytest tests/agent/ -q -W error::DeprecationWarning   # 409 tests
+.venv/bin/python -m pytest tests/agent/ -q -W error::DeprecationWarning   # 477 tests
 PYTHONPATH=. .venv/bin/python tests/agent/run_all.py                        # no-pytest fallback
 ```
-Covers: adapter actions (legacy + bank families), config, data quality, feature toggle, orchestrator, prompts, run tracker, sample weights, WIS scoring, model bank (contract/registry/bridge/baselines/runner), model selection, run report, phase segmentation, knowledge bank (schema/intake/store/render/seeds), peak-rectification harness (arms/deltas/reward/summary).
+Covers: adapter actions (legacy + bank families), config, data quality, feature toggle, orchestrator, prompts, run tracker, sample weights, WIS scoring, model bank (contract/registry/bridge/baselines/runner), model selection, run report, phase segmentation, knowledge bank (schema/intake/store/render/seeds), phase schemes, peak-rectification harness (arms/deltas/reward/summary/rescore/seeds/merge), phase oversampling.
 
 ### Key Config Details
 - Active XGBoost params: `XGBOOST_PARAMS_V2` (regularized) in `src/config.py`
@@ -158,7 +164,8 @@ knowledge/                   # Human-authored bank content (not code)
 | `run_pipeline(config)` | Implemented | Retrain and re-forecast from a config dict |
 
 **PhaseEvaluator** (`phase_evaluator.py`) - computes metrics by epidemic phase:
-- Phases: Onset (Oct-Nov), Peak (Dec-Jan), Decline (Feb-Apr), Off-season (May-Sep, skipped)
+- Phases: named calendar schemes in `PHASE_SCHEMES`, assigned by (month, day). Default `adiga_2026_10` (A. Adiga, 2026-10-15): Growth (Nov 1-Dec 31), Peak (Jan 1-end of Feb), Decline (Mar 1-Apr 15), Plateau (Apr 16-May 31), Off-season (Jun 1-Oct 31, skipped; October = off-season is an ASSUMPTION awaiting Adiga, constant `ADIGA_OCTOBER_PHASE`). Legacy `calendar_v1` (Onset Oct-Nov, Peak Dec-Jan, Decline Feb-Apr, Off-season May-Sep) stays selectable via `assign_phase(date, scheme=...)`
+- Every metrics dict records `phase_scheme` (missing = `calendar_v1`, i.e. every pre-2026-10-15 output, including round-1 of the peak-rectification sweep); `run_report` and `select_incumbent` refuse to compare across schemes; `by_phase` sample weights label each row's TARGET date (origin + horizon weeks) with the same scheme, as the evaluator does, and raise on a phase outside it (e.g. legacy `onset`)
 - Key addition over `src/evaluate.py`: **signed bias** (over vs. under-prediction)
 - Methods: `assign_phase()`, `merge_forecasts_actuals()`, `compute_overall_metrics()`, `evaluate_by_phase()`, `evaluate_by_horizon()`, `evaluate_by_location()`, `identify_worst_segments()`
 

@@ -32,6 +32,17 @@ Design:
                                    last 12 weeks" knob; knowledge-bank design
                                    doc, rectification action 4). N must be
                                    >= MIN_TRAIN_WINDOW_WEEKS or ValueError.
+        data.oversample         -> optional {"phase": P, "factor": k}: every
+                                   training row whose TARGET date (origin +
+                                   h weeks) falls in phase P under the
+                                   evaluator's default phase scheme is
+                                   fitted k times (k-1 extra copies), the
+                                   same rows `sample_weights.by_phase`
+                                   weights and the evaluator scores as P. Only on
+                                   the xgboost_direct quantile path; see
+                                   PhaseOversampledQuantileEnsemble for why the
+                                   copies are made after the target shift and
+                                   never touch the validation rows.
         data.forecast_horizon   -> 1..H weeks ahead
         data.locations          -> optional location filter (None = all)
     - Returns the absolute path to a forecast CSV with the columns the
@@ -51,19 +62,36 @@ import contextlib
 import io
 import logging
 import os
-from datetime import datetime
+from dataclasses import dataclass
+from datetime import date, datetime, timedelta
+from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, FrozenSet, Optional, Sequence, Union
 
+import numpy as np
 import pandas as pd
 
 from src import config as default_config_module
 from src.data_loader import FluDataLoader
-from src.direct_forecast import DirectForecastEnsemble, QuantileDirectForecastEnsemble
+from src.direct_forecast import (
+    DirectForecastEnsemble,
+    QuantileDirectForecastEnsemble,
+    _compute_sample_weights,
+)
 from src.feature_engineering import FeatureEngineer
 
 
-__all__ = ["run_pipeline", "validate_train_window_weeks", "MIN_TRAIN_WINDOW_WEEKS"]
+__all__ = [
+    "run_pipeline",
+    "validate_train_window_weeks",
+    "MIN_TRAIN_WINDOW_WEEKS",
+    "OVERSAMPLE_MIN_FACTOR",
+    "OversampleSpec",
+    "PhaseOversampledQuantileEnsemble",
+    "known_phases",
+    "oversample_positions",
+    "validate_oversample",
+]
 
 _log = logging.getLogger(__name__)
 
@@ -79,6 +107,166 @@ LEGACY_XGBOOST_FAMILY = "xgboost_direct"
 MIN_TRAIN_WINDOW_WEEKS = default_config_module.FORECAST_HORIZON + 4
 
 DAYS_PER_WEEK = 7
+
+# data.oversample: a factor of 1 is the stock fit, so the smallest real
+# oversampling is one extra copy per matching row.
+OVERSAMPLE_MIN_FACTOR = 2
+OVERSAMPLE_KEYS = frozenset({"phase", "factor"})
+# A leap year, so every (month, day) any phase scheme can name is visited.
+_PHASE_PROBE_YEAR = 2024
+_DAYS_IN_LEAP_YEAR = 366
+
+
+@dataclass(frozen=True, slots=True)
+class OversampleSpec:
+    """Validated `data.oversample`: fit rows of `phase` `factor` times each."""
+
+    phase: str
+    factor: int
+
+
+@lru_cache(maxsize=1)
+def known_phases() -> FrozenSet[str]:
+    """Every label `PhaseEvaluator.assign_phase` can return under its default scheme.
+
+    Derived by labelling each day of a leap year rather than read from a
+    constant, so it follows whatever scheme the evaluator scores with.
+    """
+    # Lazy import: agent/ imports src.pipeline through the flu adapter.
+    from agent.phase_evaluator import PhaseEvaluator
+
+    start = date(_PHASE_PROBE_YEAR, 1, 1)
+    return frozenset(
+        PhaseEvaluator.assign_phase((start + timedelta(days=i)).isoformat())
+        for i in range(_DAYS_IN_LEAP_YEAR)
+    )
+
+
+def validate_oversample(value: Any) -> OversampleSpec:
+    """Return `data.oversample` as an OversampleSpec, or raise a specific ValueError."""
+    if not isinstance(value, dict):
+        raise ValueError(
+            'data.oversample must be a dict {"phase": str, "factor": int}, '
+            f"got {type(value).__name__}: {value!r}"
+        )
+    if set(value) != OVERSAMPLE_KEYS:
+        raise ValueError(
+            f"data.oversample must have exactly the keys {sorted(OVERSAMPLE_KEYS)}, "
+            f"got {sorted(value)}"
+        )
+    phase, factor = value["phase"], value["factor"]
+    phases = known_phases()
+    if not isinstance(phase, str) or phase not in phases:
+        raise ValueError(
+            f"data.oversample.phase must be one of {sorted(phases)}, got {phase!r}"
+        )
+    if isinstance(factor, bool) or not isinstance(factor, int):
+        raise ValueError(
+            "data.oversample.factor must be an int, "
+            f"got {type(factor).__name__}: {factor!r}"
+        )
+    if factor < OVERSAMPLE_MIN_FACTOR:
+        raise ValueError(
+            f"data.oversample.factor must be >= {OVERSAMPLE_MIN_FACTOR}, got {factor}"
+        )
+    return OversampleSpec(phase=phase, factor=factor)
+
+
+def oversample_positions(
+    origin_dates: Sequence[Any], horizon: int, spec: OversampleSpec
+) -> np.ndarray:
+    """Row positions 0..n-1, each position whose target is in `spec.phase` repeated `spec.factor` times.
+
+    A row is labelled by its TARGET date, origin + `horizon` weeks, under
+    the evaluator's default scheme, because the evaluator scores each
+    forecast by its target date and `sample_weights.by_phase` labels rows
+    the same way. Origin-date labels would copy February origins whose h4
+    target is in March and skip December origins whose h4 target is in
+    January.
+
+    np.repeat keeps every copy directly after its original, so on a
+    (location, date)-sorted frame the copies stay inside their own
+    location's block and in date order.
+    """
+    from agent.phase_evaluator import DEFAULT_PHASE_SCHEME, assign_phases
+
+    if isinstance(horizon, bool) or not isinstance(horizon, int) or horizon < 1:
+        raise ValueError(f"horizon must be an int >= 1, got {horizon!r}")
+    target_dates = pd.to_datetime(pd.Series(origin_dates)) + pd.to_timedelta(
+        horizon * DAYS_PER_WEEK, unit="D"
+    )
+    phases = assign_phases(target_dates, DEFAULT_PHASE_SCHEME)
+    counts = np.where(phases == spec.phase, spec.factor, 1)
+    return np.repeat(np.arange(len(target_dates)), counts)
+
+
+class PhaseOversampledQuantileEnsemble(QuantileDirectForecastEnsemble):
+    """QuantileDirectForecastEnsemble whose training rows of one phase are fitted k times.
+
+    Why the copies are made here and not on the feature frame: the target is
+    built inside `prepare_horizon_data` as a per-location `shift(-h)` over
+    (location, date)-sorted rows. A duplicated feature row would become its
+    own original's h-step-ahead neighbour, so the target of the original
+    would be a copy of the same week. Copies are therefore taken from the
+    already-shifted (X, y, meta) frame.
+
+    Why `train` is overridden instead of only `prepare_horizon_data`: the
+    parent splits train/validation positionally at int(n * (1 - split)),
+    and early stopping runs on the validation rows. Adding rows anywhere
+    moves that index, which would move rows of the boundary location (about
+    split * extra rows) from training into validation. This override takes
+    the parent's split index on the ORIGINAL rows, oversamples only the
+    training side, and passes the validation rows through unchanged, so the
+    oversample arm differs from the stock fit only by the copies. It mirrors
+    the parent's fit loop (same prepare_horizon_data, split rule, sample
+    weights, model.train call) and skips only the parent's validation-MAE
+    bookkeeping, which nothing downstream reads.
+    """
+
+    def __init__(self, *, oversample: OversampleSpec, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.oversample = oversample
+
+    def train(
+        self,
+        data: pd.DataFrame,
+        validation_split: float = 0.2,
+        sample_weights: Optional[Dict] = None,
+    ) -> Dict:
+        results: Dict[str, Any] = {
+            "training_date": datetime.now().isoformat(),
+            "target_mode": self.target_mode,
+            "quantiles": self.quantiles,
+            "oversample": {"phase": self.oversample.phase, "factor": self.oversample.factor},
+            "horizons": {},
+            "sample_weights_applied": bool(sample_weights),
+        }
+        self._training_data = data.copy()
+
+        for horizon in range(1, self.forecast_horizon + 1):
+            for q in self.quantiles:
+                X, y, _, meta = self.prepare_horizon_data(
+                    data, horizon, quantile=q, return_metadata=True
+                )
+                # The parent's positional split, on the original rows.
+                split_idx = int(len(X) * (1 - validation_split))
+                take = oversample_positions(meta["date"].iloc[:split_idx], horizon, self.oversample)
+                weights = _compute_sample_weights(meta, sample_weights)
+                self.models[horizon][q].train(
+                    X.iloc[take],
+                    y.iloc[take],
+                    (X.iloc[split_idx:], y.iloc[split_idx:]),
+                    sample_weight=weights[:split_idx][take] if weights is not None else None,
+                )
+            results["horizons"][horizon] = {
+                "n_train_rows": split_idx,
+                "n_train_samples": len(take),
+                "n_val_samples": len(X) - split_idx,
+            }
+
+        self.is_trained = True
+        self.training_info = results
+        return results
 
 
 def validate_train_window_weeks(value: Any) -> int:
@@ -138,6 +326,11 @@ def run_pipeline(
     # honors every Agent 2 action (feature toggles, reweighting, floor, ...).
     family = (config.get("model") or {}).get("family", default_config_module.DEFAULT_MODEL_FAMILY)
     if family != LEGACY_XGBOOST_FAMILY:
+        if (config.get("data") or {}).get("oversample") is not None:
+            raise ValueError(
+                f"data.oversample is implemented only for model.family="
+                f"{LEGACY_XGBOOST_FAMILY!r}, got family={family!r}"
+            )
         from src.model_bank.runner import run_bank_model
 
         return run_bank_model(config, output_path=output_path, verbose=verbose)
@@ -157,6 +350,10 @@ def run_pipeline(
         if train_window_weeks_raw is not None
         else None
     )
+    oversample_raw = data_cfg.get("oversample")
+    oversample: Optional[OversampleSpec] = (
+        validate_oversample(oversample_raw) if oversample_raw is not None else None
+    )
 
     xgb_params: Dict[str, Any] = dict(
         config.get("xgboost", default_config_module.XGBOOST_PARAMS)
@@ -172,6 +369,11 @@ def run_pipeline(
     quantiles_cfg = config.get("quantiles", {})
     use_quantiles: bool = bool(quantiles_cfg.get("enabled", True))
     quantile_levels: list = list(quantiles_cfg.get("levels", [0.05, 0.25, 0.5, 0.75, 0.95]))
+    if oversample is not None and not use_quantiles:
+        raise ValueError(
+            "data.oversample requires quantiles.enabled=True (the point "
+            f"ensemble has no oversampling path), got data.oversample={oversample_raw!r}"
+        )
 
     sample_weights_cfg: Optional[Dict[str, Any]] = config.get("sample_weights")
 
@@ -213,7 +415,15 @@ def run_pipeline(
         # Quantile ensemble produces the q05/q25/q50/q75/q95 columns the
         # PhaseEvaluator needs to compute WIS + 95% coverage. Point ensemble
         # only produces the 'forecast' column (MAPE/MAE/bias only).
-        if use_quantiles:
+        if oversample is not None:
+            ensemble = PhaseOversampledQuantileEnsemble(
+                oversample=oversample,
+                forecast_horizon=forecast_horizon,
+                target_mode=target_mode,
+                quantiles=quantile_levels,
+                xgb_params_override=xgb_params,
+            )
+        elif use_quantiles:
             ensemble = QuantileDirectForecastEnsemble(
                 forecast_horizon=forecast_horizon,
                 target_mode=target_mode,
@@ -247,12 +457,16 @@ def run_pipeline(
                     f"cutoff_date={cutoff_date} (window start {window_start.date()})"
                 )
 
+        # data.oversample is applied here in effect, but the copies are made
+        # inside PhaseOversampledQuantileEnsemble.train (after the target
+        # shift, training side of the split only); see its docstring.
         _log.info(
             "pipeline training rows: %d (cutoff=%s, train_window_weeks=%s, "
-            "date range %s..%s)",
+            "oversample=%s, date range %s..%s)",
             len(training_data),
             cutoff_date,
             train_window_weeks,
+            oversample,
             pd.Timestamp(training_data["date"].min()).date(),
             pd.Timestamp(training_data["date"].max()).date(),
         )

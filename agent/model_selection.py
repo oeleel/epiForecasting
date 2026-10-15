@@ -24,6 +24,11 @@ Design notes
   error boundary that keeps a broken in-house model from hiding the others.
 - Everything returned is JSON-serializable so `select-model --json` can feed
   the run reports (workstream 6) and the paper's experiment log.
+- Every candidate's metrics record the `phase_scheme` they were scored under,
+  and `select_incumbent` refuses to rank candidates scored under different
+  schemes: "peak" means different dates in each, so a ranking across them
+  compares different test windows under one name. A metrics dict with no
+  `phase_scheme` predates the key and was scored under calendar_v1.
 """
 
 from __future__ import annotations
@@ -38,7 +43,13 @@ from typing import Any
 
 import pandas as pd
 
-from agent.phase_evaluator import PhaseEvaluator
+from agent.phase_evaluator import (
+    DEFAULT_PHASE_SCHEME,
+    PhaseEvaluator,
+    describe_phase_scheme,
+    metrics_phase_scheme,
+    phase_order,
+)
 from src import config as repo_config
 from src.model_bank.runner import fit_predict, load_history
 
@@ -62,7 +73,8 @@ LOWER_IS_BETTER_METRICS = frozenset({"wis", "mape", "mae", "rmse"})
 VALID_METRICS = tuple(sorted(LOWER_IS_BETTER_METRICS | {"coverage_95", "bias"}))
 COVERAGE_TARGET = 0.95
 ALL_PHASES = "all"
-VALID_PHASES = (ALL_PHASES, "onset", "peak", "decline")
+# Goal phases are the default scheme's, the scheme `_score` evaluates under.
+VALID_PHASES = (ALL_PHASES, *phase_order(DEFAULT_PHASE_SCHEME))
 
 
 @dataclass(frozen=True, slots=True)
@@ -234,7 +246,18 @@ def select_incumbent(
     goal: SelectionGoal = DEFAULT_GOAL,
     cutoffs: Sequence[str] = (),
 ) -> SelectionResult:
-    """Rank scored candidates by the goal and name the incumbent (None if nothing scored)."""
+    """Rank scored candidates by the goal and name the incumbent (None if nothing scored).
+
+    Raises:
+        ValueError: if the scored candidates were evaluated under different phase
+            schemes; their phase numbers cover different dates under the same names.
+    """
+    schemes = {c.family: metrics_phase_scheme(c.metrics) for c in candidates if c.ok}
+    if len(set(schemes.values())) > 1:
+        raise ValueError(
+            "candidates were scored under different phase schemes and cannot be ranked "
+            f"together: {schemes}. Re-score them with one scheme."
+        )
     scored: list[tuple[str, float]] = []
     for cand in candidates:
         if not cand.ok:
@@ -255,12 +278,15 @@ def select_incumbent(
 
 
 def _score(forecasts: pd.DataFrame, actuals: pd.DataFrame) -> dict[str, Any]:
-    merged = PhaseEvaluator.merge_forecasts_actuals(forecasts, actuals)
+    merged = PhaseEvaluator.merge_forecasts_actuals(
+        forecasts, actuals, phase_scheme=DEFAULT_PHASE_SCHEME
+    )
     return {
         "overall": PhaseEvaluator.compute_overall_metrics(merged),
         "by_phase": PhaseEvaluator.evaluate_by_phase(merged),
         "by_horizon": PhaseEvaluator.evaluate_by_horizon(merged),
         "n_scored": int(len(merged)),
+        "phase_scheme": DEFAULT_PHASE_SCHEME,
     }
 
 
@@ -277,8 +303,16 @@ def render_markdown(result: SelectionResult, title: str = "Model selection") -> 
         )
     lines.append(f"- goal: {result.goal.describe()}")
     lines.append(f"- incumbent: **{result.incumbent or 'none'}**")
-    lines += ["", "| family | WIS | MAPE | cov95 | onset WIS | peak WIS | decline WIS | fit s |",
-              "|---|---|---|---|---|---|---|---|"]
+    # select_incumbent guarantees the ok candidates share one scheme
+    scheme = next(
+        (metrics_phase_scheme(c.metrics) for c in result.candidates if c.ok),
+        DEFAULT_PHASE_SCHEME,
+    )
+    phases = phase_order(scheme)
+    lines.append(f"- phase scheme: {describe_phase_scheme(scheme)}")
+    phase_cols = "".join(f" {p} WIS |" for p in phases)
+    lines += ["", f"| family | WIS | MAPE | cov95 |{phase_cols} fit s |",
+              "|---|---|---|---|" + "---|" * len(phases) + "---|"]
     ranked = [r["family"] for r in result.ranking]
     ordered = sorted(
         (c for c in result.candidates if c.ok),
@@ -290,15 +324,13 @@ def render_markdown(result: SelectionResult, title: str = "Model selection") -> 
 
     for cand in ordered:
         overall = cand.metrics.get("overall", {})
-        phases = cand.metrics.get("by_phase", {})
+        by_phase = cand.metrics.get("by_phase", {})
         mark = " (incumbent)" if cand.family == result.incumbent else ""
         lines.append(
             f"| {cand.family}{mark} | {_num(overall.get('wis'))} | {_num(overall.get('mape'))} "
             f"| {_num(overall.get('coverage_95'), 2)} "
-            f"| {_num((phases.get('onset') or {}).get('wis'))} "
-            f"| {_num((phases.get('peak') or {}).get('wis'))} "
-            f"| {_num((phases.get('decline') or {}).get('wis'))} "
-            f"| {_num(cand.fit_seconds_total)} |"
+            + "".join(f"| {_num((by_phase.get(p) or {}).get('wis'))} " for p in phases)
+            + f"| {_num(cand.fit_seconds_total)} |"
         )
     failed = [c for c in result.candidates if not c.ok]
     if failed:

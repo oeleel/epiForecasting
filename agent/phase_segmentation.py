@@ -2,8 +2,9 @@
 
 Why this exists
 ---------------
-`agent/phase_evaluator.py` assigns a phase by **calendar month** — onset is
-Oct-Nov, peak is Dec-Jan, decline is Feb-Apr. That is a proxy for a property of
+`agent/phase_evaluator.py` assigns a phase by **calendar date** - under the
+default scheme `adiga_2026_10` growth is Nov 1 - Dec 31, peak Jan 1 - end of Feb,
+decline Mar 1 - Apr 15, plateau Apr 16 - May 31. That is a proxy for a property of
 the *curve*, and the lab whose method we are building on measures that property
 directly. Their own words, in the 2026-09-03 meeting: "we generally know that
 during October things start to grow, but the growth rate is not the same every
@@ -21,8 +22,8 @@ observed property of the series rather than an assumption about the date:
     Data Sources." IEEE Big Data 2022, pp. 1594-1602.   [Algorithms 1, 3]
 
 Their taxonomy is SURGE / PLATEAU / DECLINE, not ours. Two differences matter:
-we have no `plateau` (the regime where their ablation finds AR and Kalman
-methods win), and they have no `peak` — for them the peak is the instant
+our calendar `plateau` is a fixed late-season window, not the curve regime
+where their ablation finds AR and Kalman methods win, and they have no `peak` - for them the peak is the instant
 between surge and decline, not a phase you train on.
 
 Design notes

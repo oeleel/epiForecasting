@@ -57,6 +57,13 @@ Design notes
   `n_forecasts`). If they do not, `improvement_frac` is `None`,
   `windows_match` is False, both windows are printed, and the recommendation is
   "inconclusive" — a smaller WIS on a different set of forecasts is not a win.
+- **No improvement is claimed across different phase schemes either.** Each
+  metrics dict names the `phase_scheme` its `by_phase` was scored under (a
+  missing key means `calendar_v1`, the only scheme before 2026-10-15). If the
+  baseline and best differ, `phase_schemes_match` is False and the report
+  withholds the improvement exactly as for a window mismatch: the same phase
+  name covers different dates, so the attribution table would compare
+  different slices under one label.
 - **Segment keys are strings, whatever the source.** `evaluate_by_horizon`
   returns int keys in-process and the tracker returns JSON strings; `_segment`
   normalizes both so the live report and `--rebuild` render the same tables.
@@ -77,6 +84,7 @@ from typing import Any
 # Private, on purpose: these two functions are the single source of truth for
 # "which direction is better" in this repo. Re-deriving them here is the bug.
 from agent.orchestrator import RunResult, _extract_target, _improvement_pct, _is_better
+from agent.phase_evaluator import SCHEME_PHASE_ORDER, metrics_phase_scheme
 
 __all__ = [
     "CARRY_FORWARD_STATUSES",
@@ -177,6 +185,9 @@ class RunReport:
     baseline_date_range: dict[str, str]
     baseline_n_forecasts: int | None
     windows_match: bool  # False => baseline and best were scored on different data
+    phase_scheme: str  # the best iteration's scheme (baseline's when best is 0)
+    baseline_phase_scheme: str
+    phase_schemes_match: bool  # False => the phase table compares different date slices
     source: str  # "run_result" | "tracker"
     degraded_fields: list[str]
     generated_at: str  # ISO8601 UTC
@@ -475,8 +486,13 @@ def _assemble_report(
     best_range, best_n = _eval_window(best_metrics) if best_metrics else (baseline_range, baseline_n)
     windows_match = (baseline_range, baseline_n) == (best_range, best_n)
 
+    baseline_scheme = metrics_phase_scheme(baseline_metrics)
+    best_scheme = metrics_phase_scheme(best_metrics) if best_metrics else baseline_scheme
+    phase_schemes_match = baseline_scheme == best_scheme
+
     improvement = None
-    if windows_match and baseline_value is not None and best_value is not None:
+    comparable = windows_match and phase_schemes_match
+    if comparable and baseline_value is not None and best_value is not None:
         improvement = _improvement_pct(target_metric, best_value, baseline_value)
 
     return RunReport(
@@ -499,6 +515,9 @@ def _assemble_report(
         baseline_date_range=baseline_range,
         baseline_n_forecasts=baseline_n,
         windows_match=windows_match,
+        phase_scheme=best_scheme,
+        baseline_phase_scheme=baseline_scheme,
+        phase_schemes_match=phase_schemes_match,
         source=source,
         degraded_fields=list(degraded_fields),
         generated_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -601,7 +620,14 @@ def _segment_keys(report: RunReport, section: str) -> list[str]:
         block = metrics.get(section) if isinstance(metrics, dict) else None
         if isinstance(block, dict):
             keys.update(str(k) for k in block)
-    return _sorted_keys(keys)
+    ordered = _sorted_keys(keys)
+    if section != "by_phase":
+        return ordered
+    # Phases read in season order of their scheme; names outside it go last.
+    season = SCHEME_PHASE_ORDER.get(report.phase_scheme, ())
+    return sorted(
+        ordered, key=lambda k: season.index(k) if k in season else len(season)
+    )
 
 
 def _header_block(report: RunReport) -> list[str]:
@@ -618,6 +644,7 @@ def _header_block(report: RunReport) -> list[str]:
         f"- model family: {report.model_family or 'unknown'}",
         f"- cutoff: {report.cutoff_date or 'unknown'}",
         f"- evaluation window: {span} ({n_loc} locations, {n_fc} forecasts)",
+        f"- phase scheme: {_scheme_label(report)}",
         f"- iterations: {report.n_iterations}",
         f"- stop reason: {stop}",
         f"- best iteration: **{report.best_iteration if report.best_iteration is not None else 'none'}**",
@@ -635,6 +662,11 @@ def _header_block(report: RunReport) -> list[str]:
         out.append(
             f"- baseline -> best: {_metric_num(report.baseline_value, metric)} -> "
             f"{_metric_num(report.best_value, metric)} (not comparable: windows differ)"
+        )
+    elif not report.phase_schemes_match:
+        out.append(
+            f"- baseline -> best: {_metric_num(report.baseline_value, metric)} -> "
+            f"{_metric_num(report.best_value, metric)} (not comparable: phase schemes differ)"
         )
     else:
         out.append(
@@ -670,7 +702,18 @@ def _tried_table(report: RunReport) -> list[str]:
 
 
 def _phase_table(report: RunReport) -> list[str]:
+    if not report.phase_schemes_match:
+        return [
+            f"(phase table withheld: baseline scored under {report.baseline_phase_scheme}, "
+            f"best under {report.phase_scheme}; the same phase name covers different dates)"
+        ]
     return _segment_table(report, "by_phase", "phase")
+
+
+def _scheme_label(report: RunReport) -> str:
+    if report.phase_schemes_match:
+        return report.phase_scheme
+    return f"{report.baseline_phase_scheme} (baseline) vs {report.phase_scheme} (best)"
 
 
 def _horizon_table(report: RunReport) -> list[str]:
@@ -761,6 +804,13 @@ def _caveats(report: RunReport) -> list[str]:
             "distinguished from applied ones here. Read the run's own report.md when it exists."
         )
 
+    if not report.phase_schemes_match:
+        out.append(
+            f"baseline and best iteration were scored under different phase schemes "
+            f"({report.baseline_phase_scheme} vs {report.phase_scheme}); the headline "
+            "improvement and the phase table are withheld."
+        )
+
     if not report.windows_match:
         out.append(
             "baseline and best iteration were scored on different evaluation windows "
@@ -806,6 +856,13 @@ def _recommendation(report: RunReport) -> str:
         return (
             f"inconclusive — baseline (iteration 0) and best (iteration {report.best_iteration}) "
             "were scored on different evaluation windows, so no improvement can be claimed"
+        )
+
+    if not report.phase_schemes_match:
+        return (
+            f"inconclusive - baseline (iteration 0) and best (iteration {report.best_iteration}) "
+            f"were scored under different phase schemes ({report.baseline_phase_scheme} vs "
+            f"{report.phase_scheme}), so no improvement can be claimed"
         )
 
     frac = report.improvement_frac

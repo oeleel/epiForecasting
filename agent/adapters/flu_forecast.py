@@ -22,7 +22,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from agent.domain_adapter import DomainAdapter
 from agent.knowledge import KnowledgeBank, RetrievalContext, render_known_facts
-from agent.phase_evaluator import PhaseEvaluator
+from agent.phase_evaluator import DEFAULT_PHASE_SCHEME, PhaseEvaluator, phase_order
 
 # The family whose knobs live in the legacy config sections (xgboost.*,
 # floor.*, target.*, features.*, sample_weights.*) and whose action catalog
@@ -207,10 +207,16 @@ class FluForecastAdapter(DomainAdapter):
 
         Returns a structured dict ready for LLM consumption:
             overall, by_horizon, by_phase, worst_locations, best_locations,
-            worst_segments, date_range, n_locations
+            worst_segments, date_range, n_locations, phase_scheme
+
+        `phase_scheme` names the calendar scheme `by_phase` was scored under,
+        so two metrics dicts with different phase windows are never compared
+        as if their phase numbers meant the same dates.
         """
         # Merge forecasts with actuals
-        merged = PhaseEvaluator.merge_forecasts_actuals(forecasts, actuals)
+        merged = PhaseEvaluator.merge_forecasts_actuals(
+            forecasts, actuals, phase_scheme=DEFAULT_PHASE_SCHEME
+        )
 
         # Overall metrics
         overall = PhaseEvaluator.compute_overall_metrics(merged)
@@ -274,6 +280,7 @@ class FluForecastAdapter(DomainAdapter):
             "worst_segments": worst_segments,
             "date_range": date_range,
             "n_locations": merged["location"].nunique(),
+            "phase_scheme": DEFAULT_PHASE_SCHEME,
         }
 
     # ------------------------------------------------------------------ M2
@@ -334,7 +341,9 @@ class FluForecastAdapter(DomainAdapter):
             },
             "guardrails": {
                 "weight": (1.0, 5.0),
-                "phase_values": ["onset", "peak", "decline"],
+                # The phases evaluation scores under, so a weight lands on rows
+                # the next evaluation calls by the same name.
+                "phase_values": list(phase_order(DEFAULT_PHASE_SCHEME)),
                 "horizon_values": ["1", "2", "3", "4"],
                 # value = weeks_before for dimension='approaching_peak'
                 "approaching_peak_weeks": (2, 12),

@@ -2,64 +2,97 @@
 # agent/adapters/flu_forecast.py::get_domain_context ("Epidemic phases" and
 # "Performance context" bullets), migrated here on 2026-09-30 so the adapter
 # serves it from the bank like every other fact. The wording is kept close to
-# the original bullets; the calendar phases are the ones PhaseEvaluator.PHASE_MAP
-# scores with (open question: calendar vs curve-based phases).
+# the original bullets.
+#
+# The phase entries describe the calendar scheme PhaseEvaluator scores with
+# (agent/phase_evaluator.py DEFAULT_PHASE_SCHEME = adiga_2026_10, A. Adiga
+# 2026-10-15). They replaced the calendar_v1 entries calendar-phase-onset /
+# -peak / -decline on 2026-10-15: those described Oct-Nov / Dec-Jan / Feb-Apr
+# windows that evaluation no longer uses, so keeping them would have told the
+# LLM the wrong dates for "peak" and "decline". New ids, because the meaning
+# changed. October is unassigned by A. Adiga and scored as off_season, an
+# assumption awaiting his confirmation.
 #
 # `context.season_week` is the epidemiological week of the year (1..53, week 40
-# is early October), inclusive. The peak window (Dec-Jan) wraps the year
-# boundary, which a [lo, hi] window cannot express, so that entry carries only
-# `context.phase` and lists its months in `payload`.
+# is early October), inclusive. Epi weeks do not align with calendar dates, so
+# the week windows are approximate; the phase label itself is assigned by date.
+# Growth (Nov-Dec) runs to the year end, so its window ends at week 53.
 
-- id: calendar-phase-onset
+- id: phase-growth-adiga-2026-10
   provenance: curated
   category: domain_dynamics
-  statement: "Onset phase (Oct-Nov): flu activity begins rising."
-  entities: {phase: onset}
-  context: {phase: [onset], season_week: [40, 48]}
+  statement: "Growth phase (Nov 1 - Dec 31): flu activity rises toward the season peak."
+  entities: {phase: growth}
+  context: {phase: [growth], season_week: [44, 53]}
   payload:
-    months: [10, 11]
-    source_of_truth: agent/phase_evaluator.py PhaseEvaluator.PHASE_MAP
+    phase_scheme: adiga_2026_10
+    first_day: "11-01"
+    last_day: "12-31"
+    source_of_truth: agent/phase_evaluator.py PHASE_SCHEMES["adiga_2026_10"]
   evidence:
-    source: "migrated from agent/adapters/flu_forecast.py get_domain_context, 2026-09-30"
+    source: "A. Adiga, meeting 2026-10-15"
     n_observations: null
     reward_delta: null
   confidence: high
   llm_gloss: null
-  created_at: 2026-09-30
+  created_at: 2026-10-15
 
-- id: calendar-phase-peak
+- id: phase-peak-adiga-2026-10
   provenance: curated
   category: domain_dynamics
-  statement: "Peak phase (Dec-Jan): highest hospitalization rates."
+  statement: "Peak phase (Jan 1 - end of February): highest hospitalization rates."
   entities: {phase: peak}
-  context: {phase: [peak]}
+  context: {phase: [peak], season_week: [1, 9]}
   payload:
-    months: [12, 1]
-    source_of_truth: agent/phase_evaluator.py PhaseEvaluator.PHASE_MAP
+    phase_scheme: adiga_2026_10
+    first_day: "01-01"
+    last_day: "02-29"
+    source_of_truth: agent/phase_evaluator.py PHASE_SCHEMES["adiga_2026_10"]
   evidence:
-    source: "migrated from agent/adapters/flu_forecast.py get_domain_context, 2026-09-30"
+    source: "A. Adiga, meeting 2026-10-15"
     n_observations: null
     reward_delta: null
   confidence: high
   llm_gloss: null
-  created_at: 2026-09-30
+  created_at: 2026-10-15
 
-- id: calendar-phase-decline
+- id: phase-decline-adiga-2026-10
   provenance: curated
   category: domain_dynamics
-  statement: "Decline phase (Feb-Apr): activity decreasing."
+  statement: "Decline phase (Mar 1 - Apr 15): activity decreasing."
   entities: {phase: decline}
-  context: {phase: [decline], season_week: [5, 17]}
+  context: {phase: [decline], season_week: [9, 16]}
   payload:
-    months: [2, 3, 4]
-    source_of_truth: agent/phase_evaluator.py PhaseEvaluator.PHASE_MAP
+    phase_scheme: adiga_2026_10
+    first_day: "03-01"
+    last_day: "04-15"
+    source_of_truth: agent/phase_evaluator.py PHASE_SCHEMES["adiga_2026_10"]
   evidence:
-    source: "migrated from agent/adapters/flu_forecast.py get_domain_context, 2026-09-30"
+    source: "A. Adiga, meeting 2026-10-15"
     n_observations: null
     reward_delta: null
   confidence: high
   llm_gloss: null
-  created_at: 2026-09-30
+  created_at: 2026-10-15
+
+- id: phase-plateau-adiga-2026-10
+  provenance: curated
+  category: domain_dynamics
+  statement: "Plateau phase (Apr 16 - May 31): the low tail of the season after the decline."
+  entities: {phase: plateau}
+  context: {phase: [plateau], season_week: [15, 22]}
+  payload:
+    phase_scheme: adiga_2026_10
+    first_day: "04-16"
+    last_day: "05-31"
+    source_of_truth: agent/phase_evaluator.py PHASE_SCHEMES["adiga_2026_10"]
+  evidence:
+    source: "A. Adiga, meeting 2026-10-15"
+    n_observations: null
+    reward_delta: null
+  confidence: high
+  llm_gloss: null
+  created_at: 2026-10-15
 
 - id: mape-quality-bands
   provenance: curated

@@ -71,6 +71,12 @@ from agent.knowledge import (
     render_known_facts,
 )
 from agent.llm_client import LLMClient
+from agent.phase_evaluator import (
+    DEFAULT_PHASE_SCHEME,
+    describe_phase_scheme,
+    metrics_phase_scheme,
+    phase_order,
+)
 from agent.prompt_templates import format_summary_prompt
 from agent.run_tracker import RunTracker
 
@@ -100,9 +106,11 @@ def print_metrics_table(metrics: dict) -> None:
 
     # By phase
     if metrics["by_phase"]:
+        scheme = metrics_phase_scheme(metrics)
         print(f"\n--- By Epidemic Phase ---")
+        print(f"  scheme: {describe_phase_scheme(scheme)}")
         print(f"  {'Phase':<10} {'MAPE':>8} {'MAE':>8} {'Bias':>10} {'N':>6}")
-        for phase in ["onset", "peak", "decline"]:
+        for phase in phase_order(scheme):
             if phase in metrics["by_phase"]:
                 m = metrics["by_phase"][phase]
                 print(f"  {phase.capitalize():<10} {m['mape']:>7.1f}% {m['mae']:>8.1f} {m['bias']:>+10.1f} {m['n']:>6}")
@@ -509,17 +517,23 @@ def cmd_select_model(args) -> None:
     )
     result = select_incumbent(candidates, goal=goal, cutoffs=cutoffs)
 
+    # evaluate_candidates scores every family under the default scheme
+    phases = phase_order(DEFAULT_PHASE_SCHEME)
+    rule_width = 106
     print()
-    print("=" * 96)
+    print("=" * rule_width)
     print("MODEL SELECTION")
-    print("=" * 96)
+    print(f"phase scheme: {describe_phase_scheme(DEFAULT_PHASE_SCHEME)}")
+    print("=" * rule_width)
+    phase_header = " ".join(f"{p:>9}" for p in phases)
     header = (f"{'family':<18} {'wis':>9} {'mape':>7} {'cov95':>6} "
-              f"{'onset':>9} {'peak':>9} {'decline':>9} {'fit s':>7}  status")
+              f"{phase_header} {'fit s':>7}  status")
     print(header)
-    print("-" * 96)
+    print("-" * rule_width)
     for cand in result.candidates:
         if not cand.ok:
-            print(f"{cand.family:<18} {'-':>9} {'-':>7} {'-':>6} {'-':>9} {'-':>9} {'-':>9} "
+            phase_blanks = " ".join(f"{'-':>9}" for _ in phases)
+            print(f"{cand.family:<18} {'-':>9} {'-':>7} {'-':>6} {phase_blanks} "
                   f"{cand.fit_seconds_total:>7.1f}  FAILED: {cand.error}")
             continue
         o = cand.metrics.get("overall", {})
@@ -535,7 +549,7 @@ def cmd_select_model(args) -> None:
         wis_s = f"{wis:>9.1f}" if isinstance(wis, (int, float)) else f"{'-':>9}"
         mark = "  <- incumbent" if cand.family == result.incumbent else ""
         print(f"{cand.family:<18} {wis_s} {o.get('mape', float('nan')):>7.1f} {cov_s} "
-              f"{_w('onset')} {_w('peak')} {_w('decline')} {cand.fit_seconds_total:>7.1f}  ok{mark}")
+              f"{' '.join(_w(p) for p in phases)} {cand.fit_seconds_total:>7.1f}  ok{mark}")
     print()
     if result.incumbent is None:
         print("no candidate produced a scoreable forecast; nothing selected")
@@ -688,6 +702,13 @@ def cmd_compare(args) -> None:
         sys.exit(1)
 
     print(f"\nComparing on metric: {cmp['metric']}\n")
+    scheme_a = metrics_phase_scheme((cmp["a"].get("best") or {}).get("metrics"))
+    scheme_b = metrics_phase_scheme((cmp["b"].get("best") or {}).get("metrics"))
+    if scheme_a != scheme_b:
+        # Overall metrics do not depend on phases, but any phase reading of the
+        # two runs would compare different date windows under the same names.
+        print(f"WARNING: phase schemes differ (run A {scheme_a}, run B {scheme_b}); "
+              "per-phase metrics of these runs are not comparable.\n")
     print(f"{'':<25} {'run A':<25} {'run B':<25}")
     print("-" * 75)
 
@@ -850,6 +871,21 @@ def _knowledge_rebuild() -> None:
         print(f"{provenance:<14} {bank.count(provenance):>7}")
     print("-" * 22)
     print(f"{'total':<14} {bank.count():>7}")
+
+    # A rebuild reloads curated YAML only; experiential rows imported before
+    # entries carried payload.phase_scheme keep statements that do not say
+    # which calendar their phase numbers mean.
+    unlabelled = [
+        entry.id for entry in bank.list(provenance="experiential")
+        if "phase_scheme" not in entry.payload
+    ]
+    if unlabelled:
+        print(
+            f"\nwarning: {len(unlabelled)} experiential entries carry no payload.phase_scheme "
+            f"({', '.join(unlabelled)}); re-run `python -m agent knowledge import-experiment` "
+            f"so their statements name the phase scheme they were scored under",
+            file=sys.stderr,
+        )
 
 
 def _knowledge_list(provenance: str | None, category: str | None) -> None:
@@ -1242,14 +1278,15 @@ def main():
     # default=None (not "wis"/"all") so cmd_select_model can tell "the user typed
     # --metric wis" from "argparse filled it in" — the defaults are applied there.
     # keep in sync with agent.model_selection.VALID_METRICS / VALID_PHASES
-    # (not imported: agent.model_selection pulls pandas into every CLI startup)
+    # (not imported: agent.model_selection pulls the model bank into every CLI
+    # startup); the phases come from the default scheme, as VALID_PHASES does
     select_parser.add_argument(
         "--metric", default=None,
         choices=["wis", "mape", "mae", "rmse", "coverage_95", "bias"],
         help="Goal metric for ranking (default: wis)",
     )
     select_parser.add_argument(
-        "--phase", default=None, choices=["all", "onset", "peak", "decline"],
+        "--phase", default=None, choices=["all", *phase_order(DEFAULT_PHASE_SCHEME)],
         help="Read the goal metric from this phase (default: all = overall)",
     )
     select_parser.add_argument(

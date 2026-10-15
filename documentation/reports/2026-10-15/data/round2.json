@@ -1,0 +1,5612 @@
+[
+{
+"config_id": "baseline__seed42",
+"base": "baseline",
+"arm": "baseline",
+"seed": 42,
+"describe": "stock config",
+"overall": {
+"wis": 50.59,
+"bias": -25.7,
+"coverage_95": 0.832
+},
+"by_phase": {
+"decline": {
+"wis": 32.34,
+"bias": 22.6,
+"coverage_95": 0.657,
+"n": 312
+},
+"growth": {
+"wis": 63.95,
+"bias": -76.1,
+"coverage_95": 0.859,
+"n": 468
+},
+"peak": {
+"wis": 108.53,
+"bias": -38.2,
+"coverage_95": 0.876,
+"n": 468
+},
+"plateau": {
+"wis": 7.37,
+"bias": -4.0,
+"coverage_95": 0.832,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 29.0,
+"bias": -24.4,
+"coverage_95": 0.885,
+"n": 468
+},
+"2": {
+"wis": 36.8,
+"bias": -26.4,
+"coverage_95": 0.874,
+"n": 468
+},
+"3": {
+"wis": 54.93,
+"bias": -21.5,
+"coverage_95": 0.812,
+"n": 468
+},
+"4": {
+"wis": 81.61,
+"bias": -30.7,
+"coverage_95": 0.756,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 21.15,
+"bias": 25.9,
+"coverage_95": 0.481,
+"n": 52
+},
+"2": {
+"wis": 29.83,
+"bias": 17.2,
+"coverage_95": 0.76,
+"n": 104
+},
+"3": {
+"wis": 30.4,
+"bias": 19.0,
+"coverage_95": 0.635,
+"n": 104
+},
+"4": {
+"wis": 52.45,
+"bias": 37.1,
+"coverage_95": 0.673,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 10.78,
+"bias": -11.2,
+"coverage_95": 0.971,
+"n": 104
+},
+"2": {
+"wis": 27.84,
+"bias": -29.5,
+"coverage_95": 0.933,
+"n": 104
+},
+"3": {
+"wis": 75.49,
+"bias": -98.9,
+"coverage_95": 0.846,
+"n": 104
+},
+"4": {
+"wis": 115.77,
+"bias": -135.2,
+"coverage_95": 0.744,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 68.39,
+"bias": -71.5,
+"coverage_95": 0.91,
+"n": 156
+},
+"2": {
+"wis": 99.41,
+"bias": -101.2,
+"coverage_95": 0.933,
+"n": 104
+},
+"3": {
+"wis": 132.12,
+"bias": -10.4,
+"coverage_95": 0.837,
+"n": 104
+},
+"4": {
+"wis": 154.29,
+"bias": 47.1,
+"coverage_95": 0.808,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 4.94,
+"bias": -4.1,
+"coverage_95": 0.942,
+"n": 104
+},
+"2": {
+"wis": 6.21,
+"bias": -4.7,
+"coverage_95": 0.846,
+"n": 104
+},
+"3": {
+"wis": 7.53,
+"bias": -9.4,
+"coverage_95": 0.865,
+"n": 52
+},
+"4": {
+"wis": 10.88,
+"bias": -0.4,
+"coverage_95": 0.692,
+"n": 104
+}
+}
+}
+},
+{
+"config_id": "lambda_1.5__seed42",
+"base": "lambda_1.5",
+"arm": "lambda",
+"seed": 42,
+"describe": "approaching-peak rows (K=6 weeks before the season max) weighted 1.5x",
+"overall": {
+"wis": 50.79,
+"bias": -20.5,
+"coverage_95": 0.83
+},
+"by_phase": {
+"decline": {
+"wis": 32.67,
+"bias": 19.7,
+"coverage_95": 0.651,
+"n": 312
+},
+"growth": {
+"wis": 63.18,
+"bias": -77.9,
+"coverage_95": 0.868,
+"n": 468
+},
+"peak": {
+"wis": 109.88,
+"bias": -13.5,
+"coverage_95": 0.861,
+"n": 468
+},
+"plateau": {
+"wis": 7.45,
+"bias": -4.5,
+"coverage_95": 0.835,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 28.68,
+"bias": -18.9,
+"coverage_95": 0.876,
+"n": 468
+},
+"2": {
+"wis": 36.42,
+"bias": -18.3,
+"coverage_95": 0.874,
+"n": 468
+},
+"3": {
+"wis": 54.99,
+"bias": -16.0,
+"coverage_95": 0.803,
+"n": 468
+},
+"4": {
+"wis": 83.09,
+"bias": -28.9,
+"coverage_95": 0.765,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 20.84,
+"bias": 23.9,
+"coverage_95": 0.462,
+"n": 52
+},
+"2": {
+"wis": 30.19,
+"bias": 11.0,
+"coverage_95": 0.75,
+"n": 104
+},
+"3": {
+"wis": 31.03,
+"bias": 20.1,
+"coverage_95": 0.635,
+"n": 104
+},
+"4": {
+"wis": 52.72,
+"bias": 32.2,
+"coverage_95": 0.673,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 11.14,
+"bias": -11.1,
+"coverage_95": 0.971,
+"n": 104
+},
+"2": {
+"wis": 26.68,
+"bias": -28.5,
+"coverage_95": 0.933,
+"n": 104
+},
+"3": {
+"wis": 72.02,
+"bias": -94.8,
+"coverage_95": 0.856,
+"n": 104
+},
+"4": {
+"wis": 116.3,
+"bias": -144.0,
+"coverage_95": 0.763,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 67.2,
+"bias": -54.2,
+"coverage_95": 0.904,
+"n": 156
+},
+"2": {
+"wis": 98.5,
+"bias": -59.6,
+"coverage_95": 0.923,
+"n": 104
+},
+"3": {
+"wis": 135.29,
+"bias": 8.6,
+"coverage_95": 0.788,
+"n": 104
+},
+"4": {
+"wis": 159.86,
+"bias": 71.6,
+"coverage_95": 0.808,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 5.05,
+"bias": -4.4,
+"coverage_95": 0.923,
+"n": 104
+},
+"2": {
+"wis": 6.21,
+"bias": -5.1,
+"coverage_95": 0.865,
+"n": 104
+},
+"3": {
+"wis": 7.54,
+"bias": -9.6,
+"coverage_95": 0.846,
+"n": 52
+},
+"4": {
+"wis": 11.04,
+"bias": -1.3,
+"coverage_95": 0.712,
+"n": 104
+}
+}
+}
+},
+{
+"config_id": "lambda_2__seed42",
+"base": "lambda_2",
+"arm": "lambda",
+"seed": 42,
+"describe": "approaching-peak rows (K=6 weeks before the season max) weighted 2x",
+"overall": {
+"wis": 50.67,
+"bias": -15.8,
+"coverage_95": 0.826
+},
+"by_phase": {
+"decline": {
+"wis": 33.33,
+"bias": 23.0,
+"coverage_95": 0.654,
+"n": 312
+},
+"growth": {
+"wis": 62.16,
+"bias": -76.6,
+"coverage_95": 0.868,
+"n": 468
+},
+"peak": {
+"wis": 109.96,
+"bias": 2.1,
+"coverage_95": 0.842,
+"n": 468
+},
+"plateau": {
+"wis": 7.35,
+"bias": -4.2,
+"coverage_95": 0.843,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 26.84,
+"bias": -12.9,
+"coverage_95": 0.874,
+"n": 468
+},
+"2": {
+"wis": 35.91,
+"bias": -19.0,
+"coverage_95": 0.874,
+"n": 468
+},
+"3": {
+"wis": 56.09,
+"bias": -8.0,
+"coverage_95": 0.797,
+"n": 468
+},
+"4": {
+"wis": 83.84,
+"bias": -23.1,
+"coverage_95": 0.761,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 20.2,
+"bias": 22.9,
+"coverage_95": 0.462,
+"n": 52
+},
+"2": {
+"wis": 30.64,
+"bias": 12.7,
+"coverage_95": 0.75,
+"n": 104
+},
+"3": {
+"wis": 32.29,
+"bias": 26.1,
+"coverage_95": 0.644,
+"n": 104
+},
+"4": {
+"wis": 53.94,
+"bias": 37.2,
+"coverage_95": 0.673,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 10.5,
+"bias": -9.3,
+"coverage_95": 0.971,
+"n": 104
+},
+"2": {
+"wis": 26.54,
+"bias": -28.0,
+"coverage_95": 0.933,
+"n": 104
+},
+"3": {
+"wis": 70.14,
+"bias": -93.2,
+"coverage_95": 0.856,
+"n": 104
+},
+"4": {
+"wis": 115.05,
+"bias": -142.8,
+"coverage_95": 0.763,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 62.39,
+"bias": -37.3,
+"coverage_95": 0.891,
+"n": 156
+},
+"2": {
+"wis": 95.98,
+"bias": -65.5,
+"coverage_95": 0.913,
+"n": 104
+},
+"3": {
+"wis": 140.53,
+"bias": 37.3,
+"coverage_95": 0.75,
+"n": 104
+},
+"4": {
+"wis": 164.72,
+"bias": 93.6,
+"coverage_95": 0.788,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 4.97,
+"bias": -4.2,
+"coverage_95": 0.933,
+"n": 104
+},
+"2": {
+"wis": 6.11,
+"bias": -4.4,
+"coverage_95": 0.875,
+"n": 104
+},
+"3": {
+"wis": 7.68,
+"bias": -9.6,
+"coverage_95": 0.865,
+"n": 52
+},
+"4": {
+"wis": 10.8,
+"bias": -1.3,
+"coverage_95": 0.712,
+"n": 104
+}
+}
+}
+},
+{
+"config_id": "lambda_3__seed42",
+"base": "lambda_3",
+"arm": "lambda",
+"seed": 42,
+"describe": "approaching-peak rows (K=6 weeks before the season max) weighted 3x",
+"overall": {
+"wis": 49.71,
+"bias": -13.4,
+"coverage_95": 0.825
+},
+"by_phase": {
+"decline": {
+"wis": 34.2,
+"bias": 20.2,
+"coverage_95": 0.667,
+"n": 312
+},
+"growth": {
+"wis": 60.76,
+"bias": -74.3,
+"coverage_95": 0.87,
+"n": 468
+},
+"peak": {
+"wis": 106.87,
+"bias": 11.3,
+"coverage_95": 0.825,
+"n": 468
+},
+"plateau": {
+"wis": 7.43,
+"bias": -4.4,
+"coverage_95": 0.843,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 26.0,
+"bias": -13.4,
+"coverage_95": 0.885,
+"n": 468
+},
+"2": {
+"wis": 35.05,
+"bias": -9.8,
+"coverage_95": 0.872,
+"n": 468
+},
+"3": {
+"wis": 55.87,
+"bias": -8.6,
+"coverage_95": 0.806,
+"n": 468
+},
+"4": {
+"wis": 81.92,
+"bias": -21.9,
+"coverage_95": 0.739,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 20.26,
+"bias": 21.3,
+"coverage_95": 0.5,
+"n": 52
+},
+"2": {
+"wis": 31.7,
+"bias": 15.9,
+"coverage_95": 0.76,
+"n": 104
+},
+"3": {
+"wis": 33.02,
+"bias": 17.6,
+"coverage_95": 0.654,
+"n": 104
+},
+"4": {
+"wis": 55.53,
+"bias": 32.8,
+"coverage_95": 0.673,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 10.34,
+"bias": -8.6,
+"coverage_95": 0.971,
+"n": 104
+},
+"2": {
+"wis": 25.85,
+"bias": -25.3,
+"coverage_95": 0.942,
+"n": 104
+},
+"3": {
+"wis": 69.53,
+"bias": -95.2,
+"coverage_95": 0.875,
+"n": 104
+},
+"4": {
+"wis": 111.82,
+"bias": -136.7,
+"coverage_95": 0.75,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 59.81,
+"bias": -38.4,
+"coverage_95": 0.904,
+"n": 156
+},
+"2": {
+"wis": 91.76,
+"bias": -30.1,
+"coverage_95": 0.885,
+"n": 104
+},
+"3": {
+"wis": 139.46,
+"bias": 46.1,
+"coverage_95": 0.76,
+"n": 104
+},
+"4": {
+"wis": 159.98,
+"bias": 92.4,
+"coverage_95": 0.712,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 5.19,
+"bias": -4.3,
+"coverage_95": 0.942,
+"n": 104
+},
+"2": {
+"wis": 6.1,
+"bias": -4.6,
+"coverage_95": 0.875,
+"n": 104
+},
+"3": {
+"wis": 7.59,
+"bias": -10.1,
+"coverage_95": 0.865,
+"n": 52
+},
+"4": {
+"wis": 10.92,
+"bias": -1.6,
+"coverage_95": 0.702,
+"n": 104
+}
+}
+}
+},
+{
+"config_id": "lambda_5__seed42",
+"base": "lambda_5",
+"arm": "lambda",
+"seed": 42,
+"describe": "approaching-peak rows (K=6 weeks before the season max) weighted 5x",
+"overall": {
+"wis": 50.82,
+"bias": -10.5,
+"coverage_95": 0.822
+},
+"by_phase": {
+"decline": {
+"wis": 35.08,
+"bias": 19.4,
+"coverage_95": 0.683,
+"n": 312
+},
+"growth": {
+"wis": 59.6,
+"bias": -71.1,
+"coverage_95": 0.878,
+"n": 468
+},
+"peak": {
+"wis": 111.7,
+"bias": 20.7,
+"coverage_95": 0.786,
+"n": 468
+},
+"plateau": {
+"wis": 7.57,
+"bias": -4.6,
+"coverage_95": 0.852,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 25.35,
+"bias": -13.2,
+"coverage_95": 0.878,
+"n": 468
+},
+"2": {
+"wis": 35.75,
+"bias": -10.8,
+"coverage_95": 0.865,
+"n": 468
+},
+"3": {
+"wis": 56.95,
+"bias": -5.6,
+"coverage_95": 0.812,
+"n": 468
+},
+"4": {
+"wis": 85.22,
+"bias": -12.2,
+"coverage_95": 0.733,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 20.44,
+"bias": 22.4,
+"coverage_95": 0.481,
+"n": 52
+},
+"2": {
+"wis": 32.58,
+"bias": 13.7,
+"coverage_95": 0.75,
+"n": 104
+},
+"3": {
+"wis": 34.07,
+"bias": 16.2,
+"coverage_95": 0.721,
+"n": 104
+},
+"4": {
+"wis": 56.72,
+"bias": 33.9,
+"coverage_95": 0.673,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 10.04,
+"bias": -8.3,
+"coverage_95": 0.971,
+"n": 104
+},
+"2": {
+"wis": 26.41,
+"bias": -25.2,
+"coverage_95": 0.962,
+"n": 104
+},
+"3": {
+"wis": 67.99,
+"bias": -89.2,
+"coverage_95": 0.875,
+"n": 104
+},
+"4": {
+"wis": 109.18,
+"bias": -131.5,
+"coverage_95": 0.763,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 57.99,
+"bias": -38.2,
+"coverage_95": 0.904,
+"n": 156
+},
+"2": {
+"wis": 93.33,
+"bias": -31.7,
+"coverage_95": 0.846,
+"n": 104
+},
+"3": {
+"wis": 144.34,
+"bias": 55.1,
+"coverage_95": 0.712,
+"n": 104
+},
+"4": {
+"wis": 178.0,
+"bias": 127.2,
+"coverage_95": 0.625,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 5.14,
+"bias": -4.6,
+"coverage_95": 0.923,
+"n": 104
+},
+"2": {
+"wis": 6.23,
+"bias": -4.7,
+"coverage_95": 0.875,
+"n": 104
+},
+"3": {
+"wis": 8.08,
+"bias": -11.7,
+"coverage_95": 0.865,
+"n": 52
+},
+"4": {
+"wis": 11.09,
+"bias": -0.8,
+"coverage_95": 0.75,
+"n": 104
+}
+}
+}
+},
+{
+"config_id": "lambda_calendar_2__seed42",
+"base": "lambda_calendar_2",
+"arm": "lambda_calendar",
+"seed": 42,
+"describe": "peak-phase rows by target date (origin + h weeks) under adiga_2026_10 weighted 2x",
+"overall": {
+"wis": 49.9,
+"bias": -17.5,
+"coverage_95": 0.826
+},
+"by_phase": {
+"decline": {
+"wis": 34.82,
+"bias": 26.7,
+"coverage_95": 0.647,
+"n": 312
+},
+"growth": {
+"wis": 61.69,
+"bias": -73.7,
+"coverage_95": 0.874,
+"n": 468
+},
+"peak": {
+"wis": 106.39,
+"bias": -10.9,
+"coverage_95": 0.846,
+"n": 468
+},
+"plateau": {
+"wis": 7.4,
+"bias": -3.6,
+"coverage_95": 0.835,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 27.2,
+"bias": -16.7,
+"coverage_95": 0.878,
+"n": 468
+},
+"2": {
+"wis": 35.74,
+"bias": -18.6,
+"coverage_95": 0.87,
+"n": 468
+},
+"3": {
+"wis": 54.5,
+"bias": -16.4,
+"coverage_95": 0.816,
+"n": 468
+},
+"4": {
+"wis": 82.15,
+"bias": -18.4,
+"coverage_95": 0.741,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 21.33,
+"bias": 26.4,
+"coverage_95": 0.462,
+"n": 52
+},
+"2": {
+"wis": 31.07,
+"bias": 18.8,
+"coverage_95": 0.75,
+"n": 104
+},
+"3": {
+"wis": 32.86,
+"bias": 24.4,
+"coverage_95": 0.663,
+"n": 104
+},
+"4": {
+"wis": 59.77,
+"bias": 47.3,
+"coverage_95": 0.596,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 11.06,
+"bias": -12.9,
+"coverage_95": 0.962,
+"n": 104
+},
+"2": {
+"wis": 27.99,
+"bias": -27.6,
+"coverage_95": 0.933,
+"n": 104
+},
+"3": {
+"wis": 72.26,
+"bias": -92.0,
+"coverage_95": 0.875,
+"n": 104
+},
+"4": {
+"wis": 110.87,
+"bias": -132.7,
+"coverage_95": 0.776,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 62.83,
+"bias": -47.7,
+"coverage_95": 0.904,
+"n": 156
+},
+"2": {
+"wis": 93.43,
+"bias": -70.3,
+"coverage_95": 0.904,
+"n": 104
+},
+"3": {
+"wis": 130.97,
+"bias": -0.1,
+"coverage_95": 0.788,
+"n": 104
+},
+"4": {
+"wis": 160.11,
+"bias": 92.6,
+"coverage_95": 0.76,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 4.89,
+"bias": -3.9,
+"coverage_95": 0.942,
+"n": 104
+},
+"2": {
+"wis": 6.05,
+"bias": -4.2,
+"coverage_95": 0.865,
+"n": 104
+},
+"3": {
+"wis": 7.48,
+"bias": -9.6,
+"coverage_95": 0.885,
+"n": 52
+},
+"4": {
+"wis": 11.21,
+"bias": 0.2,
+"coverage_95": 0.673,
+"n": 104
+}
+}
+}
+},
+{
+"config_id": "lambda_calendar_3__seed42",
+"base": "lambda_calendar_3",
+"arm": "lambda_calendar",
+"seed": 42,
+"describe": "peak-phase rows by target date (origin + h weeks) under adiga_2026_10 weighted 3x",
+"overall": {
+"wis": 50.28,
+"bias": -12.5,
+"coverage_95": 0.826
+},
+"by_phase": {
+"decline": {
+"wis": 36.58,
+"bias": 31.6,
+"coverage_95": 0.66,
+"n": 312
+},
+"growth": {
+"wis": 60.69,
+"bias": -70.3,
+"coverage_95": 0.878,
+"n": 468
+},
+"peak": {
+"wis": 107.66,
+"bias": 2.0,
+"coverage_95": 0.827,
+"n": 468
+},
+"plateau": {
+"wis": 7.53,
+"bias": -2.9,
+"coverage_95": 0.841,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 26.6,
+"bias": -15.3,
+"coverage_95": 0.885,
+"n": 468
+},
+"2": {
+"wis": 35.14,
+"bias": -13.6,
+"coverage_95": 0.868,
+"n": 468
+},
+"3": {
+"wis": 54.57,
+"bias": -11.8,
+"coverage_95": 0.816,
+"n": 468
+},
+"4": {
+"wis": 84.82,
+"bias": -9.0,
+"coverage_95": 0.735,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 21.75,
+"bias": 27.5,
+"coverage_95": 0.519,
+"n": 52
+},
+"2": {
+"wis": 32.08,
+"bias": 21.6,
+"coverage_95": 0.75,
+"n": 104
+},
+"3": {
+"wis": 35.09,
+"bias": 31.1,
+"coverage_95": 0.663,
+"n": 104
+},
+"4": {
+"wis": 63.41,
+"bias": 56.9,
+"coverage_95": 0.615,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 11.08,
+"bias": -12.6,
+"coverage_95": 0.971,
+"n": 104
+},
+"2": {
+"wis": 28.21,
+"bias": -26.3,
+"coverage_95": 0.942,
+"n": 104
+},
+"3": {
+"wis": 71.62,
+"bias": -89.5,
+"coverage_95": 0.875,
+"n": 104
+},
+"4": {
+"wis": 108.13,
+"bias": -125.4,
+"coverage_95": 0.776,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 60.89,
+"bias": -44.0,
+"coverage_95": 0.897,
+"n": 156
+},
+"2": {
+"wis": 89.66,
+"bias": -52.6,
+"coverage_95": 0.904,
+"n": 104
+},
+"3": {
+"wis": 129.76,
+"bias": 10.8,
+"coverage_95": 0.788,
+"n": 104
+},
+"4": {
+"wis": 173.69,
+"bias": 117.0,
+"coverage_95": 0.683,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 4.85,
+"bias": -3.9,
+"coverage_95": 0.942,
+"n": 104
+},
+"2": {
+"wis": 6.03,
+"bias": -3.8,
+"coverage_95": 0.846,
+"n": 104
+},
+"3": {
+"wis": 7.08,
+"bias": -9.3,
+"coverage_95": 0.885,
+"n": 52
+},
+"4": {
+"wis": 11.94,
+"bias": 2.4,
+"coverage_95": 0.712,
+"n": 104
+}
+}
+}
+},
+{
+"config_id": "window_52__seed42",
+"base": "window_52",
+"arm": "window",
+"seed": 42,
+"describe": "fit only on feature rows from the last 52 weeks before each cutoff",
+"overall": {
+"wis": 71.33,
+"bias": -3.8,
+"coverage_95": 0.85
+},
+"by_phase": {
+"decline": {
+"wis": 30.08,
+"bias": 9.6,
+"coverage_95": 0.779,
+"n": 312
+},
+"growth": {
+"wis": 81.25,
+"bias": -92.1,
+"coverage_95": 0.855,
+"n": 468
+},
+"peak": {
+"wis": 174.95,
+"bias": 77.7,
+"coverage_95": 0.863,
+"n": 468
+},
+"plateau": {
+"wis": 7.75,
+"bias": -6.2,
+"coverage_95": 0.863,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 38.45,
+"bias": -38.0,
+"coverage_95": 0.878,
+"n": 468
+},
+"2": {
+"wis": 50.92,
+"bias": -4.2,
+"coverage_95": 0.887,
+"n": 468
+},
+"3": {
+"wis": 80.8,
+"bias": 16.6,
+"coverage_95": 0.85,
+"n": 468
+},
+"4": {
+"wis": 115.14,
+"bias": 10.6,
+"coverage_95": 0.786,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 19.57,
+"bias": 20.1,
+"coverage_95": 0.5,
+"n": 52
+},
+"2": {
+"wis": 29.96,
+"bias": 10.0,
+"coverage_95": 0.817,
+"n": 104
+},
+"3": {
+"wis": 27.98,
+"bias": 4.3,
+"coverage_95": 0.808,
+"n": 104
+},
+"4": {
+"wis": 45.03,
+"bias": 8.5,
+"coverage_95": 0.923,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 14.38,
+"bias": -11.8,
+"coverage_95": 0.952,
+"n": 104
+},
+"2": {
+"wis": 35.26,
+"bias": -30.0,
+"coverage_95": 0.923,
+"n": 104
+},
+"3": {
+"wis": 93.35,
+"bias": -106.4,
+"coverage_95": 0.865,
+"n": 104
+},
+"4": {
+"wis": 148.44,
+"bias": -177.4,
+"coverage_95": 0.737,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 94.4,
+"bias": -109.7,
+"coverage_95": 0.904,
+"n": 156
+},
+"2": {
+"wis": 154.39,
+"bias": 8.9,
+"coverage_95": 0.894,
+"n": 104
+},
+"3": {
+"wis": 232.04,
+"bias": 188.2,
+"coverage_95": 0.846,
+"n": 104
+},
+"4": {
+"wis": 259.22,
+"bias": 317.4,
+"coverage_95": 0.788,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 5.26,
+"bias": -4.0,
+"coverage_95": 0.933,
+"n": 104
+},
+"2": {
+"wis": 6.43,
+"bias": -5.7,
+"coverage_95": 0.885,
+"n": 104
+},
+"3": {
+"wis": 8.15,
+"bias": -11.2,
+"coverage_95": 0.904,
+"n": 52
+},
+"4": {
+"wis": 11.35,
+"bias": -6.3,
+"coverage_95": 0.75,
+"n": 104
+}
+}
+}
+},
+{
+"config_id": "oversample_2__seed42",
+"base": "oversample_2",
+"arm": "oversample",
+"seed": 42,
+"describe": "peak-phase training rows by target date under adiga_2026_10 fitted 2x (1 extra copy each)",
+"overall": {
+"wis": 49.77,
+"bias": -20.6,
+"coverage_95": 0.826
+},
+"by_phase": {
+"decline": {
+"wis": 35.16,
+"bias": 27.9,
+"coverage_95": 0.657,
+"n": 312
+},
+"growth": {
+"wis": 61.14,
+"bias": -71.7,
+"coverage_95": 0.874,
+"n": 468
+},
+"peak": {
+"wis": 106.16,
+"bias": -26.5,
+"coverage_95": 0.831,
+"n": 468
+},
+"plateau": {
+"wis": 7.45,
+"bias": -3.2,
+"coverage_95": 0.843,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 27.53,
+"bias": -19.9,
+"coverage_95": 0.876,
+"n": 468
+},
+"2": {
+"wis": 36.48,
+"bias": -19.0,
+"coverage_95": 0.872,
+"n": 468
+},
+"3": {
+"wis": 53.45,
+"bias": -19.9,
+"coverage_95": 0.808,
+"n": 468
+},
+"4": {
+"wis": 81.61,
+"bias": -23.8,
+"coverage_95": 0.748,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 21.46,
+"bias": 25.7,
+"coverage_95": 0.481,
+"n": 52
+},
+"2": {
+"wis": 31.53,
+"bias": 23.4,
+"coverage_95": 0.75,
+"n": 104
+},
+"3": {
+"wis": 32.62,
+"bias": 20.4,
+"coverage_95": 0.663,
+"n": 104
+},
+"4": {
+"wis": 61.24,
+"bias": 54.2,
+"coverage_95": 0.635,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 11.27,
+"bias": -11.8,
+"coverage_95": 0.971,
+"n": 104
+},
+"2": {
+"wis": 27.96,
+"bias": -30.0,
+"coverage_95": 0.942,
+"n": 104
+},
+"3": {
+"wis": 71.9,
+"bias": -90.8,
+"coverage_95": 0.865,
+"n": 104
+},
+"4": {
+"wis": 109.32,
+"bias": -126.7,
+"coverage_95": 0.769,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 63.66,
+"bias": -57.7,
+"coverage_95": 0.897,
+"n": 156
+},
+"2": {
+"wis": 96.28,
+"bias": -74.2,
+"coverage_95": 0.885,
+"n": 104
+},
+"3": {
+"wis": 127.0,
+"bias": -13.6,
+"coverage_95": 0.76,
+"n": 104
+},
+"4": {
+"wis": 158.97,
+"bias": 55.0,
+"coverage_95": 0.75,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 4.86,
+"bias": -3.7,
+"coverage_95": 0.923,
+"n": 104
+},
+"2": {
+"wis": 6.09,
+"bias": -4.2,
+"coverage_95": 0.885,
+"n": 104
+},
+"3": {
+"wis": 7.27,
+"bias": -9.3,
+"coverage_95": 0.885,
+"n": 52
+},
+"4": {
+"wis": 11.49,
+"bias": 1.5,
+"coverage_95": 0.702,
+"n": 104
+}
+}
+}
+},
+{
+"config_id": "oversample_3__seed42",
+"base": "oversample_3",
+"arm": "oversample",
+"seed": 42,
+"describe": "peak-phase training rows by target date under adiga_2026_10 fitted 3x (2 extra copies each)",
+"overall": {
+"wis": 50.08,
+"bias": -16.3,
+"coverage_95": 0.819
+},
+"by_phase": {
+"decline": {
+"wis": 36.49,
+"bias": 31.7,
+"coverage_95": 0.651,
+"n": 312
+},
+"growth": {
+"wis": 61.44,
+"bias": -71.5,
+"coverage_95": 0.88,
+"n": 468
+},
+"peak": {
+"wis": 106.16,
+"bias": -12.0,
+"coverage_95": 0.81,
+"n": 468
+},
+"plateau": {
+"wis": 7.54,
+"bias": -3.2,
+"coverage_95": 0.83,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 26.67,
+"bias": -17.7,
+"coverage_95": 0.868,
+"n": 468
+},
+"2": {
+"wis": 35.42,
+"bias": -19.2,
+"coverage_95": 0.861,
+"n": 468
+},
+"3": {
+"wis": 53.88,
+"bias": -13.7,
+"coverage_95": 0.81,
+"n": 468
+},
+"4": {
+"wis": 84.35,
+"bias": -14.6,
+"coverage_95": 0.737,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 21.45,
+"bias": 26.3,
+"coverage_95": 0.481,
+"n": 52
+},
+"2": {
+"wis": 32.92,
+"bias": 27.6,
+"coverage_95": 0.75,
+"n": 104
+},
+"3": {
+"wis": 34.58,
+"bias": 25.7,
+"coverage_95": 0.654,
+"n": 104
+},
+"4": {
+"wis": 62.47,
+"bias": 57.4,
+"coverage_95": 0.615,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 11.21,
+"bias": -12.3,
+"coverage_95": 0.971,
+"n": 104
+},
+"2": {
+"wis": 28.17,
+"bias": -28.3,
+"coverage_95": 0.923,
+"n": 104
+},
+"3": {
+"wis": 72.83,
+"bias": -88.0,
+"coverage_95": 0.875,
+"n": 104
+},
+"4": {
+"wis": 109.51,
+"bias": -128.7,
+"coverage_95": 0.795,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 61.13,
+"bias": -51.4,
+"coverage_95": 0.878,
+"n": 156
+},
+"2": {
+"wis": 90.09,
+"bias": -81.4,
+"coverage_95": 0.894,
+"n": 104
+},
+"3": {
+"wis": 125.87,
+"bias": 6.2,
+"coverage_95": 0.779,
+"n": 104
+},
+"4": {
+"wis": 170.06,
+"bias": 98.2,
+"coverage_95": 0.654,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 4.84,
+"bias": -3.4,
+"coverage_95": 0.913,
+"n": 104
+},
+"2": {
+"wis": 6.07,
+"bias": -4.2,
+"coverage_95": 0.846,
+"n": 104
+},
+"3": {
+"wis": 7.28,
+"bias": -9.2,
+"coverage_95": 0.865,
+"n": 52
+},
+"4": {
+"wis": 11.83,
+"bias": 1.0,
+"coverage_95": 0.712,
+"n": 104
+}
+}
+}
+},
+{
+"config_id": "oversample_5__seed42",
+"base": "oversample_5",
+"arm": "oversample",
+"seed": 42,
+"describe": "peak-phase training rows by target date under adiga_2026_10 fitted 5x (4 extra copies each)",
+"overall": {
+"wis": 49.89,
+"bias": -10.0,
+"coverage_95": 0.823
+},
+"by_phase": {
+"decline": {
+"wis": 38.04,
+"bias": 37.7,
+"coverage_95": 0.641,
+"n": 312
+},
+"growth": {
+"wis": 58.98,
+"bias": -69.3,
+"coverage_95": 0.882,
+"n": 468
+},
+"peak": {
+"wis": 106.78,
+"bias": 5.5,
+"coverage_95": 0.816,
+"n": 468
+},
+"plateau": {
+"wis": 7.68,
+"bias": -1.6,
+"coverage_95": 0.849,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 26.25,
+"bias": -15.3,
+"coverage_95": 0.876,
+"n": 468
+},
+"2": {
+"wis": 34.64,
+"bias": -11.6,
+"coverage_95": 0.874,
+"n": 468
+},
+"3": {
+"wis": 55.05,
+"bias": -3.5,
+"coverage_95": 0.812,
+"n": 468
+},
+"4": {
+"wis": 83.63,
+"bias": -9.5,
+"coverage_95": 0.729,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 21.47,
+"bias": 28.0,
+"coverage_95": 0.462,
+"n": 52
+},
+"2": {
+"wis": 33.72,
+"bias": 30.2,
+"coverage_95": 0.76,
+"n": 104
+},
+"3": {
+"wis": 37.34,
+"bias": 39.8,
+"coverage_95": 0.644,
+"n": 104
+},
+"4": {
+"wis": 64.66,
+"bias": 58.6,
+"coverage_95": 0.577,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 10.87,
+"bias": -11.6,
+"coverage_95": 0.971,
+"n": 104
+},
+"2": {
+"wis": 28.46,
+"bias": -27.6,
+"coverage_95": 0.933,
+"n": 104
+},
+"3": {
+"wis": 69.97,
+"bias": -86.7,
+"coverage_95": 0.885,
+"n": 104
+},
+"4": {
+"wis": 104.07,
+"bias": -123.9,
+"coverage_95": 0.788,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 60.14,
+"bias": -45.8,
+"coverage_95": 0.904,
+"n": 156
+},
+"2": {
+"wis": 85.69,
+"bias": -51.3,
+"coverage_95": 0.894,
+"n": 104
+},
+"3": {
+"wis": 131.48,
+"bias": 35.0,
+"coverage_95": 0.769,
+"n": 104
+},
+"4": {
+"wis": 173.12,
+"bias": 109.6,
+"coverage_95": 0.654,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 4.88,
+"bias": -2.8,
+"coverage_95": 0.933,
+"n": 104
+},
+"2": {
+"wis": 5.87,
+"bias": -3.2,
+"coverage_95": 0.875,
+"n": 104
+},
+"3": {
+"wis": 6.89,
+"bias": -8.1,
+"coverage_95": 0.904,
+"n": 52
+},
+"4": {
+"wis": 12.67,
+"bias": 4.4,
+"coverage_95": 0.712,
+"n": 104
+}
+}
+}
+},
+{
+"config_id": "baseline__seed43",
+"base": "baseline",
+"arm": "baseline",
+"seed": 43,
+"describe": "stock config",
+"overall": {
+"wis": 50.46,
+"bias": -28.4,
+"coverage_95": 0.834
+},
+"by_phase": {
+"decline": {
+"wis": 32.33,
+"bias": 19.5,
+"coverage_95": 0.66,
+"n": 312
+},
+"growth": {
+"wis": 64.61,
+"bias": -76.8,
+"coverage_95": 0.863,
+"n": 468
+},
+"peak": {
+"wis": 107.27,
+"bias": -46.0,
+"coverage_95": 0.87,
+"n": 468
+},
+"plateau": {
+"wis": 7.41,
+"bias": -4.0,
+"coverage_95": 0.843,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 28.54,
+"bias": -26.9,
+"coverage_95": 0.874,
+"n": 468
+},
+"2": {
+"wis": 37.79,
+"bias": -25.8,
+"coverage_95": 0.878,
+"n": 468
+},
+"3": {
+"wis": 54.39,
+"bias": -27.4,
+"coverage_95": 0.818,
+"n": 468
+},
+"4": {
+"wis": 81.12,
+"bias": -33.4,
+"coverage_95": 0.765,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 20.35,
+"bias": 22.1,
+"coverage_95": 0.519,
+"n": 52
+},
+"2": {
+"wis": 29.34,
+"bias": 14.7,
+"coverage_95": 0.75,
+"n": 104
+},
+"3": {
+"wis": 31.21,
+"bias": 18.3,
+"coverage_95": 0.644,
+"n": 104
+},
+"4": {
+"wis": 52.53,
+"bias": 28.9,
+"coverage_95": 0.654,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 11.08,
+"bias": -13.5,
+"coverage_95": 0.971,
+"n": 104
+},
+"2": {
+"wis": 28.32,
+"bias": -29.3,
+"coverage_95": 0.933,
+"n": 104
+},
+"3": {
+"wis": 75.15,
+"bias": -95.5,
+"coverage_95": 0.865,
+"n": 104
+},
+"4": {
+"wis": 117.47,
+"bias": -138.3,
+"coverage_95": 0.744,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 66.99,
+"bias": -75.9,
+"coverage_95": 0.891,
+"n": 156
+},
+"2": {
+"wis": 103.9,
+"bias": -96.5,
+"coverage_95": 0.933,
+"n": 104
+},
+"3": {
+"wis": 128.88,
+"bias": -39.9,
+"coverage_95": 0.817,
+"n": 104
+},
+"4": {
+"wis": 149.44,
+"bias": 43.2,
+"coverage_95": 0.827,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 5.02,
+"bias": -4.4,
+"coverage_95": 0.904,
+"n": 104
+},
+"2": {
+"wis": 6.09,
+"bias": -4.5,
+"coverage_95": 0.875,
+"n": 104
+},
+"3": {
+"wis": 7.8,
+"bias": -9.7,
+"coverage_95": 0.904,
+"n": 52
+},
+"4": {
+"wis": 10.93,
+"bias": -0.4,
+"coverage_95": 0.721,
+"n": 104
+}
+}
+}
+},
+{
+"config_id": "lambda_1.5__seed43",
+"base": "lambda_1.5",
+"arm": "lambda",
+"seed": 43,
+"describe": "approaching-peak rows (K=6 weeks before the season max) weighted 1.5x",
+"overall": {
+"wis": 50.68,
+"bias": -22.9,
+"coverage_95": 0.829
+},
+"by_phase": {
+"decline": {
+"wis": 32.92,
+"bias": 20.4,
+"coverage_95": 0.657,
+"n": 312
+},
+"growth": {
+"wis": 63.34,
+"bias": -77.4,
+"coverage_95": 0.865,
+"n": 468
+},
+"peak": {
+"wis": 108.97,
+"bias": -24.0,
+"coverage_95": 0.853,
+"n": 468
+},
+"plateau": {
+"wis": 7.48,
+"bias": -4.4,
+"coverage_95": 0.841,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 28.7,
+"bias": -21.4,
+"coverage_95": 0.876,
+"n": 468
+},
+"2": {
+"wis": 36.98,
+"bias": -18.9,
+"coverage_95": 0.87,
+"n": 468
+},
+"3": {
+"wis": 54.7,
+"bias": -19.7,
+"coverage_95": 0.801,
+"n": 468
+},
+"4": {
+"wis": 82.35,
+"bias": -31.6,
+"coverage_95": 0.769,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 20.57,
+"bias": 22.9,
+"coverage_95": 0.5,
+"n": 52
+},
+"2": {
+"wis": 29.94,
+"bias": 12.8,
+"coverage_95": 0.74,
+"n": 104
+},
+"3": {
+"wis": 31.39,
+"bias": 17.5,
+"coverage_95": 0.644,
+"n": 104
+},
+"4": {
+"wis": 54.28,
+"bias": 38.8,
+"coverage_95": 0.673,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 10.57,
+"bias": -10.8,
+"coverage_95": 0.971,
+"n": 104
+},
+"2": {
+"wis": 28.47,
+"bias": -28.6,
+"coverage_95": 0.933,
+"n": 104
+},
+"3": {
+"wis": 71.82,
+"bias": -93.5,
+"coverage_95": 0.856,
+"n": 104
+},
+"4": {
+"wis": 116.11,
+"bias": -143.6,
+"coverage_95": 0.756,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 67.6,
+"bias": -61.5,
+"coverage_95": 0.897,
+"n": 156
+},
+"2": {
+"wis": 99.41,
+"bias": -64.2,
+"coverage_95": 0.904,
+"n": 104
+},
+"3": {
+"wis": 133.56,
+"bias": -7.1,
+"coverage_95": 0.769,
+"n": 104
+},
+"4": {
+"wis": 156.0,
+"bias": 55.4,
+"coverage_95": 0.817,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 5.21,
+"bias": -4.6,
+"coverage_95": 0.913,
+"n": 104
+},
+"2": {
+"wis": 6.2,
+"bias": -4.7,
+"coverage_95": 0.875,
+"n": 104
+},
+"3": {
+"wis": 7.46,
+"bias": -9.1,
+"coverage_95": 0.865,
+"n": 52
+},
+"4": {
+"wis": 11.02,
+"bias": -1.4,
+"coverage_95": 0.721,
+"n": 104
+}
+}
+}
+},
+{
+"config_id": "lambda_2__seed43",
+"base": "lambda_2",
+"arm": "lambda",
+"seed": 43,
+"describe": "approaching-peak rows (K=6 weeks before the season max) weighted 2x",
+"overall": {
+"wis": 50.71,
+"bias": -17.3,
+"coverage_95": 0.825
+},
+"by_phase": {
+"decline": {
+"wis": 33.26,
+"bias": 22.7,
+"coverage_95": 0.66,
+"n": 312
+},
+"growth": {
+"wis": 62.11,
+"bias": -75.9,
+"coverage_95": 0.87,
+"n": 468
+},
+"peak": {
+"wis": 110.11,
+"bias": -4.6,
+"coverage_95": 0.846,
+"n": 468
+},
+"plateau": {
+"wis": 7.43,
+"bias": -4.4,
+"coverage_95": 0.819,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 27.41,
+"bias": -15.8,
+"coverage_95": 0.878,
+"n": 468
+},
+"2": {
+"wis": 36.31,
+"bias": -17.8,
+"coverage_95": 0.87,
+"n": 468
+},
+"3": {
+"wis": 55.68,
+"bias": -9.5,
+"coverage_95": 0.795,
+"n": 468
+},
+"4": {
+"wis": 83.44,
+"bias": -26.1,
+"coverage_95": 0.756,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 20.27,
+"bias": 21.8,
+"coverage_95": 0.5,
+"n": 52
+},
+"2": {
+"wis": 30.58,
+"bias": 14.5,
+"coverage_95": 0.75,
+"n": 104
+},
+"3": {
+"wis": 31.34,
+"bias": 21.6,
+"coverage_95": 0.644,
+"n": 104
+},
+"4": {
+"wis": 55.47,
+"bias": 42.2,
+"coverage_95": 0.673,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 10.58,
+"bias": -10.1,
+"coverage_95": 0.971,
+"n": 104
+},
+"2": {
+"wis": 27.36,
+"bias": -30.6,
+"coverage_95": 0.942,
+"n": 104
+},
+"3": {
+"wis": 69.87,
+"bias": -87.3,
+"coverage_95": 0.856,
+"n": 104
+},
+"4": {
+"wis": 114.45,
+"bias": -142.4,
+"coverage_95": 0.763,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 63.85,
+"bias": -44.7,
+"coverage_95": 0.904,
+"n": 156
+},
+"2": {
+"wis": 96.93,
+"bias": -58.9,
+"coverage_95": 0.913,
+"n": 104
+},
+"3": {
+"wis": 139.88,
+"bias": 28.3,
+"coverage_95": 0.75,
+"n": 104
+},
+"4": {
+"wis": 162.93,
+"bias": 76.8,
+"coverage_95": 0.788,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 5.09,
+"bias": -4.4,
+"coverage_95": 0.913,
+"n": 104
+},
+"2": {
+"wis": 6.19,
+"bias": -4.7,
+"coverage_95": 0.846,
+"n": 104
+},
+"3": {
+"wis": 7.58,
+"bias": -9.4,
+"coverage_95": 0.846,
+"n": 52
+},
+"4": {
+"wis": 10.94,
+"bias": -1.4,
+"coverage_95": 0.683,
+"n": 104
+}
+}
+}
+},
+{
+"config_id": "lambda_3__seed43",
+"base": "lambda_3",
+"arm": "lambda",
+"seed": 43,
+"describe": "approaching-peak rows (K=6 weeks before the season max) weighted 3x",
+"overall": {
+"wis": 50.73,
+"bias": -11.8,
+"coverage_95": 0.818
+},
+"by_phase": {
+"decline": {
+"wis": 34.98,
+"bias": 24.7,
+"coverage_95": 0.654,
+"n": 312
+},
+"growth": {
+"wis": 60.95,
+"bias": -74.8,
+"coverage_95": 0.874,
+"n": 468
+},
+"peak": {
+"wis": 110.2,
+"bias": 15.0,
+"coverage_95": 0.81,
+"n": 468
+},
+"plateau": {
+"wis": 7.43,
+"bias": -4.4,
+"coverage_95": 0.832,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 25.77,
+"bias": -13.6,
+"coverage_95": 0.874,
+"n": 468
+},
+"2": {
+"wis": 36.07,
+"bias": -7.0,
+"coverage_95": 0.87,
+"n": 468
+},
+"3": {
+"wis": 57.74,
+"bias": -6.8,
+"coverage_95": 0.793,
+"n": 468
+},
+"4": {
+"wis": 83.34,
+"bias": -20.0,
+"coverage_95": 0.735,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 19.75,
+"bias": 21.0,
+"coverage_95": 0.481,
+"n": 52
+},
+"2": {
+"wis": 31.98,
+"bias": 19.3,
+"coverage_95": 0.75,
+"n": 104
+},
+"3": {
+"wis": 33.9,
+"bias": 21.7,
+"coverage_95": 0.635,
+"n": 104
+},
+"4": {
+"wis": 58.38,
+"bias": 45.4,
+"coverage_95": 0.673,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 9.92,
+"bias": -8.9,
+"coverage_95": 0.971,
+"n": 104
+},
+"2": {
+"wis": 26.14,
+"bias": -26.2,
+"coverage_95": 0.942,
+"n": 104
+},
+"3": {
+"wis": 70.41,
+"bias": -93.3,
+"coverage_95": 0.865,
+"n": 104
+},
+"4": {
+"wis": 111.88,
+"bias": -138.8,
+"coverage_95": 0.769,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 59.57,
+"bias": -38.9,
+"coverage_95": 0.897,
+"n": 156
+},
+"2": {
+"wis": 95.6,
+"bias": -19.3,
+"coverage_95": 0.875,
+"n": 104
+},
+"3": {
+"wis": 145.98,
+"bias": 47.7,
+"coverage_95": 0.731,
+"n": 104
+},
+"4": {
+"wis": 164.97,
+"bias": 97.5,
+"coverage_95": 0.692,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 5.11,
+"bias": -4.3,
+"coverage_95": 0.913,
+"n": 104
+},
+"2": {
+"wis": 6.21,
+"bias": -4.6,
+"coverage_95": 0.885,
+"n": 104
+},
+"3": {
+"wis": 7.66,
+"bias": -10.0,
+"coverage_95": 0.865,
+"n": 52
+},
+"4": {
+"wis": 10.86,
+"bias": -1.5,
+"coverage_95": 0.683,
+"n": 104
+}
+}
+}
+},
+{
+"config_id": "lambda_5__seed43",
+"base": "lambda_5",
+"arm": "lambda",
+"seed": 43,
+"describe": "approaching-peak rows (K=6 weeks before the season max) weighted 5x",
+"overall": {
+"wis": 50.74,
+"bias": -7.9,
+"coverage_95": 0.821
+},
+"by_phase": {
+"decline": {
+"wis": 36.17,
+"bias": 24.5,
+"coverage_95": 0.683,
+"n": 312
+},
+"growth": {
+"wis": 58.71,
+"bias": -70.1,
+"coverage_95": 0.876,
+"n": 468
+},
+"peak": {
+"wis": 111.5,
+"bias": 25.7,
+"coverage_95": 0.786,
+"n": 468
+},
+"plateau": {
+"wis": 7.56,
+"bias": -3.9,
+"coverage_95": 0.849,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 24.9,
+"bias": -13.8,
+"coverage_95": 0.874,
+"n": 468
+},
+"2": {
+"wis": 35.93,
+"bias": -9.4,
+"coverage_95": 0.853,
+"n": 468
+},
+"3": {
+"wis": 59.24,
+"bias": 0.5,
+"coverage_95": 0.812,
+"n": 468
+},
+"4": {
+"wis": 82.9,
+"bias": -9.1,
+"coverage_95": 0.744,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 20.23,
+"bias": 20.7,
+"coverage_95": 0.481,
+"n": 52
+},
+"2": {
+"wis": 32.89,
+"bias": 18.6,
+"coverage_95": 0.74,
+"n": 104
+},
+"3": {
+"wis": 35.51,
+"bias": 22.2,
+"coverage_95": 0.721,
+"n": 104
+},
+"4": {
+"wis": 59.99,
+"bias": 44.8,
+"coverage_95": 0.692,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 9.33,
+"bias": -8.0,
+"coverage_95": 0.962,
+"n": 104
+},
+"2": {
+"wis": 25.51,
+"bias": -26.8,
+"coverage_95": 0.952,
+"n": 104
+},
+"3": {
+"wis": 66.52,
+"bias": -87.5,
+"coverage_95": 0.875,
+"n": 104
+},
+"4": {
+"wis": 108.55,
+"bias": -128.8,
+"coverage_95": 0.769,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 57.13,
+"bias": -39.7,
+"coverage_95": 0.897,
+"n": 156
+},
+"2": {
+"wis": 94.59,
+"bias": -29.4,
+"coverage_95": 0.817,
+"n": 104
+},
+"3": {
+"wis": 154.66,
+"bias": 74.3,
+"coverage_95": 0.712,
+"n": 104
+},
+"4": {
+"wis": 166.82,
+"bias": 130.3,
+"coverage_95": 0.663,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 5.11,
+"bias": -4.4,
+"coverage_95": 0.923,
+"n": 104
+},
+"2": {
+"wis": 6.25,
+"bias": -4.6,
+"coverage_95": 0.865,
+"n": 104
+},
+"3": {
+"wis": 7.92,
+"bias": -11.0,
+"coverage_95": 0.885,
+"n": 52
+},
+"4": {
+"wis": 11.13,
+"bias": 0.7,
+"coverage_95": 0.74,
+"n": 104
+}
+}
+}
+},
+{
+"config_id": "lambda_calendar_2__seed43",
+"base": "lambda_calendar_2",
+"arm": "lambda_calendar",
+"seed": 43,
+"describe": "peak-phase rows by target date (origin + h weeks) under adiga_2026_10 weighted 2x",
+"overall": {
+"wis": 49.93,
+"bias": -16.8,
+"coverage_95": 0.823
+},
+"by_phase": {
+"decline": {
+"wis": 36.01,
+"bias": 32.7,
+"coverage_95": 0.641,
+"n": 312
+},
+"growth": {
+"wis": 60.69,
+"bias": -73.2,
+"coverage_95": 0.876,
+"n": 468
+},
+"peak": {
+"wis": 106.8,
+"bias": -13.0,
+"coverage_95": 0.829,
+"n": 468
+},
+"plateau": {
+"wis": 7.3,
+"bias": -3.4,
+"coverage_95": 0.841,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 26.93,
+"bias": -18.5,
+"coverage_95": 0.874,
+"n": 468
+},
+"2": {
+"wis": 36.08,
+"bias": -14.8,
+"coverage_95": 0.865,
+"n": 468
+},
+"3": {
+"wis": 54.52,
+"bias": -16.4,
+"coverage_95": 0.801,
+"n": 468
+},
+"4": {
+"wis": 82.2,
+"bias": -17.7,
+"coverage_95": 0.752,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 21.11,
+"bias": 25.3,
+"coverage_95": 0.5,
+"n": 52
+},
+"2": {
+"wis": 31.34,
+"bias": 26.5,
+"coverage_95": 0.731,
+"n": 104
+},
+"3": {
+"wis": 34.25,
+"bias": 29.1,
+"coverage_95": 0.635,
+"n": 104
+},
+"4": {
+"wis": 63.78,
+"bias": 59.5,
+"coverage_95": 0.615,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 10.91,
+"bias": -12.6,
+"coverage_95": 0.962,
+"n": 104
+},
+"2": {
+"wis": 28.54,
+"bias": -32.2,
+"coverage_95": 0.933,
+"n": 104
+},
+"3": {
+"wis": 71.44,
+"bias": -91.8,
+"coverage_95": 0.865,
+"n": 104
+},
+"4": {
+"wis": 108.15,
+"bias": -128.6,
+"coverage_95": 0.788,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 62.2,
+"bias": -53.0,
+"coverage_95": 0.891,
+"n": 156
+},
+"2": {
+"wis": 94.11,
+"bias": -56.3,
+"coverage_95": 0.894,
+"n": 104
+},
+"3": {
+"wis": 130.64,
+"bias": -6.0,
+"coverage_95": 0.76,
+"n": 104
+},
+"4": {
+"wis": 162.52,
+"bias": 83.4,
+"coverage_95": 0.74,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 4.86,
+"bias": -3.6,
+"coverage_95": 0.923,
+"n": 104
+},
+"2": {
+"wis": 6.03,
+"bias": -4.4,
+"coverage_95": 0.875,
+"n": 104
+},
+"3": {
+"wis": 7.17,
+"bias": -8.7,
+"coverage_95": 0.885,
+"n": 52
+},
+"4": {
+"wis": 11.08,
+"bias": 0.6,
+"coverage_95": 0.702,
+"n": 104
+}
+}
+}
+},
+{
+"config_id": "lambda_calendar_3__seed43",
+"base": "lambda_calendar_3",
+"arm": "lambda_calendar",
+"seed": 43,
+"describe": "peak-phase rows by target date (origin + h weeks) under adiga_2026_10 weighted 3x",
+"overall": {
+"wis": 50.06,
+"bias": -11.1,
+"coverage_95": 0.815
+},
+"by_phase": {
+"decline": {
+"wis": 37.52,
+"bias": 35.7,
+"coverage_95": 0.631,
+"n": 312
+},
+"growth": {
+"wis": 59.61,
+"bias": -70.2,
+"coverage_95": 0.874,
+"n": 468
+},
+"peak": {
+"wis": 107.17,
+"bias": 4.5,
+"coverage_95": 0.81,
+"n": 468
+},
+"plateau": {
+"wis": 7.54,
+"bias": -3.0,
+"coverage_95": 0.838,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 26.41,
+"bias": -16.6,
+"coverage_95": 0.876,
+"n": 468
+},
+"2": {
+"wis": 35.17,
+"bias": -11.8,
+"coverage_95": 0.863,
+"n": 468
+},
+"3": {
+"wis": 54.94,
+"bias": -8.8,
+"coverage_95": 0.797,
+"n": 468
+},
+"4": {
+"wis": 83.71,
+"bias": -7.4,
+"coverage_95": 0.722,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 21.75,
+"bias": 26.7,
+"coverage_95": 0.462,
+"n": 52
+},
+"2": {
+"wis": 32.75,
+"bias": 29.3,
+"coverage_95": 0.731,
+"n": 104
+},
+"3": {
+"wis": 36.65,
+"bias": 35.2,
+"coverage_95": 0.654,
+"n": 104
+},
+"4": {
+"wis": 64.59,
+"bias": 58.7,
+"coverage_95": 0.558,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 10.63,
+"bias": -11.4,
+"coverage_95": 0.971,
+"n": 104
+},
+"2": {
+"wis": 27.09,
+"bias": -28.0,
+"coverage_95": 0.923,
+"n": 104
+},
+"3": {
+"wis": 70.47,
+"bias": -88.4,
+"coverage_95": 0.865,
+"n": 104
+},
+"4": {
+"wis": 106.69,
+"bias": -125.2,
+"coverage_95": 0.782,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 60.61,
+"bias": -48.3,
+"coverage_95": 0.91,
+"n": 156
+},
+"2": {
+"wis": 90.22,
+"bias": -49.9,
+"coverage_95": 0.894,
+"n": 104
+},
+"3": {
+"wis": 130.89,
+"bias": 18.9,
+"coverage_95": 0.731,
+"n": 104
+},
+"4": {
+"wis": 170.23,
+"bias": 123.6,
+"coverage_95": 0.654,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 4.86,
+"bias": -3.8,
+"coverage_95": 0.923,
+"n": 104
+},
+"2": {
+"wis": 6.01,
+"bias": -4.1,
+"coverage_95": 0.875,
+"n": 104
+},
+"3": {
+"wis": 7.11,
+"bias": -8.5,
+"coverage_95": 0.865,
+"n": 52
+},
+"4": {
+"wis": 11.95,
+"bias": 1.8,
+"coverage_95": 0.702,
+"n": 104
+}
+}
+}
+},
+{
+"config_id": "window_52__seed43",
+"base": "window_52",
+"arm": "window",
+"seed": 43,
+"describe": "fit only on feature rows from the last 52 weeks before each cutoff",
+"overall": {
+"wis": 72.63,
+"bias": 0.7,
+"coverage_95": 0.847
+},
+"by_phase": {
+"decline": {
+"wis": 30.94,
+"bias": 13.5,
+"coverage_95": 0.769,
+"n": 312
+},
+"growth": {
+"wis": 80.55,
+"bias": -92.8,
+"coverage_95": 0.85,
+"n": 468
+},
+"peak": {
+"wis": 180.25,
+"bias": 94.3,
+"coverage_95": 0.859,
+"n": 468
+},
+"plateau": {
+"wis": 7.76,
+"bias": -6.6,
+"coverage_95": 0.863,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 37.52,
+"bias": -36.2,
+"coverage_95": 0.872,
+"n": 468
+},
+"2": {
+"wis": 51.57,
+"bias": -5.4,
+"coverage_95": 0.88,
+"n": 468
+},
+"3": {
+"wis": 83.61,
+"bias": 17.1,
+"coverage_95": 0.848,
+"n": 468
+},
+"4": {
+"wis": 117.83,
+"bias": 27.5,
+"coverage_95": 0.786,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 19.53,
+"bias": 19.3,
+"coverage_95": 0.538,
+"n": 52
+},
+"2": {
+"wis": 30.38,
+"bias": 3.6,
+"coverage_95": 0.788,
+"n": 104
+},
+"3": {
+"wis": 28.5,
+"bias": 6.5,
+"coverage_95": 0.798,
+"n": 104
+},
+"4": {
+"wis": 48.35,
+"bias": 41.8,
+"coverage_95": 0.904,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 14.06,
+"bias": -13.1,
+"coverage_95": 0.933,
+"n": 104
+},
+"2": {
+"wis": 36.84,
+"bias": -31.8,
+"coverage_95": 0.913,
+"n": 104
+},
+"3": {
+"wis": 94.23,
+"bias": -108.9,
+"coverage_95": 0.856,
+"n": 104
+},
+"4": {
+"wis": 144.89,
+"bias": -176.0,
+"coverage_95": 0.75,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 91.76,
+"bias": -102.6,
+"coverage_95": 0.891,
+"n": 156
+},
+"2": {
+"wis": 155.15,
+"bias": 12.6,
+"coverage_95": 0.894,
+"n": 104
+},
+"3": {
+"wis": 243.32,
+"bias": 190.8,
+"coverage_95": 0.846,
+"n": 104
+},
+"4": {
+"wis": 275.01,
+"bias": 375.0,
+"coverage_95": 0.788,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 5.38,
+"bias": -4.7,
+"coverage_95": 0.923,
+"n": 104
+},
+"2": {
+"wis": 6.48,
+"bias": -6.0,
+"coverage_95": 0.894,
+"n": 104
+},
+"3": {
+"wis": 8.08,
+"bias": -11.3,
+"coverage_95": 0.904,
+"n": 52
+},
+"4": {
+"wis": 11.27,
+"bias": -6.6,
+"coverage_95": 0.75,
+"n": 104
+}
+}
+}
+},
+{
+"config_id": "oversample_2__seed43",
+"base": "oversample_2",
+"arm": "oversample",
+"seed": 43,
+"describe": "peak-phase training rows by target date under adiga_2026_10 fitted 2x (1 extra copy each)",
+"overall": {
+"wis": 50.55,
+"bias": -19.0,
+"coverage_95": 0.827
+},
+"by_phase": {
+"decline": {
+"wis": 35.51,
+"bias": 30.8,
+"coverage_95": 0.644,
+"n": 312
+},
+"growth": {
+"wis": 62.63,
+"bias": -75.3,
+"coverage_95": 0.876,
+"n": 468
+},
+"peak": {
+"wis": 107.49,
+"bias": -18.2,
+"coverage_95": 0.848,
+"n": 468
+},
+"plateau": {
+"wis": 7.5,
+"bias": -3.6,
+"coverage_95": 0.835,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 27.65,
+"bias": -20.6,
+"coverage_95": 0.878,
+"n": 468
+},
+"2": {
+"wis": 37.01,
+"bias": -16.7,
+"coverage_95": 0.878,
+"n": 468
+},
+"3": {
+"wis": 54.77,
+"bias": -16.8,
+"coverage_95": 0.808,
+"n": 468
+},
+"4": {
+"wis": 82.77,
+"bias": -22.0,
+"coverage_95": 0.744,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 20.9,
+"bias": 25.1,
+"coverage_95": 0.5,
+"n": 52
+},
+"2": {
+"wis": 31.44,
+"bias": 24.5,
+"coverage_95": 0.75,
+"n": 104
+},
+"3": {
+"wis": 32.94,
+"bias": 24.4,
+"coverage_95": 0.644,
+"n": 104
+},
+"4": {
+"wis": 63.39,
+"bias": 62.1,
+"coverage_95": 0.577,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 11.61,
+"bias": -14.6,
+"coverage_95": 0.971,
+"n": 104
+},
+"2": {
+"wis": 28.85,
+"bias": -29.2,
+"coverage_95": 0.942,
+"n": 104
+},
+"3": {
+"wis": 74.46,
+"bias": -94.4,
+"coverage_95": 0.865,
+"n": 104
+},
+"4": {
+"wis": 111.29,
+"bias": -133.7,
+"coverage_95": 0.776,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 63.92,
+"bias": -57.8,
+"coverage_95": 0.904,
+"n": 156
+},
+"2": {
+"wis": 97.81,
+"bias": -65.9,
+"coverage_95": 0.923,
+"n": 104
+},
+"3": {
+"wis": 129.94,
+"bias": 0.1,
+"coverage_95": 0.779,
+"n": 104
+},
+"4": {
+"wis": 160.09,
+"bias": 70.4,
+"coverage_95": 0.76,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 4.91,
+"bias": -4.1,
+"coverage_95": 0.913,
+"n": 104
+},
+"2": {
+"wis": 6.1,
+"bias": -4.5,
+"coverage_95": 0.875,
+"n": 104
+},
+"3": {
+"wis": 7.34,
+"bias": -9.2,
+"coverage_95": 0.885,
+"n": 52
+},
+"4": {
+"wis": 11.56,
+"bias": 0.5,
+"coverage_95": 0.692,
+"n": 104
+}
+}
+}
+},
+{
+"config_id": "oversample_3__seed43",
+"base": "oversample_3",
+"arm": "oversample",
+"seed": 43,
+"describe": "peak-phase training rows by target date under adiga_2026_10 fitted 3x (2 extra copies each)",
+"overall": {
+"wis": 50.85,
+"bias": -13.9,
+"coverage_95": 0.826
+},
+"by_phase": {
+"decline": {
+"wis": 37.21,
+"bias": 34.1,
+"coverage_95": 0.654,
+"n": 312
+},
+"growth": {
+"wis": 61.37,
+"bias": -72.2,
+"coverage_95": 0.876,
+"n": 468
+},
+"peak": {
+"wis": 108.82,
+"bias": -3.5,
+"coverage_95": 0.823,
+"n": 468
+},
+"plateau": {
+"wis": 7.49,
+"bias": -3.0,
+"coverage_95": 0.852,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 27.51,
+"bias": -15.4,
+"coverage_95": 0.872,
+"n": 468
+},
+"2": {
+"wis": 35.71,
+"bias": -17.1,
+"coverage_95": 0.872,
+"n": 468
+},
+"3": {
+"wis": 54.93,
+"bias": -10.4,
+"coverage_95": 0.821,
+"n": 468
+},
+"4": {
+"wis": 85.23,
+"bias": -12.6,
+"coverage_95": 0.741,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 21.94,
+"bias": 27.4,
+"coverage_95": 0.462,
+"n": 52
+},
+"2": {
+"wis": 32.51,
+"bias": 24.1,
+"coverage_95": 0.75,
+"n": 104
+},
+"3": {
+"wis": 35.27,
+"bias": 34.8,
+"coverage_95": 0.692,
+"n": 104
+},
+"4": {
+"wis": 65.74,
+"bias": 59.3,
+"coverage_95": 0.577,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 11.14,
+"bias": -12.3,
+"coverage_95": 0.962,
+"n": 104
+},
+"2": {
+"wis": 28.52,
+"bias": -28.7,
+"coverage_95": 0.933,
+"n": 104
+},
+"3": {
+"wis": 71.71,
+"bias": -89.9,
+"coverage_95": 0.875,
+"n": 104
+},
+"4": {
+"wis": 109.87,
+"bias": -129.2,
+"coverage_95": 0.782,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 63.58,
+"bias": -44.5,
+"coverage_95": 0.891,
+"n": 156
+},
+"2": {
+"wis": 91.46,
+"bias": -68.9,
+"coverage_95": 0.904,
+"n": 104
+},
+"3": {
+"wis": 131.19,
+"bias": 13.3,
+"coverage_95": 0.769,
+"n": 104
+},
+"4": {
+"wis": 171.67,
+"bias": 106.5,
+"coverage_95": 0.692,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 4.79,
+"bias": -3.6,
+"coverage_95": 0.942,
+"n": 104
+},
+"2": {
+"wis": 5.95,
+"bias": -3.6,
+"coverage_95": 0.865,
+"n": 104
+},
+"3": {
+"wis": 7.01,
+"bias": -8.9,
+"coverage_95": 0.885,
+"n": 52
+},
+"4": {
+"wis": 11.97,
+"bias": 1.3,
+"coverage_95": 0.731,
+"n": 104
+}
+}
+}
+},
+{
+"config_id": "oversample_5__seed43",
+"base": "oversample_5",
+"arm": "oversample",
+"seed": 43,
+"describe": "peak-phase training rows by target date under adiga_2026_10 fitted 5x (4 extra copies each)",
+"overall": {
+"wis": 50.34,
+"bias": -10.4,
+"coverage_95": 0.824
+},
+"by_phase": {
+"decline": {
+"wis": 37.73,
+"bias": 35.7,
+"coverage_95": 0.657,
+"n": 312
+},
+"growth": {
+"wis": 60.16,
+"bias": -70.2,
+"coverage_95": 0.885,
+"n": 468
+},
+"peak": {
+"wis": 107.44,
+"bias": 6.0,
+"coverage_95": 0.812,
+"n": 468
+},
+"plateau": {
+"wis": 7.83,
+"bias": -1.5,
+"coverage_95": 0.843,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 25.84,
+"bias": -11.5,
+"coverage_95": 0.878,
+"n": 468
+},
+"2": {
+"wis": 35.29,
+"bias": -13.2,
+"coverage_95": 0.87,
+"n": 468
+},
+"3": {
+"wis": 55.68,
+"bias": -6.2,
+"coverage_95": 0.814,
+"n": 468
+},
+"4": {
+"wis": 84.54,
+"bias": -10.7,
+"coverage_95": 0.735,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 21.63,
+"bias": 26.5,
+"coverage_95": 0.5,
+"n": 52
+},
+"2": {
+"wis": 32.87,
+"bias": 26.6,
+"coverage_95": 0.75,
+"n": 104
+},
+"3": {
+"wis": 36.49,
+"bias": 39.9,
+"coverage_95": 0.683,
+"n": 104
+},
+"4": {
+"wis": 66.02,
+"bias": 54.8,
+"coverage_95": 0.577,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 10.85,
+"bias": -10.6,
+"coverage_95": 0.962,
+"n": 104
+},
+"2": {
+"wis": 27.75,
+"bias": -28.1,
+"coverage_95": 0.942,
+"n": 104
+},
+"3": {
+"wis": 70.89,
+"bias": -89.4,
+"coverage_95": 0.885,
+"n": 104
+},
+"4": {
+"wis": 107.48,
+"bias": -125.1,
+"coverage_95": 0.795,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 58.79,
+"bias": -34.2,
+"coverage_95": 0.904,
+"n": 156
+},
+"2": {
+"wis": 89.91,
+"bias": -54.7,
+"coverage_95": 0.885,
+"n": 104
+},
+"3": {
+"wis": 134.27,
+"bias": 26.0,
+"coverage_95": 0.75,
+"n": 104
+},
+"4": {
+"wis": 171.1,
+"bias": 106.9,
+"coverage_95": 0.663,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 4.94,
+"bias": -3.4,
+"coverage_95": 0.933,
+"n": 104
+},
+"2": {
+"wis": 5.98,
+"bias": -3.2,
+"coverage_95": 0.865,
+"n": 104
+},
+"3": {
+"wis": 6.97,
+"bias": -8.4,
+"coverage_95": 0.885,
+"n": 52
+},
+"4": {
+"wis": 13.0,
+"bias": 5.6,
+"coverage_95": 0.712,
+"n": 104
+}
+}
+}
+},
+{
+"config_id": "baseline__seed44",
+"base": "baseline",
+"arm": "baseline",
+"seed": 44,
+"describe": "stock config",
+"overall": {
+"wis": 49.95,
+"bias": -26.7,
+"coverage_95": 0.83
+},
+"by_phase": {
+"decline": {
+"wis": 32.58,
+"bias": 21.3,
+"coverage_95": 0.647,
+"n": 312
+},
+"growth": {
+"wis": 63.7,
+"bias": -77.0,
+"coverage_95": 0.861,
+"n": 468
+},
+"peak": {
+"wis": 106.05,
+"bias": -40.5,
+"coverage_95": 0.868,
+"n": 468
+},
+"plateau": {
+"wis": 7.4,
+"bias": -3.8,
+"coverage_95": 0.841,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 29.09,
+"bias": -27.7,
+"coverage_95": 0.874,
+"n": 468
+},
+"2": {
+"wis": 36.91,
+"bias": -21.5,
+"coverage_95": 0.876,
+"n": 468
+},
+"3": {
+"wis": 54.51,
+"bias": -22.3,
+"coverage_95": 0.803,
+"n": 468
+},
+"4": {
+"wis": 79.29,
+"bias": -35.1,
+"coverage_95": 0.767,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 21.2,
+"bias": 24.1,
+"coverage_95": 0.481,
+"n": 52
+},
+"2": {
+"wis": 29.86,
+"bias": 17.9,
+"coverage_95": 0.75,
+"n": 104
+},
+"3": {
+"wis": 30.83,
+"bias": 18.8,
+"coverage_95": 0.615,
+"n": 104
+},
+"4": {
+"wis": 52.93,
+"bias": 30.7,
+"coverage_95": 0.673,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 11.11,
+"bias": -11.2,
+"coverage_95": 0.971,
+"n": 104
+},
+"2": {
+"wis": 27.83,
+"bias": -30.1,
+"coverage_95": 0.933,
+"n": 104
+},
+"3": {
+"wis": 77.25,
+"bias": -97.1,
+"coverage_95": 0.846,
+"n": 104
+},
+"4": {
+"wis": 113.63,
+"bias": -138.7,
+"coverage_95": 0.75,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 68.38,
+"bias": -80.7,
+"coverage_95": 0.897,
+"n": 156
+},
+"2": {
+"wis": 99.86,
+"bias": -79.7,
+"coverage_95": 0.923,
+"n": 104
+},
+"3": {
+"wis": 128.13,
+"bias": -16.8,
+"coverage_95": 0.817,
+"n": 104
+},
+"4": {
+"wis": 146.67,
+"bias": 35.4,
+"coverage_95": 0.817,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 4.94,
+"bias": -4.0,
+"coverage_95": 0.913,
+"n": 104
+},
+"2": {
+"wis": 6.2,
+"bias": -4.4,
+"coverage_95": 0.875,
+"n": 104
+},
+"3": {
+"wis": 7.49,
+"bias": -9.4,
+"coverage_95": 0.865,
+"n": 52
+},
+"4": {
+"wis": 11.01,
+"bias": -0.2,
+"coverage_95": 0.721,
+"n": 104
+}
+}
+}
+},
+{
+"config_id": "lambda_1.5__seed44",
+"base": "lambda_1.5",
+"arm": "lambda",
+"seed": 44,
+"describe": "approaching-peak rows (K=6 weeks before the season max) weighted 1.5x",
+"overall": {
+"wis": 50.32,
+"bias": -20.5,
+"coverage_95": 0.829
+},
+"by_phase": {
+"decline": {
+"wis": 33.17,
+"bias": 23.9,
+"coverage_95": 0.651,
+"n": 312
+},
+"growth": {
+"wis": 63.11,
+"bias": -76.4,
+"coverage_95": 0.865,
+"n": 468
+},
+"peak": {
+"wis": 107.69,
+"bias": -17.8,
+"coverage_95": 0.85,
+"n": 468
+},
+"plateau": {
+"wis": 7.42,
+"bias": -4.2,
+"coverage_95": 0.843,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 27.58,
+"bias": -16.3,
+"coverage_95": 0.876,
+"n": 468
+},
+"2": {
+"wis": 36.4,
+"bias": -16.4,
+"coverage_95": 0.88,
+"n": 468
+},
+"3": {
+"wis": 55.14,
+"bias": -18.2,
+"coverage_95": 0.795,
+"n": 468
+},
+"4": {
+"wis": 82.14,
+"bias": -31.0,
+"coverage_95": 0.763,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 20.55,
+"bias": 22.6,
+"coverage_95": 0.481,
+"n": 52
+},
+"2": {
+"wis": 30.4,
+"bias": 20.6,
+"coverage_95": 0.76,
+"n": 104
+},
+"3": {
+"wis": 31.48,
+"bias": 21.5,
+"coverage_95": 0.615,
+"n": 104
+},
+"4": {
+"wis": 54.7,
+"bias": 36.8,
+"coverage_95": 0.673,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 11.09,
+"bias": -10.3,
+"coverage_95": 0.971,
+"n": 104
+},
+"2": {
+"wis": 27.04,
+"bias": -27.1,
+"coverage_95": 0.933,
+"n": 104
+},
+"3": {
+"wis": 73.89,
+"bias": -92.9,
+"coverage_95": 0.856,
+"n": 104
+},
+"4": {
+"wis": 114.64,
+"bias": -142.3,
+"coverage_95": 0.756,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 63.94,
+"bias": -46.3,
+"coverage_95": 0.897,
+"n": 156
+},
+"2": {
+"wis": 97.99,
+"bias": -62.8,
+"coverage_95": 0.923,
+"n": 104
+},
+"3": {
+"wis": 133.59,
+"bias": -5.1,
+"coverage_95": 0.76,
+"n": 104
+},
+"4": {
+"wis": 157.13,
+"bias": 57.2,
+"coverage_95": 0.798,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 5.14,
+"bias": -4.7,
+"coverage_95": 0.923,
+"n": 104
+},
+"2": {
+"wis": 6.09,
+"bias": -4.3,
+"coverage_95": 0.885,
+"n": 104
+},
+"3": {
+"wis": 7.44,
+"bias": -9.1,
+"coverage_95": 0.865,
+"n": 52
+},
+"4": {
+"wis": 11.01,
+"bias": -1.1,
+"coverage_95": 0.712,
+"n": 104
+}
+}
+}
+},
+{
+"config_id": "lambda_2__seed44",
+"base": "lambda_2",
+"arm": "lambda",
+"seed": 44,
+"describe": "approaching-peak rows (K=6 weeks before the season max) weighted 2x",
+"overall": {
+"wis": 50.29,
+"bias": -17.8,
+"coverage_95": 0.825
+},
+"by_phase": {
+"decline": {
+"wis": 33.77,
+"bias": 25.0,
+"coverage_95": 0.66,
+"n": 312
+},
+"growth": {
+"wis": 62.24,
+"bias": -77.2,
+"coverage_95": 0.874,
+"n": 468
+},
+"peak": {
+"wis": 108.1,
+"bias": -7.0,
+"coverage_95": 0.838,
+"n": 468
+},
+"plateau": {
+"wis": 7.33,
+"bias": -4.1,
+"coverage_95": 0.827,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 26.77,
+"bias": -14.1,
+"coverage_95": 0.876,
+"n": 468
+},
+"2": {
+"wis": 36.09,
+"bias": -15.2,
+"coverage_95": 0.872,
+"n": 468
+},
+"3": {
+"wis": 55.45,
+"bias": -14.4,
+"coverage_95": 0.797,
+"n": 468
+},
+"4": {
+"wis": 82.86,
+"bias": -27.4,
+"coverage_95": 0.756,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 20.8,
+"bias": 24.1,
+"coverage_95": 0.5,
+"n": 52
+},
+"2": {
+"wis": 30.9,
+"bias": 18.3,
+"coverage_95": 0.76,
+"n": 104
+},
+"3": {
+"wis": 31.4,
+"bias": 20.5,
+"coverage_95": 0.644,
+"n": 104
+},
+"4": {
+"wis": 57.24,
+"bias": 48.2,
+"coverage_95": 0.654,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 10.52,
+"bias": -8.7,
+"coverage_95": 0.971,
+"n": 104
+},
+"2": {
+"wis": 26.63,
+"bias": -27.3,
+"coverage_95": 0.942,
+"n": 104
+},
+"3": {
+"wis": 71.46,
+"bias": -95.3,
+"coverage_95": 0.875,
+"n": 104
+},
+"4": {
+"wis": 114.31,
+"bias": -144.2,
+"coverage_95": 0.763,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 61.94,
+"bias": -41.8,
+"coverage_95": 0.891,
+"n": 156
+},
+"2": {
+"wis": 96.43,
+"bias": -54.6,
+"coverage_95": 0.904,
+"n": 104
+},
+"3": {
+"wis": 137.33,
+"bias": 15.7,
+"coverage_95": 0.74,
+"n": 104
+},
+"4": {
+"wis": 159.77,
+"bias": 70.2,
+"coverage_95": 0.788,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 4.96,
+"bias": -4.0,
+"coverage_95": 0.923,
+"n": 104
+},
+"2": {
+"wis": 6.08,
+"bias": -4.3,
+"coverage_95": 0.856,
+"n": 104
+},
+"3": {
+"wis": 7.65,
+"bias": -9.7,
+"coverage_95": 0.846,
+"n": 52
+},
+"4": {
+"wis": 10.78,
+"bias": -1.1,
+"coverage_95": 0.692,
+"n": 104
+}
+}
+}
+},
+{
+"config_id": "lambda_3__seed44",
+"base": "lambda_3",
+"arm": "lambda",
+"seed": 44,
+"describe": "approaching-peak rows (K=6 weeks before the season max) weighted 3x",
+"overall": {
+"wis": 50.03,
+"bias": -13.0,
+"coverage_95": 0.821
+},
+"by_phase": {
+"decline": {
+"wis": 33.52,
+"bias": 22.8,
+"coverage_95": 0.683,
+"n": 312
+},
+"growth": {
+"wis": 60.35,
+"bias": -74.3,
+"coverage_95": 0.865,
+"n": 468
+},
+"peak": {
+"wis": 109.02,
+"bias": 11.1,
+"coverage_95": 0.818,
+"n": 468
+},
+"plateau": {
+"wis": 7.42,
+"bias": -4.2,
+"coverage_95": 0.824,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 26.01,
+"bias": -13.2,
+"coverage_95": 0.874,
+"n": 468
+},
+"2": {
+"wis": 35.12,
+"bias": -6.5,
+"coverage_95": 0.868,
+"n": 468
+},
+"3": {
+"wis": 55.9,
+"bias": -8.9,
+"coverage_95": 0.81,
+"n": 468
+},
+"4": {
+"wis": 83.09,
+"bias": -23.3,
+"coverage_95": 0.731,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 19.73,
+"bias": 22.0,
+"coverage_95": 0.5,
+"n": 52
+},
+"2": {
+"wis": 30.33,
+"bias": 15.7,
+"coverage_95": 0.769,
+"n": 104
+},
+"3": {
+"wis": 33.38,
+"bias": 22.2,
+"coverage_95": 0.692,
+"n": 104
+},
+"4": {
+"wis": 54.01,
+"bias": 39.3,
+"coverage_95": 0.673,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 9.93,
+"bias": -8.9,
+"coverage_95": 0.971,
+"n": 104
+},
+"2": {
+"wis": 25.62,
+"bias": -24.3,
+"coverage_95": 0.942,
+"n": 104
+},
+"3": {
+"wis": 70.1,
+"bias": -92.4,
+"coverage_95": 0.865,
+"n": 104
+},
+"4": {
+"wis": 110.62,
+"bias": -139.1,
+"coverage_95": 0.744,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 60.4,
+"bias": -38.0,
+"coverage_95": 0.885,
+"n": 156
+},
+"2": {
+"wis": 93.54,
+"bias": -15.7,
+"coverage_95": 0.875,
+"n": 104
+},
+"3": {
+"wis": 138.6,
+"bias": 37.0,
+"coverage_95": 0.76,
+"n": 104
+},
+"4": {
+"wis": 167.83,
+"bias": 85.4,
+"coverage_95": 0.721,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 5.02,
+"bias": -4.1,
+"coverage_95": 0.923,
+"n": 104
+},
+"2": {
+"wis": 6.21,
+"bias": -4.8,
+"coverage_95": 0.865,
+"n": 104
+},
+"3": {
+"wis": 7.75,
+"bias": -10.3,
+"coverage_95": 0.846,
+"n": 52
+},
+"4": {
+"wis": 10.86,
+"bias": -0.5,
+"coverage_95": 0.673,
+"n": 104
+}
+}
+}
+},
+{
+"config_id": "lambda_5__seed44",
+"base": "lambda_5",
+"arm": "lambda",
+"seed": 44,
+"describe": "approaching-peak rows (K=6 weeks before the season max) weighted 5x",
+"overall": {
+"wis": 50.13,
+"bias": -9.7,
+"coverage_95": 0.822
+},
+"by_phase": {
+"decline": {
+"wis": 35.25,
+"bias": 20.4,
+"coverage_95": 0.699,
+"n": 312
+},
+"growth": {
+"wis": 57.84,
+"bias": -68.5,
+"coverage_95": 0.874,
+"n": 468
+},
+"peak": {
+"wis": 110.63,
+"bias": 20.5,
+"coverage_95": 0.786,
+"n": 468
+},
+"plateau": {
+"wis": 7.51,
+"bias": -4.6,
+"coverage_95": 0.843,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 25.4,
+"bias": -14.6,
+"coverage_95": 0.874,
+"n": 468
+},
+"2": {
+"wis": 35.11,
+"bias": -8.4,
+"coverage_95": 0.857,
+"n": 468
+},
+"3": {
+"wis": 56.29,
+"bias": -3.4,
+"coverage_95": 0.823,
+"n": 468
+},
+"4": {
+"wis": 83.75,
+"bias": -12.4,
+"coverage_95": 0.733,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 20.36,
+"bias": 21.2,
+"coverage_95": 0.5,
+"n": 52
+},
+"2": {
+"wis": 32.23,
+"bias": 16.1,
+"coverage_95": 0.76,
+"n": 104
+},
+"3": {
+"wis": 34.32,
+"bias": 15.2,
+"coverage_95": 0.74,
+"n": 104
+},
+"4": {
+"wis": 58.06,
+"bias": 38.6,
+"coverage_95": 0.692,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 10.43,
+"bias": -7.4,
+"coverage_95": 0.962,
+"n": 104
+},
+"2": {
+"wis": 25.15,
+"bias": -26.0,
+"coverage_95": 0.962,
+"n": 104
+},
+"3": {
+"wis": 65.58,
+"bias": -83.6,
+"coverage_95": 0.875,
+"n": 104
+},
+"4": {
+"wis": 106.08,
+"bias": -127.5,
+"coverage_95": 0.756,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 57.88,
+"bias": -42.9,
+"coverage_95": 0.891,
+"n": 156
+},
+"2": {
+"wis": 92.01,
+"bias": -22.9,
+"coverage_95": 0.817,
+"n": 104
+},
+"3": {
+"wis": 143.51,
+"bias": 60.6,
+"coverage_95": 0.74,
+"n": 104
+},
+"4": {
+"wis": 175.52,
+"bias": 118.9,
+"coverage_95": 0.644,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 5.17,
+"bias": -4.4,
+"coverage_95": 0.923,
+"n": 104
+},
+"2": {
+"wis": 6.27,
+"bias": -4.7,
+"coverage_95": 0.856,
+"n": 104
+},
+"3": {
+"wis": 7.97,
+"bias": -11.3,
+"coverage_95": 0.885,
+"n": 52
+},
+"4": {
+"wis": 10.86,
+"bias": -1.3,
+"coverage_95": 0.731,
+"n": 104
+}
+}
+}
+},
+{
+"config_id": "lambda_calendar_2__seed44",
+"base": "lambda_calendar_2",
+"arm": "lambda_calendar",
+"seed": 44,
+"describe": "peak-phase rows by target date (origin + h weeks) under adiga_2026_10 weighted 2x",
+"overall": {
+"wis": 48.95,
+"bias": -17.6,
+"coverage_95": 0.826
+},
+"by_phase": {
+"decline": {
+"wis": 35.01,
+"bias": 28.0,
+"coverage_95": 0.647,
+"n": 312
+},
+"growth": {
+"wis": 61.04,
+"bias": -74.2,
+"coverage_95": 0.87,
+"n": 468
+},
+"peak": {
+"wis": 103.09,
+"bias": -12.1,
+"coverage_95": 0.848,
+"n": 468
+},
+"plateau": {
+"wis": 7.38,
+"bias": -3.2,
+"coverage_95": 0.832,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 26.24,
+"bias": -15.5,
+"coverage_95": 0.887,
+"n": 468
+},
+"2": {
+"wis": 35.08,
+"bias": -17.3,
+"coverage_95": 0.865,
+"n": 468
+},
+"3": {
+"wis": 53.66,
+"bias": -13.1,
+"coverage_95": 0.81,
+"n": 468
+},
+"4": {
+"wis": 80.83,
+"bias": -24.6,
+"coverage_95": 0.741,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 21.26,
+"bias": 25.1,
+"coverage_95": 0.519,
+"n": 52
+},
+"2": {
+"wis": 30.25,
+"bias": 20.2,
+"coverage_95": 0.75,
+"n": 104
+},
+"3": {
+"wis": 33.3,
+"bias": 26.1,
+"coverage_95": 0.644,
+"n": 104
+},
+"4": {
+"wis": 61.72,
+"bias": 50.4,
+"coverage_95": 0.577,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 11.27,
+"bias": -13.3,
+"coverage_95": 0.971,
+"n": 104
+},
+"2": {
+"wis": 28.21,
+"bias": -29.6,
+"coverage_95": 0.933,
+"n": 104
+},
+"3": {
+"wis": 71.04,
+"bias": -90.5,
+"coverage_95": 0.865,
+"n": 104
+},
+"4": {
+"wis": 109.45,
+"bias": -133.6,
+"coverage_95": 0.763,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 59.78,
+"bias": -43.1,
+"coverage_95": 0.91,
+"n": 156
+},
+"2": {
+"wis": 91.0,
+"bias": -64.2,
+"coverage_95": 0.913,
+"n": 104
+},
+"3": {
+"wis": 127.92,
+"bias": 11.3,
+"coverage_95": 0.779,
+"n": 104
+},
+"4": {
+"wis": 155.3,
+"bias": 63.3,
+"coverage_95": 0.76,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 4.93,
+"bias": -4.0,
+"coverage_95": 0.933,
+"n": 104
+},
+"2": {
+"wis": 6.04,
+"bias": -3.8,
+"coverage_95": 0.837,
+"n": 104
+},
+"3": {
+"wis": 7.39,
+"bias": -9.6,
+"coverage_95": 0.904,
+"n": 52
+},
+"4": {
+"wis": 11.15,
+"bias": 1.5,
+"coverage_95": 0.692,
+"n": 104
+}
+}
+}
+},
+{
+"config_id": "lambda_calendar_3__seed44",
+"base": "lambda_calendar_3",
+"arm": "lambda_calendar",
+"seed": 44,
+"describe": "peak-phase rows by target date (origin + h weeks) under adiga_2026_10 weighted 3x",
+"overall": {
+"wis": 50.1,
+"bias": -10.5,
+"coverage_95": 0.823
+},
+"by_phase": {
+"decline": {
+"wis": 37.35,
+"bias": 34.6,
+"coverage_95": 0.644,
+"n": 312
+},
+"growth": {
+"wis": 61.09,
+"bias": -72.1,
+"coverage_95": 0.876,
+"n": 468
+},
+"peak": {
+"wis": 106.04,
+"bias": 9.9,
+"coverage_95": 0.825,
+"n": 468
+},
+"plateau": {
+"wis": 7.44,
+"bias": -3.0,
+"coverage_95": 0.841,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 26.56,
+"bias": -14.1,
+"coverage_95": 0.885,
+"n": 468
+},
+"2": {
+"wis": 34.45,
+"bias": -11.0,
+"coverage_95": 0.868,
+"n": 468
+},
+"3": {
+"wis": 55.43,
+"bias": -2.7,
+"coverage_95": 0.812,
+"n": 468
+},
+"4": {
+"wis": 83.95,
+"bias": -14.1,
+"coverage_95": 0.729,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 21.61,
+"bias": 26.3,
+"coverage_95": 0.5,
+"n": 52
+},
+"2": {
+"wis": 31.78,
+"bias": 27.3,
+"coverage_95": 0.75,
+"n": 104
+},
+"3": {
+"wis": 36.3,
+"bias": 35.0,
+"coverage_95": 0.654,
+"n": 104
+},
+"4": {
+"wis": 66.34,
+"bias": 56.5,
+"coverage_95": 0.558,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 11.24,
+"bias": -11.8,
+"coverage_95": 0.971,
+"n": 104
+},
+"2": {
+"wis": 27.73,
+"bias": -26.5,
+"coverage_95": 0.933,
+"n": 104
+},
+"3": {
+"wis": 71.95,
+"bias": -91.4,
+"coverage_95": 0.865,
+"n": 104
+},
+"4": {
+"wis": 109.33,
+"bias": -129.7,
+"coverage_95": 0.782,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 60.71,
+"bias": -40.7,
+"coverage_95": 0.91,
+"n": 156
+},
+"2": {
+"wis": 87.29,
+"bias": -46.0,
+"coverage_95": 0.904,
+"n": 104
+},
+"3": {
+"wis": 131.98,
+"bias": 49.9,
+"coverage_95": 0.779,
+"n": 104
+},
+"4": {
+"wis": 166.83,
+"bias": 101.8,
+"coverage_95": 0.663,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 4.88,
+"bias": -3.6,
+"coverage_95": 0.933,
+"n": 104
+},
+"2": {
+"wis": 6.03,
+"bias": -3.9,
+"coverage_95": 0.846,
+"n": 104
+},
+"3": {
+"wis": 7.21,
+"bias": -9.4,
+"coverage_95": 0.904,
+"n": 52
+},
+"4": {
+"wis": 11.53,
+"bias": 1.6,
+"coverage_95": 0.712,
+"n": 104
+}
+}
+}
+},
+{
+"config_id": "window_52__seed44",
+"base": "window_52",
+"arm": "window",
+"seed": 44,
+"describe": "fit only on feature rows from the last 52 weeks before each cutoff",
+"overall": {
+"wis": 71.3,
+"bias": -3.3,
+"coverage_95": 0.853
+},
+"by_phase": {
+"decline": {
+"wis": 31.96,
+"bias": 18.4,
+"coverage_95": 0.769,
+"n": 312
+},
+"growth": {
+"wis": 82.65,
+"bias": -90.9,
+"coverage_95": 0.865,
+"n": 468
+},
+"peak": {
+"wis": 172.16,
+"bias": 72.4,
+"coverage_95": 0.857,
+"n": 468
+},
+"plateau": {
+"wis": 7.71,
+"bias": -5.9,
+"coverage_95": 0.868,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 37.48,
+"bias": -36.3,
+"coverage_95": 0.878,
+"n": 468
+},
+"2": {
+"wis": 52.55,
+"bias": -2.0,
+"coverage_95": 0.885,
+"n": 468
+},
+"3": {
+"wis": 79.21,
+"bias": 12.3,
+"coverage_95": 0.857,
+"n": 468
+},
+"4": {
+"wis": 115.97,
+"bias": 12.9,
+"coverage_95": 0.791,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 19.58,
+"bias": 19.1,
+"coverage_95": 0.519,
+"n": 52
+},
+"2": {
+"wis": 30.57,
+"bias": 6.5,
+"coverage_95": 0.788,
+"n": 104
+},
+"3": {
+"wis": 31.35,
+"bias": 19.3,
+"coverage_95": 0.798,
+"n": 104
+},
+"4": {
+"wis": 48.3,
+"bias": 39.9,
+"coverage_95": 0.923,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 14.28,
+"bias": -13.7,
+"coverage_95": 0.952,
+"n": 104
+},
+"2": {
+"wis": 36.96,
+"bias": -30.2,
+"coverage_95": 0.923,
+"n": 104
+},
+"3": {
+"wis": 96.6,
+"bias": -101.7,
+"coverage_95": 0.875,
+"n": 104
+},
+"4": {
+"wis": 149.38,
+"bias": -175.5,
+"coverage_95": 0.763,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 91.47,
+"bias": -102.6,
+"coverage_95": 0.897,
+"n": 156
+},
+"2": {
+"wis": 159.28,
+"bias": 22.5,
+"coverage_95": 0.904,
+"n": 104
+},
+"3": {
+"wis": 218.09,
+"bias": 148.9,
+"coverage_95": 0.827,
+"n": 104
+},
+"4": {
+"wis": 260.15,
+"bias": 308.4,
+"coverage_95": 0.779,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 5.48,
+"bias": -4.5,
+"coverage_95": 0.933,
+"n": 104
+},
+"2": {
+"wis": 6.43,
+"bias": -5.3,
+"coverage_95": 0.894,
+"n": 104
+},
+"3": {
+"wis": 8.02,
+"bias": -11.2,
+"coverage_95": 0.942,
+"n": 52
+},
+"4": {
+"wis": 11.07,
+"bias": -5.3,
+"coverage_95": 0.74,
+"n": 104
+}
+}
+}
+},
+{
+"config_id": "oversample_2__seed44",
+"base": "oversample_2",
+"arm": "oversample",
+"seed": 44,
+"describe": "peak-phase training rows by target date under adiga_2026_10 fitted 2x (1 extra copy each)",
+"overall": {
+"wis": 50.05,
+"bias": -17.9,
+"coverage_95": 0.829
+},
+"by_phase": {
+"decline": {
+"wis": 35.23,
+"bias": 29.4,
+"coverage_95": 0.654,
+"n": 312
+},
+"growth": {
+"wis": 62.55,
+"bias": -74.7,
+"coverage_95": 0.872,
+"n": 468
+},
+"peak": {
+"wis": 105.77,
+"bias": -13.4,
+"coverage_95": 0.855,
+"n": 468
+},
+"plateau": {
+"wis": 7.49,
+"bias": -3.4,
+"coverage_95": 0.83,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 27.55,
+"bias": -19.6,
+"coverage_95": 0.874,
+"n": 468
+},
+"2": {
+"wis": 35.19,
+"bias": -17.8,
+"coverage_95": 0.861,
+"n": 468
+},
+"3": {
+"wis": 54.47,
+"bias": -13.8,
+"coverage_95": 0.816,
+"n": 468
+},
+"4": {
+"wis": 82.98,
+"bias": -20.5,
+"coverage_95": 0.763,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 21.66,
+"bias": 26.5,
+"coverage_95": 0.462,
+"n": 52
+},
+"2": {
+"wis": 30.56,
+"bias": 18.3,
+"coverage_95": 0.74,
+"n": 104
+},
+"3": {
+"wis": 33.66,
+"bias": 30.5,
+"coverage_95": 0.663,
+"n": 104
+},
+"4": {
+"wis": 61.27,
+"bias": 52.4,
+"coverage_95": 0.654,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 11.54,
+"bias": -12.9,
+"coverage_95": 0.971,
+"n": 104
+},
+"2": {
+"wis": 28.36,
+"bias": -29.2,
+"coverage_95": 0.923,
+"n": 104
+},
+"3": {
+"wis": 73.4,
+"bias": -91.7,
+"coverage_95": 0.865,
+"n": 104
+},
+"4": {
+"wis": 112.12,
+"bias": -135.1,
+"coverage_95": 0.776,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 63.41,
+"bias": -56.3,
+"coverage_95": 0.904,
+"n": 156
+},
+"2": {
+"wis": 91.12,
+"bias": -64.3,
+"coverage_95": 0.904,
+"n": 104
+},
+"3": {
+"wis": 128.98,
+"bias": 4.8,
+"coverage_95": 0.808,
+"n": 104
+},
+"4": {
+"wis": 160.77,
+"bias": 83.6,
+"coverage_95": 0.779,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 4.88,
+"bias": -3.9,
+"coverage_95": 0.913,
+"n": 104
+},
+"2": {
+"wis": 6.06,
+"bias": -4.1,
+"coverage_95": 0.846,
+"n": 104
+},
+"3": {
+"wis": 7.42,
+"bias": -9.7,
+"coverage_95": 0.865,
+"n": 52
+},
+"4": {
+"wis": 11.58,
+"bias": 0.9,
+"coverage_95": 0.712,
+"n": 104
+}
+}
+}
+},
+{
+"config_id": "oversample_3__seed44",
+"base": "oversample_3",
+"arm": "oversample",
+"seed": 44,
+"describe": "peak-phase training rows by target date under adiga_2026_10 fitted 3x (2 extra copies each)",
+"overall": {
+"wis": 49.85,
+"bias": -14.7,
+"coverage_95": 0.825
+},
+"by_phase": {
+"decline": {
+"wis": 37.3,
+"bias": 34.1,
+"coverage_95": 0.657,
+"n": 312
+},
+"growth": {
+"wis": 61.41,
+"bias": -73.0,
+"coverage_95": 0.88,
+"n": 468
+},
+"peak": {
+"wis": 104.87,
+"bias": -6.0,
+"coverage_95": 0.833,
+"n": 468
+},
+"plateau": {
+"wis": 7.41,
+"bias": -3.1,
+"coverage_95": 0.83,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 26.57,
+"bias": -16.9,
+"coverage_95": 0.876,
+"n": 468
+},
+"2": {
+"wis": 35.26,
+"bias": -14.5,
+"coverage_95": 0.865,
+"n": 468
+},
+"3": {
+"wis": 54.29,
+"bias": -8.4,
+"coverage_95": 0.816,
+"n": 468
+},
+"4": {
+"wis": 83.28,
+"bias": -19.2,
+"coverage_95": 0.744,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 21.92,
+"bias": 26.4,
+"coverage_95": 0.462,
+"n": 52
+},
+"2": {
+"wis": 32.13,
+"bias": 24.8,
+"coverage_95": 0.75,
+"n": 104
+},
+"3": {
+"wis": 35.83,
+"bias": 34.2,
+"coverage_95": 0.683,
+"n": 104
+},
+"4": {
+"wis": 65.94,
+"bias": 60.1,
+"coverage_95": 0.615,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 11.36,
+"bias": -12.4,
+"coverage_95": 0.971,
+"n": 104
+},
+"2": {
+"wis": 28.29,
+"bias": -27.2,
+"coverage_95": 0.923,
+"n": 104
+},
+"3": {
+"wis": 72.21,
+"bias": -89.3,
+"coverage_95": 0.875,
+"n": 104
+},
+"4": {
+"wis": 109.66,
+"bias": -133.2,
+"coverage_95": 0.795,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 60.54,
+"bias": -48.8,
+"coverage_95": 0.91,
+"n": 156
+},
+"2": {
+"wis": 89.97,
+"bias": -58.3,
+"coverage_95": 0.913,
+"n": 104
+},
+"3": {
+"wis": 127.4,
+"bias": 21.9,
+"coverage_95": 0.779,
+"n": 104
+},
+"4": {
+"wis": 163.73,
+"bias": 82.7,
+"coverage_95": 0.692,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 4.91,
+"bias": -3.4,
+"coverage_95": 0.913,
+"n": 104
+},
+"2": {
+"wis": 6.06,
+"bias": -4.0,
+"coverage_95": 0.846,
+"n": 104
+},
+"3": {
+"wis": 7.12,
+"bias": -8.8,
+"coverage_95": 0.865,
+"n": 52
+},
+"4": {
+"wis": 11.4,
+"bias": 1.0,
+"coverage_95": 0.712,
+"n": 104
+}
+}
+}
+},
+{
+"config_id": "oversample_5__seed44",
+"base": "oversample_5",
+"arm": "oversample",
+"seed": 44,
+"describe": "peak-phase training rows by target date under adiga_2026_10 fitted 5x (4 extra copies each)",
+"overall": {
+"wis": 50.35,
+"bias": -7.2,
+"coverage_95": 0.824
+},
+"by_phase": {
+"decline": {
+"wis": 38.36,
+"bias": 39.4,
+"coverage_95": 0.657,
+"n": 312
+},
+"growth": {
+"wis": 59.94,
+"bias": -70.9,
+"coverage_95": 0.88,
+"n": 468
+},
+"peak": {
+"wis": 107.38,
+"bias": 17.1,
+"coverage_95": 0.812,
+"n": 468
+},
+"plateau": {
+"wis": 7.65,
+"bias": -1.6,
+"coverage_95": 0.846,
+"n": 364
+}
+},
+"by_horizon": {
+"1": {
+"wis": 26.06,
+"bias": -10.2,
+"coverage_95": 0.876,
+"n": 468
+},
+"2": {
+"wis": 35.23,
+"bias": -9.6,
+"coverage_95": 0.868,
+"n": 468
+},
+"3": {
+"wis": 56.47,
+"bias": -0.0,
+"coverage_95": 0.816,
+"n": 468
+},
+"4": {
+"wis": 83.63,
+"bias": -9.0,
+"coverage_95": 0.735,
+"n": 468
+}
+},
+"by_phase_horizon": {
+"decline": {
+"1": {
+"wis": 21.66,
+"bias": 27.8,
+"coverage_95": 0.481,
+"n": 52
+},
+"2": {
+"wis": 33.25,
+"bias": 29.0,
+"coverage_95": 0.75,
+"n": 104
+},
+"3": {
+"wis": 36.92,
+"bias": 44.8,
+"coverage_95": 0.692,
+"n": 104
+},
+"4": {
+"wis": 68.18,
+"bias": 60.9,
+"coverage_95": 0.577,
+"n": 52
+}
+},
+"growth": {
+"1": {
+"wis": 10.98,
+"bias": -11.4,
+"coverage_95": 0.962,
+"n": 104
+},
+"2": {
+"wis": 28.98,
+"bias": -28.8,
+"coverage_95": 0.933,
+"n": 104
+},
+"3": {
+"wis": 73.8,
+"bias": -93.2,
+"coverage_95": 0.885,
+"n": 104
+},
+"4": {
+"wis": 103.97,
+"bias": -123.7,
+"coverage_95": 0.788,
+"n": 156
+}
+},
+"peak": {
+"1": {
+"wis": 59.4,
+"bias": -30.3,
+"coverage_95": 0.904,
+"n": 156
+},
+"2": {
+"wis": 88.31,
+"bias": -40.5,
+"coverage_95": 0.885,
+"n": 104
+},
+"3": {
+"wis": 134.33,
+"bias": 52.5,
+"coverage_95": 0.75,
+"n": 104
+},
+"4": {
+"wis": 171.49,
+"bias": 110.5,
+"coverage_95": 0.663,
+"n": 104
+}
+},
+"plateau": {
+"1": {
+"wis": 4.83,
+"bias": -3.0,
+"coverage_95": 0.933,
+"n": 104
+},
+"2": {
+"wis": 5.8,
+"bias": -2.8,
+"coverage_95": 0.865,
+"n": 104
+},
+"3": {
+"wis": 6.75,
+"bias": -8.5,
+"coverage_95": 0.885,
+"n": 52
+},
+"4": {
+"wis": 12.76,
+"bias": 4.4,
+"coverage_95": 0.721,
+"n": 104
+}
+}
+}
+}
+]

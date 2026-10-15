@@ -499,7 +499,7 @@ def test_domain_context_describes_active_bank_family():
     with tempfile.TemporaryDirectory() as tmp:
         bank = KnowledgeBank.open(DEFAULT_CURATED_DIR, Path(tmp) / "knowledge.db")
         a = FluForecastAdapter(knowledge_bank=bank)
-        migrated = "Onset phase (Oct-Nov): flu activity begins rising."
+        migrated = "Growth phase (Nov 1 - Dec 31): flu activity rises toward the season peak."
 
         ctx = a.get_domain_context(_bank_config("persistence"))
         assert "'persistence'" in ctx

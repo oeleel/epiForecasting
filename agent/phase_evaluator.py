@@ -12,10 +12,160 @@ Supports two forecast formats:
                         computed in addition to MAPE/MAE/RMSE/bias.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
+
+
+# ---- phase schemes ----------------------------------------------------------
+#
+# A phase scheme maps a calendar date to an epidemic phase by (month, day).
+# Every metrics dict records the scheme it was scored under ("phase_scheme"),
+# because the same phase name means different dates in different schemes
+# ("peak" is Dec-Jan in calendar_v1 and Jan 1 - end of Feb in adiga_2026_10).
+#
+# Windows are inclusive (month, day) ranges that never wrap the year; a phase
+# that wraps (calendar_v1 peak) is two windows. `_validate_scheme` checks at
+# import time that each scheme covers every day of a leap year exactly once.
+
+PHASE_SCHEME_CALENDAR_V1 = "calendar_v1"
+PHASE_SCHEME_ADIGA_2026_10 = "adiga_2026_10"
+DEFAULT_PHASE_SCHEME = PHASE_SCHEME_ADIGA_2026_10
+
+# Metrics dicts written before phase schemes existed carry no "phase_scheme"
+# key; every one of them was scored with the month map now named calendar_v1.
+LEGACY_PHASE_SCHEME = PHASE_SCHEME_CALENDAR_V1
+
+OFF_SEASON = "off_season"
+
+# A. Adiga's 2026-10-15 definitions do not assign October. ASSUMPTION, awaiting
+# his confirmation: October is off-season (unscored). Change this one constant
+# if he places it elsewhere (for example "growth").
+ADIGA_OCTOBER_PHASE = OFF_SEASON
+
+MonthDay = Tuple[int, int]
+PhaseWindow = Tuple[MonthDay, MonthDay, str]  # (first day, last day, phase), inclusive
+
+PHASE_SCHEMES: Dict[str, Tuple[PhaseWindow, ...]] = {
+    # Month map used through 2026-10-15 (adapted from scripts/optimize.py).
+    PHASE_SCHEME_CALENDAR_V1: (
+        ((1, 1), (1, 31), "peak"),
+        ((2, 1), (4, 30), "decline"),
+        ((5, 1), (9, 30), OFF_SEASON),
+        ((10, 1), (11, 30), "onset"),
+        ((12, 1), (12, 31), "peak"),
+    ),
+    # A. Adiga, meeting 2026-10-15.
+    PHASE_SCHEME_ADIGA_2026_10: (
+        ((1, 1), (2, 29), "peak"),  # through the end of February, leap day included
+        ((3, 1), (4, 15), "decline"),
+        ((4, 16), (5, 31), "plateau"),
+        ((6, 1), (9, 30), OFF_SEASON),
+        ((10, 1), (10, 31), ADIGA_OCTOBER_PHASE),
+        ((11, 1), (12, 31), "growth"),
+    ),
+}
+
+# Scored phases (everything except off_season) in season order, per scheme.
+# Reports, prompts and tables iterate these instead of hard-coding names.
+SCHEME_PHASE_ORDER: Dict[str, Tuple[str, ...]] = {
+    PHASE_SCHEME_CALENDAR_V1: ("onset", "peak", "decline"),
+    PHASE_SCHEME_ADIGA_2026_10: ("growth", "peak", "decline", "plateau"),
+}
+
+# One-line human description per scheme, for prompts and report headers.
+SCHEME_DESCRIPTIONS: Dict[str, str] = {
+    PHASE_SCHEME_CALENDAR_V1: (
+        "onset Oct-Nov, peak Dec-Jan, decline Feb-Apr, off_season May-Sep"
+    ),
+    PHASE_SCHEME_ADIGA_2026_10: (
+        "growth Nov 1-Dec 31, peak Jan 1-end of Feb, decline Mar 1-Apr 15, "
+        f"plateau Apr 16-May 31, off_season Jun 1-Sep 30, October {ADIGA_OCTOBER_PHASE} "
+        "(assumed, awaiting A. Adiga)"
+    ),
+}
+
+_LEAP_YEAR = 2024  # any leap year: the coverage check must include Feb 29
+
+
+def resolve_phase_scheme(scheme: Optional[str] = None) -> str:
+    """Return a known scheme name; None means DEFAULT_PHASE_SCHEME.
+
+    Raises:
+        ValueError: if `scheme` is not a key of PHASE_SCHEMES.
+    """
+    if scheme is None:
+        return DEFAULT_PHASE_SCHEME
+    if scheme not in PHASE_SCHEMES:
+        raise ValueError(
+            f"unknown phase scheme {scheme!r}; known schemes are {sorted(PHASE_SCHEMES)}"
+        )
+    return scheme
+
+
+def metrics_phase_scheme(metrics: Optional[Dict[str, Any]]) -> str:
+    """The scheme a metrics dict was scored under; a missing key means LEGACY_PHASE_SCHEME."""
+    if not isinstance(metrics, dict):
+        return LEGACY_PHASE_SCHEME
+    return str(metrics.get("phase_scheme") or LEGACY_PHASE_SCHEME)
+
+
+def phase_order(scheme: Optional[str] = None) -> Tuple[str, ...]:
+    """Scored phases of `scheme` in season order (off_season excluded)."""
+    return SCHEME_PHASE_ORDER[resolve_phase_scheme(scheme)]
+
+
+def describe_phase_scheme(scheme: Optional[str] = None) -> str:
+    """`<name> (<windows>)`, e.g. for a prompt line or a report header."""
+    name = resolve_phase_scheme(scheme)
+    return f"{name} ({SCHEME_DESCRIPTIONS[name]})"
+
+
+def _month_day_key(month: int, day: int) -> int:
+    return month * 100 + day
+
+
+def _validate_scheme(name: str, windows: Tuple[PhaseWindow, ...]) -> None:
+    """Every day of a leap year falls in exactly one window; raise naming the gap/overlap."""
+    days = pd.date_range(f"{_LEAP_YEAR}-01-01", f"{_LEAP_YEAR}-12-31", freq="D")
+    keys = days.month * 100 + days.day
+    hits = np.zeros(len(days), dtype=int)
+    for (m1, d1), (m2, d2), _phase in windows:
+        hits += (keys >= _month_day_key(m1, d1)) & (keys <= _month_day_key(m2, d2))
+    bad = days[hits != 1]
+    if len(bad):
+        raise ValueError(
+            f"phase scheme {name!r} must cover every day exactly once; "
+            f"first bad day {bad[0].strftime('%m-%d')} is covered {int(hits[hits != 1][0])} times"
+        )
+    if set(SCHEME_PHASE_ORDER[name]) != {p for _, _, p in windows} - {OFF_SEASON}:
+        raise ValueError(
+            f"SCHEME_PHASE_ORDER[{name!r}] = {SCHEME_PHASE_ORDER[name]} does not match the "
+            f"scheme's scored phases {sorted({p for _, _, p in windows} - {OFF_SEASON})}"
+        )
+
+
+for _name, _windows in PHASE_SCHEMES.items():
+    _validate_scheme(_name, _windows)
+
+
+def assign_phases(dates: Any, scheme: Optional[str] = None) -> np.ndarray:
+    """Vectorized phase labels for anything `pd.to_datetime` accepts as a 1-D array.
+
+    Raises:
+        ValueError: on an unknown scheme.
+    """
+    windows = PHASE_SCHEMES[resolve_phase_scheme(scheme)]
+    parsed = pd.DatetimeIndex(pd.to_datetime(dates))
+    keys = np.asarray(parsed.month * 100 + parsed.day)
+    conditions = [
+        (keys >= _month_day_key(m1, d1)) & (keys <= _month_day_key(m2, d2))
+        for (m1, d1), (m2, d2), _phase in windows
+    ]
+    labels = [phase for _, _, phase in windows]
+    # Coverage is validated at import, so the default is unreachable for real dates.
+    return np.select(conditions, labels, default=OFF_SEASON).astype(object)
 
 
 # FluSight standard quantile levels (also matches src.config.QUANTILES default)
@@ -108,39 +258,40 @@ def _compute_wis_vector(actual: np.ndarray, q05, q25, q50, q75, q95) -> np.ndarr
 class PhaseEvaluator:
     """Evaluate forecasting performance by epidemic phase and time step.
 
-    Phases are calendar-based (adapted from scripts/optimize.py:get_season_phase):
-        onset:      October-November (weeks 40-48)
-        peak:       December-January (weeks 49-52, 1-4)
-        decline:    February-April (weeks 5-16)
-        off_season: May-September
+    Phases come from a named calendar scheme (PHASE_SCHEMES), assigned by
+    (month, day) of the forecast's target date. DEFAULT_PHASE_SCHEME is
+    adiga_2026_10 (A. Adiga, 2026-10-15):
+        growth:     Nov 1 - Dec 31
+        peak:       Jan 1 - end of February
+        decline:    Mar 1 - Apr 15
+        plateau:    Apr 16 - May 31
+        off_season: Jun 1 - Oct 31 (October assumed, see ADIGA_OCTOBER_PHASE)
+    calendar_v1 (the month map used before 2026-10-15) stays selectable:
+    onset Oct-Nov, peak Dec-Jan, decline Feb-Apr, off_season May-Sep.
     """
 
-    PHASE_MAP = {
-        10: "onset", 11: "onset",
-        12: "peak", 1: "peak",
-        2: "decline", 3: "decline", 4: "decline",
-        5: "off_season", 6: "off_season", 7: "off_season",
-        8: "off_season", 9: "off_season",
-    }
-
     @classmethod
-    def assign_phase(cls, date_str: str) -> str:
-        """Assign epidemic phase based on calendar month.
+    def assign_phase(cls, date_str: str, scheme: Optional[str] = None) -> str:
+        """Assign the epidemic phase of one date under `scheme` (default DEFAULT_PHASE_SCHEME).
 
         Args:
             date_str: Date string parseable by pd.to_datetime
+            scheme: A PHASE_SCHEMES key, or None for DEFAULT_PHASE_SCHEME
 
         Returns:
-            Phase name: "onset", "peak", "decline", or "off_season"
+            A phase name of the scheme, or "off_season".
+
+        Raises:
+            ValueError: on an unknown scheme.
         """
-        month = pd.to_datetime(date_str).month
-        return cls.PHASE_MAP.get(month, "off_season")
+        return str(assign_phases([date_str], scheme)[0])
 
     @classmethod
     def merge_forecasts_actuals(
         cls,
         forecasts: pd.DataFrame,
         actuals: pd.DataFrame,
+        phase_scheme: Optional[str] = None,
     ) -> pd.DataFrame:
         """Merge forecasts with actuals and compute error columns.
 
@@ -162,10 +313,15 @@ class PhaseEvaluator:
                        and either 'forecast' or 'predicted' (point), plus
                        optional quantile columns.
             actuals: DataFrame with columns: date, location, value, location_name
+            phase_scheme: PHASE_SCHEMES key for the phase column (None = default)
 
         Returns:
             Merged DataFrame with error columns and phase labels.
+
+        Raises:
+            ValueError: on an unknown phase scheme, or when nothing merges.
         """
+        phase_scheme = resolve_phase_scheme(phase_scheme)
         forecasts = forecasts.copy()
         actuals = actuals.copy()
 
@@ -206,10 +362,8 @@ class PhaseEvaluator:
         merged["pct_error"] = (merged["error"] / actual_safe) * 100
         merged["abs_pct_error"] = merged["pct_error"].abs()
 
-        # Assign phase based on forecast date
-        merged["phase"] = merged["forecast_date"].apply(
-            lambda d: cls.assign_phase(d.isoformat())
-        )
+        # Assign phase based on forecast (target) date
+        merged["phase"] = assign_phases(merged["forecast_date"], phase_scheme)
 
         # Quantile-derived metrics (WIS + 95% PI coverage) when available
         if _has_quantiles(merged):
@@ -258,7 +412,7 @@ class PhaseEvaluator:
         """
         result = {}
         for phase, group in merged_df.groupby("phase"):
-            if phase == "off_season":
+            if phase == OFF_SEASON:
                 continue  # Skip off-season — not meaningful for flu forecasting
             result[phase] = cls._row_metrics(group)
         return result

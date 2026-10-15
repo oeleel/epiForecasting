@@ -28,7 +28,7 @@
   entities: {}
   context:
     model: [persistence, seasonal_naive]     # TODO: the AR/statistical families this covers
-    # phase: [surge, onset]                  # optional: restrict to a phase
+    # phase: [surge, growth]                 # optional: restrict to a phase
   payload:
     model_class: statistical_ar
     # recommendation: {action: not_yet_available, params: {weeks: 12}}

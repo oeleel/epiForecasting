@@ -200,7 +200,9 @@ def test_to_dict_is_a_deep_copy():
 
 
 def test_known_phases_cover_both_vocabularies():
-    for phase in ("onset", "peak", "decline", "off_season", "surge", "plateau", "approaching_peak"):
+    for phase in (
+        "growth", "peak", "decline", "plateau", "onset", "off_season", "surge", "approaching_peak",
+    ):
         assert phase in KNOWN_PHASES, phase
 
 
@@ -1123,14 +1125,21 @@ def test_seed_files_carry_the_five_rectification_actions():
 def test_seed_files_hold_the_migrated_adapter_domain_context():
     entries = {e.id: e for e in load_curated_dir(DEFAULT_CURATED_DIR)}
 
-    assert entries["calendar-phase-onset"].statement == (
-        "Onset phase (Oct-Nov): flu activity begins rising."
-    )
-    assert entries["calendar-phase-onset"].context["season_week"] == [40, 48]
-    assert entries["calendar-phase-decline"].context["season_week"] == [5, 17]
     assert entries["bias-sign-convention"].category == "forecasts"
-    for entry_id in ("calendar-phase-onset", "mape-quality-bands", "bias-sign-convention"):
+    for entry_id in ("mape-quality-bands", "bias-sign-convention", "error-grows-with-horizon"):
         assert entries[entry_id].evidence["source"].startswith("migrated from agent/adapters/")
+
+
+def test_seed_files_phase_entries_describe_the_adiga_scheme():
+    entries = {e.id: e for e in load_curated_dir(DEFAULT_CURATED_DIR)}
+
+    assert entries["phase-growth-adiga-2026-10"].statement == (
+        "Growth phase (Nov 1 - Dec 31): flu activity rises toward the season peak."
+    )
+    assert entries["phase-peak-adiga-2026-10"].payload["last_day"] == "02-29"
+    assert entries["phase-decline-adiga-2026-10"].context["phase"] == ["decline"]
+    assert entries["phase-plateau-adiga-2026-10"].payload["phase_scheme"] == "adiga_2026_10"
+    assert "calendar-phase-onset" not in entries
 
 
 # ---- CLI: knowledge remove ----------------------------------------------------
