@@ -66,11 +66,8 @@ The harness flags and design are in its module docstring (`--arms`, `--lambdas`,
 
 ## Gotchas
 
-- **Phase schemes.** Phases are named calendar schemes in `PHASE_SCHEMES`
-  (`agent/phase_evaluator.py`). Default `adiga_2026_10`: Growth Nov 1-Dec 31, Peak Jan 1-end
-  Feb, Decline Mar 1-Apr 15, Plateau Apr 16-May 31, Off-season Jun 1-Oct 31 (skipped).
-  October = off-season is an assumption awaiting A. Adiga (`ADIGA_OCTOBER_PHASE`). Legacy
-  `calendar_v1` stays selectable.
+- **October = off-season is an assumption** awaiting A. Adiga (`ADIGA_OCTOBER_PHASE` in
+  `agent/phase_evaluator.py`).
 - **Never compare metrics across phase schemes.** Every metrics dict records `phase_scheme`;
   a missing value means `calendar_v1` (every output before 2026-10-15, including round 1 of
   the peak-rectification sweep). `run_report` and `select_incumbent` refuse cross-scheme
@@ -91,30 +88,21 @@ The harness flags and design are in its module docstring (`--arms`, `--lambdas`,
   feature-engineered rows with lags intact; minimum 8. Not the same as
   `data.train_start_date`, which truncates history before feature engineering.
 - **`data.oversample`** works for `xgboost_direct` only.
-- **Model family** is `config["model"]["family"]`; default `xgboost_direct` is the legacy
-  path, every other family dispatches through `src/model_bank/`. In-house lab models are the
-  real bank; the Nixtla families are example scaffolding (`documentation/MODEL_BANK.md`).
-- **Targets are `log1p`** (`TARGET_MODE = "log"`), inverted with `expm1` at inference.
-  Floor constraint: predictions cannot drop below 30% of the last known value (decays per
-  horizon).
 - **`src/` is stable infrastructure.** Change it through agent actions, not manual edits.
 - **`scrap/`** (demoted NL goal parser) is never imported, tested, or maintained.
 - **Curated knowledge files starting with `_`** (templates, intake stubs) are skipped. To
   delete a curated entry, edit its YAML and `knowledge rebuild`; `knowledge remove` is for
   derived and experiential entries.
-- **LLM endpoint:** Ollama on localhost with `qwen3:8b` by default; vLLM on Rivanna (Qwen
-  2.5 72B AWQ) via `--base-url` or `LLM_BASE_URL`. If the LLM is unreachable, the agent
-  prints raw metrics instead.
 
 ## Map
 
 | Path | What |
 |---|---|
-| `agent/` | orchestrator, LLM client, prompts, run tracker (`outputs/agent_runs/runs.db`), phase evaluator, model selection, run report, CLI |
+| `agent/` | orchestrator, LLM client, prompts, run tracker (`outputs/agent_runs/runs.db`), phase evaluator (calendar schemes in `PHASE_SCHEMES`), model selection, run report, CLI |
 | `agent/knowledge/` | knowledge bank code (design: `documentation/knowledge-bank-design.md`) |
 | `knowledge/` | bank content: `curated/*.yaml`, `README.md` for the lab's authoring guide |
 | `src/` | pipeline: data loader (1-week cache in `data/raw/`), feature engineering, direct-forecast ensembles, NN alternative |
-| `src/model_bank/` | `ForecastModel` contract, registry (`@register` or `pkg.mod:Class`), data bridge, runner |
+| `src/model_bank/` | `ForecastModel` contract, registry (`@register` or `pkg.mod:Class`), data bridge, runner; every family except legacy `xgboost_direct` dispatches here. In-house lab models are the real bank, Nixtla families are examples (`documentation/MODEL_BANK.md`) |
 | `scripts/experiments/` | controlled experiments whose logs feed the bank |
 | `tests/agent/` | the test suite |
 | `documentation/` | roadmap, design docs, reports, `STATUS.md`; `archive/` is superseded |
