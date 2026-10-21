@@ -1,0 +1,7 @@
+emphasis,gate,rows_changed_zero,d_overall_zero,d_peak_zero,rows_changed_floor,d_overall_floor,d_peak_floor
+oversample_2,horizon,60,7.874027261323135e-07,0.0,28,1.3065480715113154e-06,0.0
+oversample_2,horizon+curve,16,-8.193923406452086e-07,0.0,11,-2.668840437536346e-07,0.0
+oversample_5,horizon,59,-1.8782509627612853e-06,0.0,35,8.605351453638832e-07,0.0
+oversample_5,horizon+curve,16,-1.2221638314713346e-06,0.0,12,-6.818630424731964e-07,0.0
+lambda_calendar_3,horizon,55,-1.3405851646552946e-06,0.0,27,9.27828118335583e-07,0.0
+lambda_calendar_3,horizon+curve,16,-1.0529322338470593e-06,0.0,14,-4.716114929692594e-07,0.0

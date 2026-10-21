@@ -88,6 +88,10 @@ python scripts/demo_knowledge_bank.py [--live] [--json PATH]           # lab dem
 # Visual inspection: one location, one forecast date, one panel per config (reads the tracked export by default)
 .venv/bin/python scripts/plot_forecasts.py --location Virginia --date 2026-01-10 [--configs all] [--lookback-weeks 6] [--out f.png]
 .venv/bin/python scripts/plot_forecasts.py --list-dates
+# Interactive viewer: https://oeleel.github.io/epiForecasting/documentation/experiments/weekly_hindcast/viewer.html
+
+# Gate experiment (no training): baseline vs peak emphasis combined by horizon / calendar / curve; in-sample
+.venv/bin/python scripts/experiments/gated_emphasis.py
 ```
 Other flags: `--arms {baseline,lambda,lambda_calendar,window,oversample}`, `--lambdas`, `--calendar-lambdas`, `--windows`, `--oversample-factors`, `--seeds`, `--out`, `--stride-weeks K` (cutoff spacing, default 4), `--pin-data-sha256 SHA` (fresh run: no cache refresh, fail unless the cache hashes to SHA). Saved `forecasts/<config>.csv` keep every location, US included; `score()` drops US. Resumable (logged `config_id`s are skipped; config ids end in `__seed<N>`); the manifest pins cutoffs, seeds, phase scheme and the data-cache sha256, and a mismatched resume fails. Round 1 output (calendar_v1, seed 42) is `outputs/experiments/peak_rectification/`; round 2 defaults to `outputs/experiments/peak_rectification_round2/` (`manifest.json`, `log.jsonl`, `forecasts/`, `summary.md` with peak and overall WIS by horizon). `config["data"]["oversample"]` (xgboost_direct only) copies training rows whose target date falls in a phase. Script docstring has the design.
 
@@ -111,10 +115,10 @@ python -m src.data_loader update
 
 ### Testing
 ```bash
-.venv/bin/python -m pytest tests/agent/ -q -W error::DeprecationWarning   # 492 tests
+.venv/bin/python -m pytest tests/agent/ -q -W error::DeprecationWarning   # 516 tests
 PYTHONPATH=. .venv/bin/python tests/agent/run_all.py                        # no-pytest fallback
 ```
-Covers: adapter actions (legacy + bank families), config, data quality, feature toggle, orchestrator, prompts, run tracker, sample weights, WIS scoring, model bank (contract/registry/bridge/baselines/runner), model selection, run report, phase segmentation, knowledge bank (schema/intake/store/render/seeds), phase schemes, peak-rectification harness (arms/deltas/reward/summary/rescore/seeds/merge/stride/pinned data), phase oversampling, forecast panels + hindcast export.
+Covers: adapter actions (legacy + bank families), config, data quality, feature toggle, orchestrator, prompts, run tracker, sample weights, WIS scoring, model bank (contract/registry/bridge/baselines/runner), model selection, run report, phase segmentation, knowledge bank (schema/intake/store/render/seeds), phase schemes, peak-rectification harness (arms/deltas/reward/summary/rescore/seeds/merge/stride/pinned data), phase oversampling, forecast panels + hindcast export (incl. direction agreement), gated emphasis.
 
 ### Key Config Details
 - Active XGBoost params: `XGBOOST_PARAMS_V2` (regularized) in `src/config.py`

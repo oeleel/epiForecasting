@@ -1,0 +1,803 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hindcast Forecast Viewer</title>
+<meta name="description" content="Pick a location and a forecast date and compare the 2025-26 weekly hindcasts of the peak-rectification configs.">
+<meta name="color-scheme" content="light dark">
+<script>
+  // Theme before first paint, same rule and storage key as the weekly report pages.
+  (function () {
+    var root = document.documentElement;
+    var stored = null;
+    try { stored = localStorage.getItem("report-theme"); } catch (e) { stored = null; }
+    var explicit = root.getAttribute("data-theme") || stored;
+    var dark = explicit ? explicit === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+    root.classList.toggle("dark", dark);
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* shadcn zinc tokens, as in documentation/reports/_template/tokens.css */
+:root {
+  --background: 0 0% 100%;
+  --foreground: 240 10% 3.9%;
+  --card: 0 0% 100%;
+  --muted: 240 4.8% 95.9%;
+  --muted-foreground: 240 3.8% 46.1%;
+  --accent: 240 4.8% 95.9%;
+  --border: 240 5.9% 90%;
+  --input: 240 5.9% 90%;
+  --ring: 240 10% 3.9%;
+  --primary: 240 5.9% 10%;
+  --primary-foreground: 0 0% 98%;
+  --radius: 0.5rem;
+  --warning: 28 92% 32%;
+  --warning-bg: 28 92% 32% / 0.10;
+  --destructive-ink: 0 72% 42%;
+  /* chart ink */
+  --observed: #111111;
+  --grid: #e4e3df;
+  --axis: #a1a1aa;
+  color-scheme: light;
+}
+.dark {
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --card: 240 10% 3.9%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --accent: 240 3.7% 15.9%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --ring: 240 4.9% 83.9%;
+  --primary: 0 0% 98%;
+  --primary-foreground: 240 5.9% 10%;
+  --warning: 38 92% 55%;
+  --warning-bg: 38 92% 55% / 0.12;
+  --destructive-ink: 0 90% 70%;
+  --observed: #ededed;
+  --grid: #27272a;
+  --axis: #52525b;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; border-color: hsl(var(--border)); }
+body {
+  margin: 0;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-feature-settings: "cv11", "ss01";
+  line-height: 1.5;
+  font-size: 14px;
+}
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.tnum { font-variant-numeric: tabular-nums; }
+svg { display: block; }
+[hidden] { display: none !important; }
+
+header.top { border-bottom: 1px solid hsl(var(--border)); }
+.wrap { max-width: 1440px; margin: 0 auto; padding: 0 24px; }
+header.top .wrap { display: flex; align-items: center; justify-content: space-between; height: 52px; gap: 16px; }
+.brand { font-weight: 600; letter-spacing: -0.01em; text-decoration: none; color: inherit; }
+.top-links { display: flex; gap: 4px; align-items: center; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px;
+  padding: 0 12px; border-radius: calc(var(--radius) - 2px); border: 1px solid hsl(var(--input));
+  background: hsl(var(--background)); color: hsl(var(--foreground)); font: inherit; font-size: 13px;
+  font-weight: 500; cursor: pointer; text-decoration: none; white-space: nowrap;
+}
+.btn:hover { background: hsl(var(--accent)); }
+.btn:disabled { opacity: 0.45; cursor: default; background: hsl(var(--background)); }
+.btn-ghost { border-color: transparent; background: transparent; }
+.btn-icon { width: 36px; padding: 0; }
+.btn:focus-visible, .select:focus-visible, .chip:focus-visible, .input:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
+
+h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; margin: 24px 0 4px; }
+.lede { color: hsl(var(--muted-foreground)); margin: 0 0 20px; max-width: 900px; }
+
+.controls {
+  display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px; padding: 16px;
+  border: 1px solid hsl(var(--border)); border-radius: var(--radius); background: hsl(var(--card));
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field-label { font-size: 13px; font-weight: 500; line-height: 1; }
+.select, .input {
+  height: 36px; border-radius: calc(var(--radius) - 2px); border: 1px solid hsl(var(--input));
+  background: hsl(var(--background)); color: hsl(var(--foreground)); padding: 0 10px; font: inherit; font-size: 13px;
+}
+.select { min-width: 190px; }
+.input { width: 72px; }
+.date-row { display: flex; gap: 6px; }
+.date-row .select { min-width: 150px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; max-width: 760px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 9999px;
+  border: 1px solid hsl(var(--input)); background: hsl(var(--background)); color: hsl(var(--muted-foreground));
+  font: inherit; font-size: 12px; font-weight: 500; cursor: pointer; user-select: none;
+}
+.chip .sw { width: 10px; height: 10px; border-radius: 3px; border: 1.5px solid var(--c); background: transparent; }
+.chip[aria-pressed="true"] { color: hsl(var(--foreground)); border-color: hsl(var(--foreground) / 0.35); background: hsl(var(--accent)); }
+.chip[aria-pressed="true"] .sw { background: var(--c); }
+.chip-action { color: hsl(var(--muted-foreground)); border-style: dashed; }
+.chips { gap: 6px 14px; max-width: none; }
+.chip-group { display: inline-flex; align-items: center; gap: 4px; }
+.group-name { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; margin-right: 2px; }
+.group-name .sw { width: 10px; height: 10px; border-radius: 3px; background: var(--c); }
+.chip-param { padding: 0 9px; min-width: 32px; justify-content: center; }
+.chip-param[aria-pressed="true"] { background: var(--c); border-color: var(--c); color: #fff; }
+
+.callout {
+  margin-top: 16px; padding: 10px 14px; border-radius: var(--radius); border: 1px solid hsl(var(--warning) / 0.4);
+  border-left: 3px solid hsl(var(--warning)); background: hsl(var(--warning-bg)); color: hsl(var(--foreground));
+  font-size: 13px; display: flex; gap: 8px; align-items: center;
+}
+.callout svg { color: hsl(var(--warning)); flex: none; }
+.callout.error { border-color: hsl(var(--destructive-ink) / 0.4); border-left-color: hsl(var(--destructive-ink)); background: hsl(var(--destructive-ink) / 0.08); }
+
+.fig-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin: 22px 0 10px; flex-wrap: wrap; }
+.fig-title { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+.fig-title .sep { color: hsl(var(--muted-foreground)); padding: 0 8px; font-weight: 400; }
+.status { font-size: 12px; color: hsl(var(--muted-foreground)); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 18px; font-size: 12px; color: hsl(var(--muted-foreground)); margin-bottom: 12px; }
+.legend span.item { display: inline-flex; align-items: center; gap: 6px; }
+
+.grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.panel {
+  border: 1px solid hsl(var(--border)); border-radius: var(--radius); background: hsl(var(--card));
+  padding: 10px 6px 4px; min-width: 0; position: relative;
+}
+.panel-title { text-align: center; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.panel-title .sw { width: 10px; height: 10px; border-radius: 3px; }
+.panel-wis { text-align: center; font-size: 11px; color: hsl(var(--muted-foreground)); min-height: 16px; }
+.panel svg text { font-family: inherit; }
+
+.tooltip {
+  position: fixed; pointer-events: none; z-index: 20; min-width: 190px;
+  background: hsl(var(--background)); color: hsl(var(--foreground)); border: 1px solid hsl(var(--border));
+  border-radius: calc(var(--radius) - 2px); box-shadow: 0 4px 12px rgb(0 0 0 / 0.12); padding: 8px 10px; font-size: 12px;
+}
+.tooltip .tt-head { font-weight: 600; margin-bottom: 4px; display: flex; gap: 6px; align-items: center; }
+.tooltip .row { display: flex; justify-content: space-between; gap: 14px; }
+.tooltip .row .k { color: hsl(var(--muted-foreground)); }
+
+details.table-view { margin: 20px 0 40px; }
+details.table-view summary { cursor: pointer; font-size: 13px; font-weight: 500; color: hsl(var(--muted-foreground)); }
+.table-wrap { overflow-x: auto; margin-top: 10px; border: 1px solid hsl(var(--border)); border-radius: var(--radius); }
+table { border-collapse: collapse; width: 100%; font-size: 12px; }
+th, td { padding: 6px 10px; border-bottom: 1px solid hsl(var(--border)); text-align: right; white-space: nowrap; }
+th { font-weight: 500; color: hsl(var(--muted-foreground)); }
+th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; }
+tr:last-child td { border-bottom: 0; }
+.foot { font-size: 12px; color: hsl(var(--muted-foreground)); margin: 0 0 40px; }
+kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; border: 1px solid hsl(var(--border)); border-radius: 4px; padding: 0 4px; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="../../reports/index.html">epiForecasting</a>
+    <div class="top-links">
+      <a class="btn btn-ghost" href="README.md">README</a>
+      <a class="btn btn-ghost" href="../../reports/index.html">Reports</a>
+      <button type="button" class="btn btn-ghost btn-icon" id="theme-toggle" aria-label="Toggle colour theme" title="Toggle colour theme">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <h1>Weekly hindcast viewer</h1>
+  <p class="lede">2025-26 season, every peak-rectification config forecast from every week (seed 42). Pick a location and a forecast date; each panel is one config on a shared y-scale.</p>
+
+  <div class="controls" role="group" aria-label="Figure controls">
+    <label class="field">
+      <span class="field-label">Location</span>
+      <select class="select" id="loc"></select>
+    </label>
+    <div class="field">
+      <label class="field-label" for="date">Forecast date (avl_date)</label>
+      <div class="date-row">
+        <button type="button" class="btn btn-icon" id="prev" aria-label="Previous forecast date" title="Previous date (left arrow)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <select class="select mono" id="date"></select>
+        <button type="button" class="btn btn-icon" id="next" aria-label="Next forecast date" title="Next date (right arrow)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </div>
+    </div>
+    <label class="field">
+      <span class="field-label">Lookback weeks</span>
+      <input class="input tnum" id="lookback" type="number" min="1" max="60" step="1" value="6">
+    </label>
+    <div class="field">
+      <span class="field-label">Configs</span>
+      <div class="chips" id="configs"></div>
+    </div>
+  </div>
+
+  <div id="notes"></div>
+
+  <div class="fig-head">
+    <div class="fig-title" id="fig-title"></div>
+    <div class="status" id="status">Loading...</div>
+  </div>
+  <div class="legend" id="legend"></div>
+  <div class="grid" id="grid"></div>
+
+  <details class="table-view">
+    <summary>Table view of the shown forecasts</summary>
+    <div class="table-wrap"><table id="table"></table></div>
+  </details>
+  <p class="foot">Data: <span class="mono">forecasts/&lt;config&gt;.csv</span> and the data cache <span class="mono">data/raw/flusight_hospital_admissions.csv</span>. Horizon h targets avl_date + h weeks; ref_date = avl_date + 1 week. Bands start at the last observed value. WIS is computed on the five quantiles against the data cache, as in <span class="mono">src/forecast_panels.py</span>. Keys: <kbd>&larr;</kbd> <kbd>&rarr;</kbd> change the date. The URL keeps the selection, so it can be shared.</p>
+</main>
+
+<div class="tooltip" id="tooltip" hidden></div>
+
+<script>
+"use strict";
+
+// ---- constants -------------------------------------------------------------------------
+const FORECAST_DIR = "forecasts/";
+const OBSERVED_URL = "../../../data/raw/flusight_hospital_admissions.csv";
+const CONFIGS = [
+  "baseline", "lambda_1.5", "lambda_2", "lambda_3", "lambda_5", "lambda_calendar_2", "lambda_calendar_3",
+  "oversample_2", "oversample_3", "oversample_5", "window_12", "window_26", "window_52",
+];
+const DEFAULTS = {
+  location: "Virginia",
+  date: "2026-01-10",
+  configs: ["baseline", "lambda_calendar_3", "oversample_2", "oversample_5", "window_52"],
+  lookback: 6,
+};
+// One hue per arm family, fixed (src/forecast_panels.py FAMILY_COLORS).
+const FAMILY_COLORS = {
+  baseline: "#2a78d6", lambda: "#eb6834", lambda_calendar: "#1baf7a", oversample: "#e87ba4", window: "#6250d6",
+};
+const UNKNOWN_FAMILY_COLOR = "#5f5e5a";
+const OUTER_BAND_OPACITY = 0.18;
+const INNER_BAND_OPACITY = 0.38;
+const QUANTILES = ["q05", "q25", "q50", "q75", "q95"];
+const DAY_MS = 86400000;
+const WEEK_MS = 7 * DAY_MS;
+const PANEL_HEIGHT = 250;
+const MARGIN = { top: 10, right: 12, bottom: 26, left: 44 };
+const MIN_MONTH_LABEL_PX = 34;
+const MAX_LOOKBACK = 60;
+const US_CODE = "US";
+
+// ---- state -----------------------------------------------------------------------------
+const state = { location: null, date: null, configs: [], lookback: DEFAULTS.lookback };
+const forecastCache = new Map();   // config -> Promise<{rows by key, dates, locations}>
+let observed = null;               // {byLoc: Map(code -> [{t, date, value}]), names: Map(code -> name)}
+let renderToken = 0;
+
+const $ = (id) => document.getElementById(id);
+const el = (tag, attrs = {}, kids = []) => {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "text") node.textContent = v; else if (k === "style") node.style.cssText = v; else node.setAttribute(k, v);
+  }
+  for (const kid of kids) node.append(kid);
+  return node;
+};
+const SVG_NS = "http://www.w3.org/2000/svg";
+const sv = (tag, attrs = {}) => {
+  const node = document.createElementNS(SVG_NS, tag);
+  for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+  return node;
+};
+
+function configColor(config) {
+  return FAMILY_COLORS[familyOf(config).family] || UNKNOWN_FAMILY_COLOR;
+}
+const toTime = (iso) => Date.parse(iso + "T00:00:00Z");
+const isoOf = (t) => new Date(t).toISOString().slice(0, 10);
+const fmtNum = (v) => (v == null || isNaN(v) ? "-" : Math.round(v).toLocaleString("en-US"));
+const fmtDate = (t) => new Date(t).toLocaleDateString("en-US", { timeZone: "UTC", month: "short", day: "numeric", year: "numeric" });
+
+// ---- data ------------------------------------------------------------------------------
+function parseCsv(text) {
+  // The files carry no quoted fields; columns are read by header name, so appended columns are harmless.
+  const lines = text.split(/\r?\n/).filter((l) => l.length);
+  const header = lines[0].split(",");
+  const index = Object.fromEntries(header.map((h, i) => [h, i]));
+  return { index, rows: lines.slice(1).map((l) => l.split(",")) };
+}
+function requireColumns(index, columns, label) {
+  const missing = columns.filter((c) => !(c in index));
+  if (missing.length) throw new Error(`${label} is missing columns ${missing.join(", ")}`);
+}
+async function fetchText(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`could not fetch ${url} (HTTP ${res.status})`);
+  return res.text();
+}
+
+async function loadObserved() {
+  const { index, rows } = parseCsv(await fetchText(OBSERVED_URL));
+  requireColumns(index, ["date", "location", "location_name", "value"], "data cache");
+  const byLoc = new Map(), names = new Map();
+  for (const r of rows) {
+    const code = r[index.location];
+    if (!byLoc.has(code)) { byLoc.set(code, []); names.set(code, r[index.location_name]); }
+    const value = r[index.value] === "" ? NaN : Number(r[index.value]);
+    byLoc.get(code).push({ t: toTime(r[index.date]), date: r[index.date], value });
+  }
+  for (const series of byLoc.values()) series.sort((a, b) => a.t - b.t);
+  return { byLoc, names };
+}
+
+function loadForecast(config) {
+  if (!forecastCache.has(config)) {
+    const promise = fetchText(FORECAST_DIR + encodeURIComponent(config) + ".csv").then((text) => {
+      const { index, rows } = parseCsv(text);
+      requireColumns(index, ["location", "location_name", "cutoff_date", "target_end_date", "horizon", ...QUANTILES], config);
+      const byKey = new Map(), dates = new Set(), locations = new Map();
+      for (const r of rows) {
+        const key = r[index.location] + "|" + r[index.cutoff_date];
+        const row = {
+          horizon: Number(r[index.horizon]), target: r[index.target_end_date], t: toTime(r[index.target_end_date]),
+        };
+        for (const q of QUANTILES) row[q] = Number(r[index[q]]);
+        if (!byKey.has(key)) byKey.set(key, []);
+        byKey.get(key).push(row);
+        dates.add(r[index.cutoff_date]);
+        locations.set(r[index.location], r[index.location_name]);
+      }
+      for (const list of byKey.values()) list.sort((a, b) => a.horizon - b.horizon);
+      return { byKey, dates: [...dates].sort(), locations };
+    });
+    promise.catch(() => forecastCache.delete(config)); // let a failed fetch be retried
+    forecastCache.set(config, promise);
+  }
+  return forecastCache.get(config);
+}
+
+// Same formula as agent.phase_evaluator._compute_wis_vector (five quantiles, K = 2).
+function wis(actual, q) {
+  const is90 = (q.q95 - q.q05) + (2 / 0.10) * Math.max(q.q05 - actual, 0) + (2 / 0.10) * Math.max(actual - q.q95, 0);
+  const is50 = (q.q75 - q.q25) + (2 / 0.50) * Math.max(q.q25 - actual, 0) + (2 / 0.50) * Math.max(actual - q.q75, 0);
+  return (1 / 2.5) * (0.5 * Math.abs(actual - q.q50) + 0.05 * is90 + 0.25 * is50);
+}
+
+// ---- URL state -------------------------------------------------------------------------
+function readHash() {
+  const p = new URLSearchParams(location.hash.slice(1));
+  const configs = p.get("configs") === "all" ? CONFIGS.slice() : (p.get("configs") || "").split(",").filter((c) => CONFIGS.includes(c));
+  const lookback = Number(p.get("lookback"));
+  return {
+    location: p.get("loc") || DEFAULTS.location,
+    date: p.get("date") || DEFAULTS.date,
+    configs: configs.length ? configs : DEFAULTS.configs.slice(),
+    lookback: Number.isInteger(lookback) && lookback >= 1 && lookback <= MAX_LOOKBACK ? lookback : DEFAULTS.lookback,
+  };
+}
+function writeHash() {
+  const p = new URLSearchParams({
+    loc: observed.names.get(state.location) || state.location, date: state.date,
+    configs: state.configs.join(","), lookback: String(state.lookback),
+  });
+  history.replaceState(null, "", "#" + p.toString());
+}
+
+// ---- controls --------------------------------------------------------------------------
+function familyOf(config) {
+  const cut = config.lastIndexOf("_");
+  const head = config.slice(0, cut), tail = config.slice(cut + 1);
+  return cut > 0 && tail !== "" && !isNaN(Number(tail)) ? { family: head, param: tail } : { family: config, param: null };
+}
+function buildConfigChips() {
+  // Grouped by family so all 13 configs fit one row: "lambda  1.5 2 3 5".
+  const host = $("configs");
+  host.textContent = "";
+  const groups = new Map();
+  for (const config of CONFIGS) {
+    const { family } = familyOf(config);
+    if (!groups.has(family)) groups.set(family, []);
+    groups.get(family).push(config);
+  }
+  const toggle = (config) => {
+    const on = state.configs.includes(config);
+    const next = on ? state.configs.filter((c) => c !== config) : [...state.configs, config];
+    if (!next.length) return; // at least one panel
+    state.configs = CONFIGS.filter((c) => next.includes(c));
+    buildConfigChips();
+    update();
+  };
+  for (const [family, configs] of groups) {
+    const group = el("div", { class: "chip-group", style: `--c:${configColor(configs[0])}` });
+    const single = configs.length === 1 && familyOf(configs[0]).param === null;
+    if (single) {
+      const on = state.configs.includes(configs[0]);
+      const chip = el("button", { type: "button", class: "chip chip-param", "aria-pressed": String(on), title: configs[0], text: family });
+      chip.addEventListener("click", () => toggle(configs[0]));
+      group.append(chip);
+    } else {
+      group.append(el("span", { class: "group-name" }, [el("span", { class: "sw", "aria-hidden": "true" }), family]));
+      for (const config of configs) {
+        const on = state.configs.includes(config);
+        const chip = el("button", { type: "button", class: "chip chip-param", "aria-pressed": String(on), title: config, "aria-label": config, text: familyOf(config).param });
+        chip.addEventListener("click", () => toggle(config));
+        group.append(chip);
+      }
+    }
+    host.append(group);
+  }
+  const reset = el("button", { type: "button", class: "chip chip-action", text: "default" });
+  reset.addEventListener("click", () => { state.configs = DEFAULTS.configs.slice(); buildConfigChips(); update(); });
+  const all = el("button", { type: "button", class: "chip chip-action", text: "all" });
+  all.addEventListener("click", () => { state.configs = CONFIGS.slice(); buildConfigChips(); update(); });
+  host.append(el("div", { class: "chip-group" }, [reset, all]));
+}
+
+function fillLocations(locations) {
+  const sel = $("loc");
+  const entries = [...locations.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  sel.textContent = "";
+  for (const [code, name] of entries) sel.append(el("option", { value: code, text: name === code ? name : name }));
+  sel.value = state.location;
+}
+function fillDates(dates) {
+  const sel = $("date");
+  sel.textContent = "";
+  for (const d of dates) sel.append(el("option", { value: d, text: d }));
+  sel.value = state.date;
+}
+function stepDate(delta) {
+  const options = [...$("date").options].map((o) => o.value);
+  const i = options.indexOf(state.date) + delta;
+  if (i < 0 || i >= options.length) return;
+  state.date = options[i];
+  $("date").value = state.date;
+  update();
+}
+function syncStepButtons() {
+  const options = [...$("date").options].map((o) => o.value);
+  const i = options.indexOf(state.date);
+  $("prev").disabled = i <= 0;
+  $("next").disabled = i < 0 || i >= options.length - 1;
+}
+
+// ---- figure ----------------------------------------------------------------------------
+function niceTicks(max, count = 5) {
+  if (!(max > 0)) return { top: 1, ticks: [0, 1] };
+  const raw = max / count;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= raw);
+  const ticks = [];
+  for (let v = 0; v <= max + 1e-9; v += step) ticks.push(v);
+  return { top: max, ticks };
+}
+function monthTicks(t0, t1, widthPx) {
+  const d = new Date(t0);
+  let y = d.getUTCFullYear(), m = d.getUTCMonth() + 1;
+  const ticks = [];
+  for (;;) {
+    if (m > 11) { m = 0; y += 1; }
+    const t = Date.UTC(y, m, 1);
+    if (t > t1) break;
+    ticks.push(t);
+    m += 1;
+  }
+  // Thin labels so they never collide: keep every k-th month.
+  const spanPx = ticks.length > 1 ? widthPx / ((t1 - t0) / (30.4 * DAY_MS)) : Infinity;
+  const k = Math.max(1, Math.ceil(MIN_MONTH_LABEL_PX / spanPx));
+  return ticks.map((t, i) => ({ t, label: i % k === 0 }));
+}
+
+function legendSwatchLine(dash, hollow) {
+  const s = sv("svg", { width: 30, height: 12, "aria-hidden": "true" });
+  s.append(sv("line", { x1: 1, x2: 29, y1: 6, y2: 6, stroke: "var(--observed)", "stroke-width": dash === "dot" ? 1 : 2,
+    "stroke-dasharray": dash === "dot" ? "1.5 2.5" : dash === "dash" ? "5 3" : "none" }));
+  s.append(sv("circle", { cx: 15, cy: 6, r: hollow ? 3.5 : 3.5, fill: hollow ? "hsl(var(--background))" : "var(--observed)",
+    stroke: "var(--observed)", "stroke-width": hollow ? 1.5 : 0 }));
+  return s;
+}
+function buildLegend() {
+  const host = $("legend");
+  host.textContent = "";
+  const muted = "hsl(var(--muted-foreground))";
+  const median = sv("svg", { width: 30, height: 12, "aria-hidden": "true" });
+  median.append(sv("line", { x1: 1, x2: 29, y1: 6, y2: 6, stroke: muted, "stroke-width": 2, "stroke-dasharray": "5 3" }));
+  median.append(sv("circle", { cx: 15, cy: 6, r: 3, fill: muted }));
+  const band = (opacity) => {
+    const s = sv("svg", { width: 18, height: 12, "aria-hidden": "true" });
+    s.append(sv("rect", { x: 0, y: 0, width: 18, height: 12, rx: 2, fill: muted, "fill-opacity": opacity }));
+    return s;
+  };
+  const items = [
+    [legendSwatchLine("solid", false), "observed"],
+    [legendSwatchLine("dot", true), "observed after forecast date"],
+    [median, "median (config colour)"],
+    [band(INNER_BAND_OPACITY + 0.1), "50% interval"],
+    [band(OUTER_BAND_OPACITY), "90% interval"],
+  ];
+  for (const [icon, label] of items) host.append(el("span", { class: "item" }, [icon, label]));
+}
+
+function showNotes(messages) {
+  const host = $("notes");
+  host.textContent = "";
+  for (const { text, error } of messages) {
+    const icon = sv("svg", { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": 2, "stroke-linecap": "round", "stroke-linejoin": "round", "aria-hidden": "true" });
+    icon.append(sv("path", { d: "m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" }), sv("path", { d: "M12 9v4" }), sv("path", { d: "M12 17h.01" }));
+    host.append(el("div", { class: "callout" + (error ? " error" : ""), role: error ? "alert" : "note" }, [icon, el("span", { text })]));
+  }
+}
+
+async function update() {
+  const token = ++renderToken;
+  writeHash();
+  const us = state.location === US_CODE;
+  const baseNotes = us ? [{ text: "US forecasts are not valid for this model (trained on state data; collapses to the floor)." }] : [];
+  showNotes(baseNotes);
+  $("status").textContent = "Loading " + state.configs.length + " config" + (state.configs.length > 1 ? "s" : "") + "...";
+  let loaded;
+  try {
+    loaded = await Promise.all(state.configs.map(loadForecast));
+  } catch (err) {
+    if (token !== renderToken) return;
+    showNotes([...baseNotes, { text: String(err.message || err), error: true }]);
+    $("status").textContent = "";
+    return;
+  }
+  if (token !== renderToken) return;
+
+  // Forecast dates present in every selected config.
+  const common = loaded.map((f) => new Set(f.dates)).reduce((a, b) => new Set([...a].filter((d) => b.has(d))));
+  const dates = [...common].sort();
+  if (!dates.includes(state.date)) state.date = dates.reduce((best, d) => Math.abs(toTime(d) - toTime(state.date)) < Math.abs(toTime(best) - toTime(state.date)) ? d : best, dates[0]);
+  fillDates(dates);
+  syncStepButtons();
+  writeHash();
+
+  try {
+    render(loaded);
+    $("status").textContent = dates.length + " forecast dates, " + state.configs.length + " of " + CONFIGS.length + " configs shown";
+  } catch (err) {
+    $("grid").textContent = "";
+    $("table").textContent = "";
+    showNotes([...baseNotes, { text: String(err.message || err), error: true }]);
+    $("status").textContent = "";
+  }
+}
+
+function render(loaded) {
+  const code = state.location, cutoffIso = state.date;
+  const cutoff = toTime(cutoffIso);
+  const name = observed.names.get(code) || code;
+  const series = observed.byLoc.get(code) || [];
+  const start = cutoff - state.lookback * WEEK_MS;
+  const history = series.filter((p) => p.t >= start && p.t <= cutoff && !isNaN(p.value));
+  if (!history.length || history[history.length - 1].t !== cutoff) {
+    throw new Error(`No observed value for ${name} on ${cutoffIso}; cannot anchor the forecast.`);
+  }
+  const anchor = history[history.length - 1].value;
+
+  const panels = state.configs.map((config, i) => {
+    const rows = loaded[i].byKey.get(code + "|" + cutoffIso) || [];
+    if (!rows.length) throw new Error(`No forecast rows for ${name} on ${cutoffIso} in ${config}.`);
+    return { config, rows, color: configColor(config) };
+  });
+  const lastTarget = Math.max(...panels.flatMap((p) => p.rows.map((r) => r.t)));
+  const truth = series.filter((p) => p.t > cutoff && p.t <= lastTarget && !isNaN(p.value));
+  const truthAt = new Map(truth.map((p) => [p.t, p.value]));
+
+  // Shared y-scale across every panel.
+  const yMax = Math.max(...history.map((p) => p.value), ...truth.map((p) => p.value),
+    ...panels.flatMap((p) => p.rows.map((r) => r.q95)), anchor);
+  const y = niceTicks(yMax * 1.05);
+
+  const ref = isoOf(cutoff + WEEK_MS);
+  const label = name === code ? name : `${name} (${code})`;
+  const title = $("fig-title");
+  title.textContent = "";
+  title.append(label, el("span", { class: "sep", text: "||" }), "ref_date = " + ref, el("span", { class: "sep", text: "||" }), "avl_date = " + cutoffIso);
+
+  const grid = $("grid");
+  grid.textContent = "";
+  const hosts = panels.map((p) => {
+    const panel = el("div", { class: "panel" });
+    const wisParts = p.rows.filter((r) => truthAt.has(r.t)).map((r) => `h${r.horizon} ${Math.round(wis(truthAt.get(r.t), r))}`);
+    panel.append(
+      el("div", { class: "panel-title" }, [el("span", { class: "sw", style: `background:${p.color}`, "aria-hidden": "true" }), p.config]),
+      el("div", { class: "panel-wis tnum", text: wisParts.length ? "WIS " + wisParts.join("  ") : "" }),
+    );
+    panel.querySelector(".panel-wis").style.whiteSpace = "pre";
+    grid.append(panel);
+    return panel;
+  });
+
+  const width = hosts[0].clientWidth - 12;
+  const xDomain = [start - 4 * DAY_MS, lastTarget + 4 * DAY_MS];
+  const plotW = width - MARGIN.left - MARGIN.right, plotH = PANEL_HEIGHT - MARGIN.top - MARGIN.bottom;
+  const sx = (t) => MARGIN.left + ((t - xDomain[0]) / (xDomain[1] - xDomain[0])) * plotW;
+  const sy = (v) => MARGIN.top + plotH - (v / y.top) * plotH;
+  const months = monthTicks(xDomain[0], xDomain[1], plotW);
+  const hoverDates = [...new Set([...history.map((p) => p.t), ...truth.map((p) => p.t), ...panels.flatMap((p) => p.rows.map((r) => r.t))])].sort((a, b) => a - b);
+
+  const crosshairs = [];
+  panels.forEach((p, i) => {
+    const svg = sv("svg", { width, height: PANEL_HEIGHT, viewBox: `0 0 ${width} ${PANEL_HEIGHT}`, role: "img",
+      "aria-label": `${p.config} forecast for ${name} from ${cutoffIso}` });
+    // grid + y axis
+    for (const v of y.ticks) {
+      svg.append(sv("line", { x1: MARGIN.left, x2: MARGIN.left + plotW, y1: sy(v), y2: sy(v), stroke: "var(--grid)", "stroke-width": 1 }));
+      const t = sv("text", { x: MARGIN.left - 6, y: sy(v) + 3.5, "text-anchor": "end", "font-size": 10, fill: "hsl(var(--muted-foreground))", class: "tnum" });
+      t.textContent = v.toLocaleString("en-US");
+      svg.append(t);
+    }
+    // x axis: baseline, weekly minor ticks on the data dates, month labels
+    const axisY = MARGIN.top + plotH;
+    svg.append(sv("line", { x1: MARGIN.left, x2: MARGIN.left + plotW, y1: axisY, y2: axisY, stroke: "var(--axis)", "stroke-width": 1 }));
+    for (let t = cutoff; t >= xDomain[0]; t -= WEEK_MS) svg.append(sv("line", { x1: sx(t), x2: sx(t), y1: axisY, y2: axisY + 3, stroke: "var(--axis)" }));
+    for (let t = cutoff + WEEK_MS; t <= xDomain[1]; t += WEEK_MS) svg.append(sv("line", { x1: sx(t), x2: sx(t), y1: axisY, y2: axisY + 3, stroke: "var(--axis)" }));
+    for (const m of months) {
+      svg.append(sv("line", { x1: sx(m.t), x2: sx(m.t), y1: axisY, y2: axisY + 6, stroke: "var(--axis)" }));
+      if (!m.label) continue;
+      const t = sv("text", { x: sx(m.t), y: axisY + 18, "text-anchor": "middle", "font-size": 10, fill: "hsl(var(--muted-foreground))" });
+      const d = new Date(m.t);
+      t.textContent = d.toLocaleDateString("en-US", { timeZone: "UTC", month: "short" }) + (d.getUTCMonth() === 0 ? " " + d.getUTCFullYear() : "");
+      svg.append(t);
+    }
+
+    // forecast: bands and median start at the last observed value
+    const pts = [{ t: cutoff, q05: anchor, q25: anchor, q50: anchor, q75: anchor, q95: anchor }, ...p.rows];
+    const area = (lo, hi) => "M" + pts.map((r) => `${sx(r.t)},${sy(r[hi])}`).join("L") + "L" + pts.slice().reverse().map((r) => `${sx(r.t)},${sy(r[lo])}`).join("L") + "Z";
+    svg.append(sv("path", { d: area("q05", "q95"), fill: p.color, "fill-opacity": OUTER_BAND_OPACITY }));
+    svg.append(sv("path", { d: area("q25", "q75"), fill: p.color, "fill-opacity": INNER_BAND_OPACITY }));
+    svg.append(sv("polyline", { points: pts.map((r) => `${sx(r.t)},${sy(r.q50)}`).join(" "), fill: "none", stroke: p.color, "stroke-width": 2, "stroke-dasharray": "6 4", "stroke-linejoin": "round" }));
+    for (const r of p.rows) svg.append(sv("circle", { cx: sx(r.t), cy: sy(r.q50), r: 3, fill: p.color }));
+
+    // observed history (solid, filled) and what came after (dotted, hollow)
+    svg.append(sv("polyline", { points: history.map((q) => `${sx(q.t)},${sy(q.value)}`).join(" "), fill: "none", stroke: "var(--observed)", "stroke-width": 2, "stroke-linejoin": "round" }));
+    for (const q of history.slice(0, -1)) svg.append(sv("circle", { cx: sx(q.t), cy: sy(q.value), r: 3.5, fill: "var(--observed)" }));
+    if (truth.length) {
+      svg.append(sv("polyline", { points: truth.map((q) => `${sx(q.t)},${sy(q.value)}`).join(" "), fill: "none", stroke: "var(--observed)", "stroke-width": 1, "stroke-dasharray": "1.5 2.5" }));
+      for (const q of truth) svg.append(sv("circle", { cx: sx(q.t), cy: sy(q.value), r: 4, fill: "hsl(var(--card))", stroke: "var(--observed)", "stroke-width": 1.5 }));
+    }
+    svg.append(sv("circle", { cx: sx(cutoff), cy: sy(anchor), r: 5.5, fill: "hsl(var(--card))", stroke: p.color, "stroke-width": 2 }));
+
+    // crosshair layer (synced across panels)
+    const cross = sv("g", { visibility: "hidden", "pointer-events": "none" });
+    const vline = sv("line", { y1: MARGIN.top, y2: axisY, stroke: "hsl(var(--muted-foreground))", "stroke-width": 1, "stroke-dasharray": "2 3" });
+    const dotMedian = sv("circle", { r: 4.5, fill: p.color, stroke: "hsl(var(--card))", "stroke-width": 2 });
+    const dotObs = sv("circle", { r: 4.5, fill: "var(--observed)", stroke: "hsl(var(--card))", "stroke-width": 2 });
+    cross.append(vline, dotObs, dotMedian);
+    svg.append(cross);
+    crosshairs.push({ cross, vline, dotMedian, dotObs, panel: p });
+
+    const hit = sv("rect", { x: MARGIN.left, y: 0, width: plotW, height: PANEL_HEIGHT, fill: "transparent" });
+    hit.addEventListener("mousemove", (ev) => {
+      const box = svg.getBoundingClientRect();
+      const t = xDomain[0] + ((ev.clientX - box.left - MARGIN.left) / plotW) * (xDomain[1] - xDomain[0]);
+      const nearest = hoverDates.reduce((a, b) => (Math.abs(b - t) < Math.abs(a - t) ? b : a), hoverDates[0]);
+      showCrosshair(nearest, i, ev);
+    });
+    hit.addEventListener("mouseleave", hideCrosshair);
+    svg.append(hit);
+    hosts[i].append(svg);
+  });
+
+  function valueAt(t) {
+    const h = history.find((q) => q.t === t);
+    if (h) return { value: h.value, after: false };
+    return truthAt.has(t) ? { value: truthAt.get(t), after: true } : null;
+  }
+  function showCrosshair(t, activeIndex, ev) {
+    const obs = valueAt(t);
+    for (const c of crosshairs) {
+      c.cross.setAttribute("visibility", "visible");
+      c.vline.setAttribute("x1", sx(t)); c.vline.setAttribute("x2", sx(t));
+      const row = c.panel.rows.find((r) => r.t === t);
+      c.dotMedian.setAttribute("visibility", row ? "visible" : "hidden");
+      if (row) { c.dotMedian.setAttribute("cx", sx(t)); c.dotMedian.setAttribute("cy", sy(row.q50)); }
+      c.dotObs.setAttribute("visibility", obs ? "visible" : "hidden");
+      if (obs) { c.dotObs.setAttribute("cx", sx(t)); c.dotObs.setAttribute("cy", sy(obs.value)); }
+    }
+    const p = panels[activeIndex];
+    const row = p.rows.find((r) => r.t === t);
+    const tip = $("tooltip");
+    tip.textContent = "";
+    const kv = (k, v) => el("div", { class: "row" }, [el("span", { class: "k", text: k }), el("span", { class: "tnum", text: v })]);
+    tip.append(el("div", { class: "tt-head" }, [el("span", { class: "sw", style: `width:10px;height:10px;border-radius:3px;background:${p.color}` }), p.config]));
+    tip.append(kv("week ending", fmtDate(t)));
+    if (obs) tip.append(kv(obs.after ? "observed after" : (t === cutoff ? "last observed" : "observed"), fmtNum(obs.value)));
+    if (row) {
+      tip.append(kv("horizon", "h" + row.horizon));
+      tip.append(kv("median", fmtNum(row.q50)));
+      tip.append(kv("50% interval", fmtNum(row.q25) + " - " + fmtNum(row.q75)));
+      tip.append(kv("90% interval", fmtNum(row.q05) + " - " + fmtNum(row.q95)));
+      if (obs && obs.after) tip.append(kv("WIS", fmtNum(wis(obs.value, row))));
+    }
+    tip.hidden = false;
+    const pad = 14, w = tip.offsetWidth, h = tip.offsetHeight;
+    let left = ev.clientX + pad, top = ev.clientY + pad;
+    if (left + w > window.innerWidth - 8) left = ev.clientX - w - pad;
+    if (top + h > window.innerHeight - 8) top = ev.clientY - h - pad;
+    tip.style.left = left + "px"; tip.style.top = top + "px";
+  }
+  function hideCrosshair() {
+    for (const c of crosshairs) c.cross.setAttribute("visibility", "hidden");
+    $("tooltip").hidden = true;
+  }
+
+  renderTable(panels, truthAt);
+}
+
+function renderTable(panels, truthAt) {
+  const table = $("table");
+  table.textContent = "";
+  const head = el("tr", {}, ["config", "target week", "h", "observed", "q05", "q25", "median", "q75", "q95", "WIS"].map((h) => el("th", { text: h })));
+  table.append(el("thead", {}, [head]));
+  const body = el("tbody");
+  for (const p of panels) {
+    for (const r of p.rows) {
+      const obs = truthAt.get(r.t);
+      const cells = [p.config, r.target, "h" + r.horizon, fmtNum(obs), ...QUANTILES.map((q) => fmtNum(r[q])), obs == null ? "-" : fmtNum(wis(obs, r))];
+      body.append(el("tr", {}, cells.map((c, i) => el("td", { text: c, class: i > 1 ? "tnum" : "" }))));
+    }
+  }
+  table.append(body);
+}
+
+// ---- boot ------------------------------------------------------------------------------
+async function boot() {
+  Object.assign(state, readHash());
+  buildConfigChips();
+  buildLegend();
+  $("lookback").value = state.lookback;
+  try {
+    const [obs, first] = await Promise.all([loadObserved(), loadForecast(state.configs[0])]);
+    observed = obs;
+    // Locations: those the forecasts cover. Accept a name or a code in the URL.
+    const byName = new Map([...first.locations.entries()].map(([c, n]) => [n.toLowerCase(), c]));
+    const wanted = state.location;
+    state.location = first.locations.has(wanted) ? wanted : byName.get(String(wanted).toLowerCase()) || byName.get(DEFAULTS.location.toLowerCase());
+    fillLocations(first.locations);
+  } catch (err) {
+    showNotes([{ text: "Could not load the data: " + (err.message || err) + ". Serve the repository root over HTTP (file:// blocks fetch).", error: true }]);
+    $("status").textContent = "";
+    return;
+  }
+  $("loc").addEventListener("change", (e) => { state.location = e.target.value; update(); });
+  $("date").addEventListener("change", (e) => { state.date = e.target.value; update(); });
+  $("prev").addEventListener("click", () => stepDate(-1));
+  $("next").addEventListener("click", () => stepDate(1));
+  $("lookback").addEventListener("change", (e) => {
+    const v = Math.round(Number(e.target.value));
+    state.lookback = Math.min(MAX_LOOKBACK, Math.max(1, Number.isFinite(v) ? v : DEFAULTS.lookback));
+    e.target.value = state.lookback;
+    update();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const tag = (e.target.tagName || "").toLowerCase();
+    if (tag === "select" || tag === "input" || tag === "textarea") return;
+    if (e.key === "ArrowLeft") { stepDate(-1); e.preventDefault(); }
+    if (e.key === "ArrowRight") { stepDate(1); e.preventDefault(); }
+  });
+  let resizeTimer = null;
+  window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(update, 150); });
+  $("theme-toggle").addEventListener("click", () => {
+    const root = document.documentElement;
+    const next = root.classList.contains("dark") ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    root.classList.toggle("dark", next === "dark");
+    try { localStorage.setItem("report-theme", next); } catch (e) { /* storage unavailable */ }
+  });
+  update();
+}
+boot();
+</script>
+</body>
+</html>
