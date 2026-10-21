@@ -63,6 +63,7 @@ from scripts.experiments.peak_rectification import (  # noqa: E402
     _data_cache_sha256,
     _ensure_manifest,
     _frozen_data_cache,
+    _resolve_cutoffs,
     apply_delta,
     arm_lambda,
     arm_lambda_calendar,
@@ -70,10 +71,12 @@ from scripts.experiments.peak_rectification import (  # noqa: E402
     arm_window,
     build_arms,
     log_row,
+    main as harness_main,
     merge,
     read_log,
     rescore,
     reward_for,
+    run_config,
     score,
     with_seed,
     write_summary,
@@ -682,6 +685,72 @@ def test_merge_refuses_overlapping_seeds_and_an_existing_target():
 
         _expect_value_error(lambda: merge(root / "merged", [root / "a", root / "b"]), "share seeds", "42")
         _expect_value_error(lambda: merge(root / "a", [root / "b", root / "c"]), "already has", "--out")
+
+
+class _ExcludingEchoAdapter(_HorizonEchoAdapter):
+    exclude_locations = {"US"}
+
+
+class _TwoLocationPipelineAdapter:
+    """Stands in for FluForecastAdapter.run_pipeline: one row each for US and 01."""
+
+    exclude_locations = {"US"}
+
+    def run_pipeline(self, config: dict, output_path: str) -> str:
+        pd.DataFrame(
+            [{"location": loc, "horizon": 1, "predicted_q50": 1.0} for loc in ("US", "01")]
+        ).to_csv(output_path, index=False)
+        return output_path
+
+
+def test_score_drops_excluded_locations_before_scoring():
+    forecasts = pd.DataFrame(
+        [
+            {"location": "01", "horizon": 1, "predicted_q50": 10.0},
+            {"location": "US", "horizon": 1, "predicted_q50": 1000.0},
+        ]
+    )
+
+    metrics = score(_ExcludingEchoAdapter(), forecasts, pd.DataFrame())
+
+    assert metrics["by_phase"]["peak"] == {"wis": 10.0, "bias": 0.0, "n": 1}
+
+
+def test_run_config_saves_excluded_locations_for_plotting():
+    with tempfile.TemporaryDirectory() as tmp:
+        forecasts_dir = Path(tmp) / FORECASTS_DIRNAME
+        arm = build_arms([])[0]
+
+        run_config(_TwoLocationPipelineAdapter(), arm, ["2025-12-06"], forecasts_dir, say=lambda *_: None)
+
+        saved = pd.read_csv(forecasts_dir / f"{arm.config_id}.csv", dtype={"location": str})
+        assert sorted(saved["location"]) == ["01", "US"]
+
+
+def test_resolve_cutoffs_stride_one_gives_weekly_split():
+    cutoffs, is_subset = _resolve_cutoffs(None, stride_weeks=1)
+
+    gaps = pd.to_datetime(pd.Series(cutoffs)).diff().dropna().dt.days
+    assert (len(cutoffs), cutoffs[0], cutoffs[-1]) == (35, "2025-10-04", "2026-05-30")
+    assert set(gaps) == {7}
+    assert is_subset is False
+
+
+def test_resolve_cutoffs_rejects_stride_below_one():
+    _expect_value_error(lambda: _resolve_cutoffs(None, stride_weeks=0), "--stride-weeks", "0")
+
+
+def test_main_pin_data_sha256_mismatch_fails_without_refresh():
+    with tempfile.TemporaryDirectory() as tmp:
+        out_dir = Path(tmp) / "weekly"
+        with mock.patch.object(FluDataLoader, "fetch_data", side_effect=AssertionError("refreshed")):
+            _expect_value_error(
+                lambda: harness_main(["--stride-weeks", "1", "--pin-data-sha256", "0" * 64, "--out", str(out_dir)]),
+                "sha256",
+                "0" * 64,
+            )
+
+        assert not (out_dir / MANIFEST_NAME).exists()
 
 
 ALL = [fn for name, fn in sorted(globals().items()) if name.startswith("test_") and callable(fn)]

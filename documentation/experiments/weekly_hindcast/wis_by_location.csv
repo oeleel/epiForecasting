@@ -1,0 +1,4057 @@
+config,location,location_name,phase,wis,n
+baseline,01,Alabama,all,45.46,140
+baseline,02,Alaska,all,6.9,140
+baseline,04,Arizona,all,40.46,140
+baseline,05,Arkansas,all,24.82,140
+baseline,06,California,all,131.74,140
+baseline,08,Colorado,all,41.08,140
+baseline,09,Connecticut,all,43.1,140
+baseline,10,Delaware,all,14.51,140
+baseline,11,District of Columbia,all,9.17,140
+baseline,12,Florida,all,229.28,140
+baseline,13,Georgia,all,85.21,140
+baseline,15,Hawaii,all,10.21,140
+baseline,16,Idaho,all,15.54,140
+baseline,17,Illinois,all,95.0,140
+baseline,18,Indiana,all,50.1,140
+baseline,19,Iowa,all,25.56,140
+baseline,20,Kansas,all,27.22,140
+baseline,21,Kentucky,all,38.14,140
+baseline,22,Louisiana,all,45.86,140
+baseline,23,Maine,all,14.57,140
+baseline,24,Maryland,all,41.59,140
+baseline,25,Massachusetts,all,59.63,140
+baseline,26,Michigan,all,66.52,140
+baseline,27,Minnesota,all,57.35,140
+baseline,28,Mississippi,all,26.57,140
+baseline,29,Missouri,all,59.45,140
+baseline,30,Montana,all,11.59,140
+baseline,31,Nebraska,all,16.04,140
+baseline,32,Nevada,all,22.17,140
+baseline,33,New Hampshire,all,16.7,140
+baseline,34,New Jersey,all,94.12,140
+baseline,35,New Mexico,all,24.76,140
+baseline,36,New York,all,219.01,140
+baseline,37,North Carolina,all,142.79,140
+baseline,38,North Dakota,all,9.73,140
+baseline,39,Ohio,all,119.99,140
+baseline,40,Oklahoma,all,29.5,140
+baseline,41,Oregon,all,30.12,140
+baseline,42,Pennsylvania,all,204.84,140
+baseline,44,Rhode Island,all,16.96,140
+baseline,45,South Carolina,all,55.58,140
+baseline,46,South Dakota,all,7.87,140
+baseline,47,Tennessee,all,51.83,140
+baseline,48,Texas,all,164.88,140
+baseline,49,Utah,all,19.73,140
+baseline,50,Vermont,all,5.13,140
+baseline,51,Virginia,all,54.81,140
+baseline,53,Washington,all,20.73,140
+baseline,54,West Virginia,all,18.64,140
+baseline,55,Wisconsin,all,52.91,140
+baseline,56,Wyoming,all,6.45,140
+baseline,72,Puerto Rico,all,34.75,140
+baseline,01,Alabama,decline,49.9,24
+baseline,01,Alabama,growth,26.97,36
+baseline,01,Alabama,off_season,4.4,16
+baseline,01,Alabama,peak,112.21,36
+baseline,01,Alabama,plateau,3.06,28
+baseline,02,Alaska,decline,2.53,24
+baseline,02,Alaska,growth,6.01,36
+baseline,02,Alaska,off_season,1.53,16
+baseline,02,Alaska,peak,17.3,36
+baseline,02,Alaska,plateau,1.46,28
+baseline,04,Arizona,decline,40.73,24
+baseline,04,Arizona,growth,21.58,36
+baseline,04,Arizona,off_season,5.88,16
+baseline,04,Arizona,peak,96.83,36
+baseline,04,Arizona,plateau,11.76,28
+baseline,05,Arkansas,decline,35.7,24
+baseline,05,Arkansas,growth,17.24,36
+baseline,05,Arkansas,off_season,2.68,16
+baseline,05,Arkansas,peak,51.82,36
+baseline,05,Arkansas,plateau,3.18,28
+baseline,06,California,decline,103.88,24
+baseline,06,California,growth,74.45,36
+baseline,06,California,off_season,11.66,16
+baseline,06,California,peak,337.67,36
+baseline,06,California,plateau,33.13,28
+baseline,08,Colorado,decline,18.52,24
+baseline,08,Colorado,growth,41.44,36
+baseline,08,Colorado,off_season,2.59,16
+baseline,08,Colorado,peak,99.85,36
+baseline,08,Colorado,plateau,6.4,28
+baseline,09,Connecticut,decline,3.88,24
+baseline,09,Connecticut,growth,53.43,36
+baseline,09,Connecticut,off_season,1.57,16
+baseline,09,Connecticut,peak,107.45,36
+baseline,09,Connecticut,plateau,4.43,28
+baseline,10,Delaware,decline,8.64,24
+baseline,10,Delaware,growth,16.94,36
+baseline,10,Delaware,off_season,1.75,16
+baseline,10,Delaware,peak,31.68,36
+baseline,10,Delaware,plateau,1.62,28
+baseline,11,District of Columbia,decline,3.47,24
+baseline,11,District of Columbia,growth,6.71,36
+baseline,11,District of Columbia,off_season,1.27,16
+baseline,11,District of Columbia,peak,25.47,36
+baseline,11,District of Columbia,plateau,0.79,28
+baseline,12,Florida,decline,103.33,24
+baseline,12,Florida,growth,135.17,36
+baseline,12,Florida,off_season,19.55,16
+baseline,12,Florida,peak,654.51,36
+baseline,12,Florida,plateau,31.38,28
+baseline,13,Georgia,decline,48.29,24
+baseline,13,Georgia,growth,99.16,36
+baseline,13,Georgia,off_season,4.02,16
+baseline,13,Georgia,peak,194.19,36
+baseline,13,Georgia,plateau,5.2,28
+baseline,15,Hawaii,decline,5.56,24
+baseline,15,Hawaii,growth,9.71,36
+baseline,15,Hawaii,off_season,1.59,16
+baseline,15,Hawaii,peak,21.48,36
+baseline,15,Hawaii,plateau,5.3,28
+baseline,16,Idaho,decline,11.51,24
+baseline,16,Idaho,growth,9.78,36
+baseline,16,Idaho,off_season,1.31,16
+baseline,16,Idaho,peak,39.93,36
+baseline,16,Idaho,plateau,3.18,28
+baseline,17,Illinois,decline,37.93,24
+baseline,17,Illinois,growth,109.6,36
+baseline,17,Illinois,off_season,8.69,16
+baseline,17,Illinois,peak,220.78,36
+baseline,17,Illinois,plateau,12.73,28
+baseline,18,Indiana,decline,46.17,24
+baseline,18,Indiana,growth,36.06,36
+baseline,18,Indiana,off_season,3.47,16
+baseline,18,Indiana,peak,123.42,36
+baseline,18,Indiana,plateau,3.91,28
+baseline,19,Iowa,decline,22.24,24
+baseline,19,Iowa,growth,22.06,36
+baseline,19,Iowa,off_season,1.35,16
+baseline,19,Iowa,peak,59.64,36
+baseline,19,Iowa,plateau,2.92,28
+baseline,20,Kansas,decline,26.88,24
+baseline,20,Kansas,growth,27.96,36
+baseline,20,Kansas,off_season,1.49,16
+baseline,20,Kansas,peak,57.91,36
+baseline,20,Kansas,plateau,1.8,28
+baseline,21,Kentucky,decline,35.77,24
+baseline,21,Kentucky,growth,36.07,36
+baseline,21,Kentucky,off_season,3.71,16
+baseline,21,Kentucky,peak,84.02,36
+baseline,21,Kentucky,plateau,3.52,28
+baseline,22,Louisiana,decline,42.5,24
+baseline,22,Louisiana,growth,41.69,36
+baseline,22,Louisiana,off_season,4.86,16
+baseline,22,Louisiana,peak,101.71,36
+baseline,22,Louisiana,plateau,5.74,28
+baseline,23,Maine,decline,9.55,24
+baseline,23,Maine,growth,10.18,36
+baseline,23,Maine,off_season,1.21,16
+baseline,23,Maine,peak,38.23,36
+baseline,23,Maine,plateau,1.75,28
+baseline,24,Maryland,decline,13.61,24
+baseline,24,Maryland,growth,33.69,36
+baseline,24,Maryland,off_season,2.45,16
+baseline,24,Maryland,peak,114.64,36
+baseline,24,Maryland,plateau,4.21,28
+baseline,25,Massachusetts,decline,9.54,24
+baseline,25,Massachusetts,growth,51.47,36
+baseline,25,Massachusetts,off_season,4.48,16
+baseline,25,Massachusetts,peak,168.61,36
+baseline,25,Massachusetts,plateau,4.42,28
+baseline,26,Michigan,decline,26.37,24
+baseline,26,Michigan,growth,58.21,36
+baseline,26,Michigan,off_season,4.55,16
+baseline,26,Michigan,peak,177.45,36
+baseline,26,Michigan,plateau,4.39,28
+baseline,27,Minnesota,decline,25.88,24
+baseline,27,Minnesota,growth,78.38,36
+baseline,27,Minnesota,off_season,3.22,16
+baseline,27,Minnesota,peak,121.82,36
+baseline,27,Minnesota,plateau,5.34,28
+baseline,28,Mississippi,decline,39.69,24
+baseline,28,Mississippi,growth,17.92,36
+baseline,28,Mississippi,off_season,2.65,16
+baseline,28,Mississippi,peak,54.33,36
+baseline,28,Mississippi,plateau,4.42,28
+baseline,29,Missouri,decline,45.88,24
+baseline,29,Missouri,growth,59.74,36
+baseline,29,Missouri,off_season,2.78,16
+baseline,29,Missouri,peak,136.22,36
+baseline,29,Missouri,plateau,4.39,28
+baseline,30,Montana,decline,9.74,24
+baseline,30,Montana,growth,8.55,36
+baseline,30,Montana,off_season,1.52,16
+baseline,30,Montana,peak,27.54,36
+baseline,30,Montana,plateau,2.33,28
+baseline,31,Nebraska,decline,19.88,24
+baseline,31,Nebraska,growth,13.27,36
+baseline,31,Nebraska,off_season,2.05,16
+baseline,31,Nebraska,peak,33.24,36
+baseline,31,Nebraska,plateau,2.19,28
+baseline,32,Nevada,decline,7.08,24
+baseline,32,Nevada,growth,22.13,36
+baseline,32,Nevada,off_season,4.53,16
+baseline,32,Nevada,peak,50.13,36
+baseline,32,Nevada,plateau,9.31,28
+baseline,33,New Hampshire,decline,6.31,24
+baseline,33,New Hampshire,growth,14.13,36
+baseline,33,New Hampshire,off_season,1.31,16
+baseline,33,New Hampshire,peak,44.65,36
+baseline,33,New Hampshire,plateau,1.77,28
+baseline,34,New Jersey,decline,24.45,24
+baseline,34,New Jersey,growth,145.25,36
+baseline,34,New Jersey,off_season,3.61,16
+baseline,34,New Jersey,peak,196.75,36
+baseline,34,New Jersey,plateau,7.85,28
+baseline,35,New Mexico,decline,14.51,24
+baseline,35,New Mexico,growth,24.15,36
+baseline,35,New Mexico,off_season,1.99,16
+baseline,35,New Mexico,peak,59.75,36
+baseline,35,New Mexico,plateau,2.36,28
+baseline,36,New York,decline,26.05,24
+baseline,36,New York,growth,562.98,36
+baseline,36,New York,off_season,4.23,16
+baseline,36,New York,peak,260.81,36
+baseline,36,New York,plateau,11.15,28
+baseline,37,North Carolina,decline,34.37,24
+baseline,37,North Carolina,growth,259.73,36
+baseline,37,North Carolina,off_season,2.6,16
+baseline,37,North Carolina,peak,268.55,36
+baseline,37,North Carolina,plateau,3.79,28
+baseline,38,North Dakota,decline,3.66,24
+baseline,38,North Dakota,growth,8.51,36
+baseline,38,North Dakota,off_season,1.33,16
+baseline,38,North Dakota,peak,24.84,36
+baseline,38,North Dakota,plateau,1.89,28
+baseline,39,Ohio,decline,79.01,24
+baseline,39,Ohio,growth,129.33,36
+baseline,39,Ohio,off_season,2.74,16
+baseline,39,Ohio,peak,278.84,36
+baseline,39,Ohio,plateau,5.85,28
+baseline,40,Oklahoma,decline,46.38,24
+baseline,40,Oklahoma,growth,19.05,36
+baseline,40,Oklahoma,off_season,3.55,16
+baseline,40,Oklahoma,peak,60.38,36
+baseline,40,Oklahoma,plateau,3.62,28
+baseline,41,Oregon,decline,55.93,24
+baseline,41,Oregon,growth,7.72,36
+baseline,41,Oregon,off_season,2.06,16
+baseline,41,Oregon,peak,68.43,36
+baseline,41,Oregon,plateau,3.58,28
+baseline,42,Pennsylvania,decline,181.32,24
+baseline,42,Pennsylvania,growth,212.55,36
+baseline,42,Pennsylvania,off_season,27.99,16
+baseline,42,Pennsylvania,peak,420.13,36
+baseline,42,Pennsylvania,plateau,39.32,28
+baseline,44,Rhode Island,decline,3.51,24
+baseline,44,Rhode Island,growth,18.1,36
+baseline,44,Rhode Island,off_season,2.28,16
+baseline,44,Rhode Island,peak,42.94,36
+baseline,44,Rhode Island,plateau,2.0,28
+baseline,45,South Carolina,decline,33.31,24
+baseline,45,South Carolina,growth,68.72,36
+baseline,45,South Carolina,off_season,3.93,16
+baseline,45,South Carolina,peak,120.98,36
+baseline,45,South Carolina,plateau,3.18,28
+baseline,46,South Dakota,decline,6.94,24
+baseline,46,South Dakota,growth,5.88,36
+baseline,46,South Dakota,off_season,0.93,16
+baseline,46,South Dakota,peak,18.34,36
+baseline,46,South Dakota,plateau,1.74,28
+baseline,47,Tennessee,decline,21.46,24
+baseline,47,Tennessee,growth,65.95,36
+baseline,47,Tennessee,off_season,4.53,16
+baseline,47,Tennessee,peak,114.59,36
+baseline,47,Tennessee,plateau,6.02,28
+baseline,48,Texas,decline,52.05,24
+baseline,48,Texas,growth,177.72,36
+baseline,48,Texas,off_season,11.0,16
+baseline,48,Texas,peak,408.99,36
+baseline,48,Texas,plateau,19.14,28
+baseline,49,Utah,decline,14.39,24
+baseline,49,Utah,growth,12.18,36
+baseline,49,Utah,off_season,1.4,16
+baseline,49,Utah,peak,51.98,36
+baseline,49,Utah,plateau,3.0,28
+baseline,50,Vermont,decline,4.67,24
+baseline,50,Vermont,growth,3.84,36
+baseline,50,Vermont,off_season,0.53,16
+baseline,50,Vermont,peak,11.84,36
+baseline,50,Vermont,plateau,1.21,28
+baseline,51,Virginia,decline,32.37,24
+baseline,51,Virginia,growth,46.94,36
+baseline,51,Virginia,off_season,3.24,16
+baseline,51,Virginia,peak,140.21,36
+baseline,51,Virginia,plateau,3.81,28
+baseline,53,Washington,decline,30.36,24
+baseline,53,Washington,growth,10.14,36
+baseline,53,Washington,off_season,2.85,16
+baseline,53,Washington,peak,45.5,36
+baseline,53,Washington,plateau,4.46,28
+baseline,54,West Virginia,decline,24.96,24
+baseline,54,West Virginia,growth,17.1,36
+baseline,54,West Virginia,off_season,0.86,16
+baseline,54,West Virginia,peak,35.95,36
+baseline,54,West Virginia,plateau,3.1,28
+baseline,55,Wisconsin,decline,15.89,24
+baseline,55,Wisconsin,growth,63.91,36
+baseline,55,Wisconsin,off_season,1.63,16
+baseline,55,Wisconsin,peak,125.56,36
+baseline,55,Wisconsin,plateau,6.4,28
+baseline,56,Wyoming,decline,3.7,24
+baseline,56,Wyoming,growth,4.1,36
+baseline,56,Wyoming,off_season,1.5,16
+baseline,56,Wyoming,peak,16.66,36
+baseline,56,Wyoming,plateau,1.56,28
+baseline,72,Puerto Rico,decline,20.89,24
+baseline,72,Puerto Rico,growth,53.45,36
+baseline,72,Puerto Rico,off_season,12.45,16
+baseline,72,Puerto Rico,peak,49.34,36
+baseline,72,Puerto Rico,plateau,16.58,28
+lambda_1.5,01,Alabama,all,47.14,140
+lambda_1.5,02,Alaska,all,7.16,140
+lambda_1.5,04,Arizona,all,41.02,140
+lambda_1.5,05,Arkansas,all,24.4,140
+lambda_1.5,06,California,all,127.38,140
+lambda_1.5,08,Colorado,all,43.33,140
+lambda_1.5,09,Connecticut,all,44.58,140
+lambda_1.5,10,Delaware,all,14.78,140
+lambda_1.5,11,District of Columbia,all,9.43,140
+lambda_1.5,12,Florida,all,227.17,140
+lambda_1.5,13,Georgia,all,89.04,140
+lambda_1.5,15,Hawaii,all,10.5,140
+lambda_1.5,16,Idaho,all,15.94,140
+lambda_1.5,17,Illinois,all,99.87,140
+lambda_1.5,18,Indiana,all,51.78,140
+lambda_1.5,19,Iowa,all,26.1,140
+lambda_1.5,20,Kansas,all,28.46,140
+lambda_1.5,21,Kentucky,all,39.82,140
+lambda_1.5,22,Louisiana,all,47.1,140
+lambda_1.5,23,Maine,all,15.02,140
+lambda_1.5,24,Maryland,all,44.03,140
+lambda_1.5,25,Massachusetts,all,62.99,140
+lambda_1.5,26,Michigan,all,70.91,140
+lambda_1.5,27,Minnesota,all,61.09,140
+lambda_1.5,28,Mississippi,all,27.19,140
+lambda_1.5,29,Missouri,all,63.01,140
+lambda_1.5,30,Montana,all,11.92,140
+lambda_1.5,31,Nebraska,all,15.94,140
+lambda_1.5,32,Nevada,all,23.6,140
+lambda_1.5,33,New Hampshire,all,17.11,140
+lambda_1.5,34,New Jersey,all,100.95,140
+lambda_1.5,35,New Mexico,all,26.26,140
+lambda_1.5,36,New York,all,215.06,140
+lambda_1.5,37,North Carolina,all,151.48,140
+lambda_1.5,38,North Dakota,all,10.16,140
+lambda_1.5,39,Ohio,all,122.66,140
+lambda_1.5,40,Oklahoma,all,30.32,140
+lambda_1.5,41,Oregon,all,31.13,140
+lambda_1.5,42,Pennsylvania,all,212.92,140
+lambda_1.5,44,Rhode Island,all,17.33,140
+lambda_1.5,45,South Carolina,all,57.64,140
+lambda_1.5,46,South Dakota,all,8.27,140
+lambda_1.5,47,Tennessee,all,54.45,140
+lambda_1.5,48,Texas,all,162.11,140
+lambda_1.5,49,Utah,all,20.25,140
+lambda_1.5,50,Vermont,all,5.24,140
+lambda_1.5,51,Virginia,all,58.75,140
+lambda_1.5,53,Washington,all,20.92,140
+lambda_1.5,54,West Virginia,all,18.53,140
+lambda_1.5,55,Wisconsin,all,54.5,140
+lambda_1.5,56,Wyoming,all,6.5,140
+lambda_1.5,72,Puerto Rico,all,33.94,140
+lambda_1.5,01,Alabama,decline,51.25,24
+lambda_1.5,01,Alabama,growth,28.32,36
+lambda_1.5,01,Alabama,off_season,4.46,16
+lambda_1.5,01,Alabama,peak,116.48,36
+lambda_1.5,01,Alabama,plateau,3.05,28
+lambda_1.5,02,Alaska,decline,2.53,24
+lambda_1.5,02,Alaska,growth,5.93,36
+lambda_1.5,02,Alaska,off_season,1.56,16
+lambda_1.5,02,Alaska,peak,18.43,36
+lambda_1.5,02,Alaska,plateau,1.45,28
+lambda_1.5,04,Arizona,decline,41.28,24
+lambda_1.5,04,Arizona,growth,19.91,36
+lambda_1.5,04,Arizona,off_season,5.9,16
+lambda_1.5,04,Arizona,peak,100.27,36
+lambda_1.5,04,Arizona,plateau,11.85,28
+lambda_1.5,05,Arkansas,decline,34.88,24
+lambda_1.5,05,Arkansas,growth,16.19,36
+lambda_1.5,05,Arkansas,off_season,2.7,16
+lambda_1.5,05,Arkansas,peak,51.73,36
+lambda_1.5,05,Arkansas,plateau,3.23,28
+lambda_1.5,06,California,decline,110.92,24
+lambda_1.5,06,California,growth,73.89,36
+lambda_1.5,06,California,off_season,11.58,16
+lambda_1.5,06,California,peak,315.84,36
+lambda_1.5,06,California,plateau,34.12,28
+lambda_1.5,08,Colorado,decline,18.19,24
+lambda_1.5,08,Colorado,growth,40.33,36
+lambda_1.5,08,Colorado,off_season,2.6,16
+lambda_1.5,08,Colorado,peak,109.8,36
+lambda_1.5,08,Colorado,plateau,6.53,28
+lambda_1.5,09,Connecticut,decline,3.93,24
+lambda_1.5,09,Connecticut,growth,51.56,36
+lambda_1.5,09,Connecticut,off_season,1.6,16
+lambda_1.5,09,Connecticut,peak,115.06,36
+lambda_1.5,09,Connecticut,plateau,4.41,28
+lambda_1.5,10,Delaware,decline,8.55,24
+lambda_1.5,10,Delaware,growth,16.21,36
+lambda_1.5,10,Delaware,off_season,1.77,16
+lambda_1.5,10,Delaware,peak,33.52,36
+lambda_1.5,10,Delaware,plateau,1.63,28
+lambda_1.5,11,District of Columbia,decline,3.46,24
+lambda_1.5,11,District of Columbia,growth,6.77,36
+lambda_1.5,11,District of Columbia,off_season,1.28,16
+lambda_1.5,11,District of Columbia,peak,26.43,36
+lambda_1.5,11,District of Columbia,plateau,0.79,28
+lambda_1.5,12,Florida,decline,103.04,24
+lambda_1.5,12,Florida,growth,124.06,36
+lambda_1.5,12,Florida,off_season,19.76,16
+lambda_1.5,12,Florida,peak,657.54,36
+lambda_1.5,12,Florida,plateau,31.33,28
+lambda_1.5,13,Georgia,decline,49.6,24
+lambda_1.5,13,Georgia,growth,98.12,36
+lambda_1.5,13,Georgia,off_season,4.1,16
+lambda_1.5,13,Georgia,peak,209.14,36
+lambda_1.5,13,Georgia,plateau,5.27,28
+lambda_1.5,15,Hawaii,decline,5.59,24
+lambda_1.5,15,Hawaii,growth,10.08,36
+lambda_1.5,15,Hawaii,off_season,1.57,16
+lambda_1.5,15,Hawaii,peak,22.22,36
+lambda_1.5,15,Hawaii,plateau,5.28,28
+lambda_1.5,16,Idaho,decline,11.13,24
+lambda_1.5,16,Idaho,growth,9.85,36
+lambda_1.5,16,Idaho,off_season,1.29,16
+lambda_1.5,16,Idaho,peak,41.62,36
+lambda_1.5,16,Idaho,plateau,3.23,28
+lambda_1.5,17,Illinois,decline,38.65,24
+lambda_1.5,17,Illinois,growth,108.62,36
+lambda_1.5,17,Illinois,off_season,8.55,16
+lambda_1.5,17,Illinois,peak,240.32,36
+lambda_1.5,17,Illinois,plateau,12.71,28
+lambda_1.5,18,Indiana,decline,44.99,24
+lambda_1.5,18,Indiana,growth,36.15,36
+lambda_1.5,18,Indiana,off_season,3.48,16
+lambda_1.5,18,Indiana,peak,130.74,36
+lambda_1.5,18,Indiana,plateau,3.8,28
+lambda_1.5,19,Iowa,decline,22.22,24
+lambda_1.5,19,Iowa,growth,21.43,36
+lambda_1.5,19,Iowa,off_season,1.35,16
+lambda_1.5,19,Iowa,peak,62.37,36
+lambda_1.5,19,Iowa,plateau,2.92,28
+lambda_1.5,20,Kansas,decline,25.27,24
+lambda_1.5,20,Kansas,growth,27.66,36
+lambda_1.5,20,Kansas,off_season,1.49,16
+lambda_1.5,20,Kansas,peak,64.11,36
+lambda_1.5,20,Kansas,plateau,1.79,28
+lambda_1.5,21,Kentucky,decline,34.37,24
+lambda_1.5,21,Kentucky,growth,35.44,36
+lambda_1.5,21,Kentucky,off_season,3.72,16
+lambda_1.5,21,Kentucky,peak,92.11,36
+lambda_1.5,21,Kentucky,plateau,3.53,28
+lambda_1.5,22,Louisiana,decline,42.3,24
+lambda_1.5,22,Louisiana,growth,40.39,36
+lambda_1.5,22,Louisiana,off_season,4.88,16
+lambda_1.5,22,Louisiana,peak,107.86,36
+lambda_1.5,22,Louisiana,plateau,5.86,28
+lambda_1.5,23,Maine,decline,9.39,24
+lambda_1.5,23,Maine,growth,9.91,36
+lambda_1.5,23,Maine,off_season,1.22,16
+lambda_1.5,23,Maine,peak,40.35,36
+lambda_1.5,23,Maine,plateau,1.76,28
+lambda_1.5,24,Maryland,decline,13.21,24
+lambda_1.5,24,Maryland,growth,31.57,36
+lambda_1.5,24,Maryland,off_season,2.47,16
+lambda_1.5,24,Maryland,peak,126.48,36
+lambda_1.5,24,Maryland,plateau,4.22,28
+lambda_1.5,25,Massachusetts,decline,9.52,24
+lambda_1.5,25,Massachusetts,growth,52.12,36
+lambda_1.5,25,Massachusetts,off_season,4.54,16
+lambda_1.5,25,Massachusetts,peak,181.05,36
+lambda_1.5,25,Massachusetts,plateau,4.4,28
+lambda_1.5,26,Michigan,decline,25.23,24
+lambda_1.5,26,Michigan,growth,57.91,36
+lambda_1.5,26,Michigan,off_season,4.58,16
+lambda_1.5,26,Michigan,peak,195.55,36
+lambda_1.5,26,Michigan,plateau,4.43,28
+lambda_1.5,27,Minnesota,decline,26.56,24
+lambda_1.5,27,Minnesota,growth,75.54,36
+lambda_1.5,27,Minnesota,off_season,3.3,16
+lambda_1.5,27,Minnesota,peak,138.68,36
+lambda_1.5,27,Minnesota,plateau,5.36,28
+lambda_1.5,28,Mississippi,decline,40.91,24
+lambda_1.5,28,Mississippi,growth,17.46,36
+lambda_1.5,28,Mississippi,off_season,2.64,16
+lambda_1.5,28,Mississippi,peak,56.42,36
+lambda_1.5,28,Mississippi,plateau,4.41,28
+lambda_1.5,29,Missouri,decline,45.54,24
+lambda_1.5,29,Missouri,growth,59.39,36
+lambda_1.5,29,Missouri,off_season,2.81,16
+lambda_1.5,29,Missouri,peak,150.69,36
+lambda_1.5,29,Missouri,plateau,4.32,28
+lambda_1.5,30,Montana,decline,9.62,24
+lambda_1.5,30,Montana,growth,8.54,36
+lambda_1.5,30,Montana,off_season,1.53,16
+lambda_1.5,30,Montana,peak,28.9,36
+lambda_1.5,30,Montana,plateau,2.36,28
+lambda_1.5,31,Nebraska,decline,18.74,24
+lambda_1.5,31,Nebraska,growth,12.7,36
+lambda_1.5,31,Nebraska,off_season,2.05,16
+lambda_1.5,31,Nebraska,peak,34.2,36
+lambda_1.5,31,Nebraska,plateau,2.18,28
+lambda_1.5,32,Nevada,decline,7.12,24
+lambda_1.5,32,Nevada,growth,22.29,36
+lambda_1.5,32,Nevada,off_season,4.53,16
+lambda_1.5,32,Nevada,peak,55.44,36
+lambda_1.5,32,Nevada,plateau,9.36,28
+lambda_1.5,33,New Hampshire,decline,6.23,24
+lambda_1.5,33,New Hampshire,growth,13.66,36
+lambda_1.5,33,New Hampshire,off_season,1.34,16
+lambda_1.5,33,New Hampshire,peak,46.76,36
+lambda_1.5,33,New Hampshire,plateau,1.78,28
+lambda_1.5,34,New Jersey,decline,23.54,24
+lambda_1.5,34,New Jersey,growth,146.47,36
+lambda_1.5,34,New Jersey,off_season,3.62,16
+lambda_1.5,34,New Jersey,peak,222.68,36
+lambda_1.5,34,New Jersey,plateau,7.86,28
+lambda_1.5,35,New Mexico,decline,14.21,24
+lambda_1.5,35,New Mexico,growth,23.61,36
+lambda_1.5,35,New Mexico,off_season,2.0,16
+lambda_1.5,35,New Mexico,peak,66.31,36
+lambda_1.5,35,New Mexico,plateau,2.33,28
+lambda_1.5,36,New York,decline,26.72,24
+lambda_1.5,36,New York,growth,540.05,36
+lambda_1.5,36,New York,off_season,4.23,16
+lambda_1.5,36,New York,peak,267.8,36
+lambda_1.5,36,New York,plateau,11.33,28
+lambda_1.5,37,North Carolina,decline,32.98,24
+lambda_1.5,37,North Carolina,growth,256.83,36
+lambda_1.5,37,North Carolina,off_season,2.53,16
+lambda_1.5,37,North Carolina,peak,306.24,36
+lambda_1.5,37,North Carolina,plateau,3.76,28
+lambda_1.5,38,North Dakota,decline,3.57,24
+lambda_1.5,38,North Dakota,growth,8.35,36
+lambda_1.5,38,North Dakota,off_season,1.36,16
+lambda_1.5,38,North Dakota,peak,26.69,36
+lambda_1.5,38,North Dakota,plateau,1.9,28
+lambda_1.5,39,Ohio,decline,77.7,24
+lambda_1.5,39,Ohio,growth,126.19,36
+lambda_1.5,39,Ohio,off_season,2.79,16
+lambda_1.5,39,Ohio,peak,293.28,36
+lambda_1.5,39,Ohio,plateau,5.78,28
+lambda_1.5,40,Oklahoma,decline,47.14,24
+lambda_1.5,40,Oklahoma,growth,19.16,36
+lambda_1.5,40,Oklahoma,off_season,3.57,16
+lambda_1.5,40,Oklahoma,peak,62.9,36
+lambda_1.5,40,Oklahoma,plateau,3.64,28
+lambda_1.5,41,Oregon,decline,59.89,24
+lambda_1.5,41,Oregon,growth,7.88,36
+lambda_1.5,41,Oregon,off_season,2.07,16
+lambda_1.5,41,Oregon,peak,69.53,36
+lambda_1.5,41,Oregon,plateau,3.58,28
+lambda_1.5,42,Pennsylvania,decline,187.61,24
+lambda_1.5,42,Pennsylvania,growth,212.92,36
+lambda_1.5,42,Pennsylvania,off_season,28.02,16
+lambda_1.5,42,Pennsylvania,peak,447.8,36
+lambda_1.5,42,Pennsylvania,plateau,38.31,28
+lambda_1.5,44,Rhode Island,decline,3.43,24
+lambda_1.5,44,Rhode Island,growth,17.51,36
+lambda_1.5,44,Rhode Island,off_season,2.31,16
+lambda_1.5,44,Rhode Island,peak,45.03,36
+lambda_1.5,44,Rhode Island,plateau,2.01,28
+lambda_1.5,45,South Carolina,decline,31.11,24
+lambda_1.5,45,South Carolina,growth,67.3,36
+lambda_1.5,45,South Carolina,off_season,4.03,16
+lambda_1.5,45,South Carolina,peak,131.84,36
+lambda_1.5,45,South Carolina,plateau,3.17,28
+lambda_1.5,46,South Dakota,decline,6.79,24
+lambda_1.5,46,South Dakota,growth,5.81,36
+lambda_1.5,46,South Dakota,off_season,0.92,16
+lambda_1.5,46,South Dakota,peak,20.07,36
+lambda_1.5,46,South Dakota,plateau,1.73,28
+lambda_1.5,47,Tennessee,decline,20.99,24
+lambda_1.5,47,Tennessee,growth,67.09,36
+lambda_1.5,47,Tennessee,off_season,4.52,16
+lambda_1.5,47,Tennessee,peak,123.94,36
+lambda_1.5,47,Tennessee,plateau,6.05,28
+lambda_1.5,48,Texas,decline,53.25,24
+lambda_1.5,48,Texas,growth,173.28,36
+lambda_1.5,48,Texas,off_season,10.76,16
+lambda_1.5,48,Texas,peak,401.89,36
+lambda_1.5,48,Texas,plateau,19.27,28
+lambda_1.5,49,Utah,decline,14.14,24
+lambda_1.5,49,Utah,growth,11.51,36
+lambda_1.5,49,Utah,off_season,1.37,16
+lambda_1.5,49,Utah,peak,54.85,36
+lambda_1.5,49,Utah,plateau,3.01,28
+lambda_1.5,50,Vermont,decline,4.68,24
+lambda_1.5,50,Vermont,growth,3.88,36
+lambda_1.5,50,Vermont,off_season,0.53,16
+lambda_1.5,50,Vermont,peak,12.21,36
+lambda_1.5,50,Vermont,plateau,1.19,28
+lambda_1.5,51,Virginia,decline,31.41,24
+lambda_1.5,51,Virginia,growth,46.38,36
+lambda_1.5,51,Virginia,off_season,3.3,16
+lambda_1.5,51,Virginia,peak,156.79,36
+lambda_1.5,51,Virginia,plateau,3.71,28
+lambda_1.5,53,Washington,decline,29.0,24
+lambda_1.5,53,Washington,growth,9.7,36
+lambda_1.5,53,Washington,off_season,2.8,16
+lambda_1.5,53,Washington,peak,47.65,36
+lambda_1.5,53,Washington,plateau,4.38,28
+lambda_1.5,54,West Virginia,decline,24.47,24
+lambda_1.5,54,West Virginia,growth,16.7,36
+lambda_1.5,54,West Virginia,off_season,0.87,16
+lambda_1.5,54,West Virginia,peak,36.2,36
+lambda_1.5,54,West Virginia,plateau,3.18,28
+lambda_1.5,55,Wisconsin,decline,15.58,24
+lambda_1.5,55,Wisconsin,growth,61.55,36
+lambda_1.5,55,Wisconsin,off_season,1.64,16
+lambda_1.5,55,Wisconsin,peak,134.34,36
+lambda_1.5,55,Wisconsin,plateau,6.33,28
+lambda_1.5,56,Wyoming,decline,3.78,24
+lambda_1.5,56,Wyoming,growth,4.21,36
+lambda_1.5,56,Wyoming,off_season,1.47,16
+lambda_1.5,56,Wyoming,peak,16.65,36
+lambda_1.5,56,Wyoming,plateau,1.6,28
+lambda_1.5,72,Puerto Rico,decline,20.6,24
+lambda_1.5,72,Puerto Rico,growth,49.81,36
+lambda_1.5,72,Puerto Rico,off_season,12.31,16
+lambda_1.5,72,Puerto Rico,peak,50.17,36
+lambda_1.5,72,Puerto Rico,plateau,16.44,28
+lambda_2,01,Alabama,all,49.41,140
+lambda_2,02,Alaska,all,7.28,140
+lambda_2,04,Arizona,all,42.46,140
+lambda_2,05,Arkansas,all,24.97,140
+lambda_2,06,California,all,125.62,140
+lambda_2,08,Colorado,all,46.12,140
+lambda_2,09,Connecticut,all,45.22,140
+lambda_2,10,Delaware,all,14.81,140
+lambda_2,11,District of Columbia,all,9.57,140
+lambda_2,12,Florida,all,225.33,140
+lambda_2,13,Georgia,all,92.36,140
+lambda_2,15,Hawaii,all,10.73,140
+lambda_2,16,Idaho,all,16.34,140
+lambda_2,17,Illinois,all,104.68,140
+lambda_2,18,Indiana,all,54.65,140
+lambda_2,19,Iowa,all,26.65,140
+lambda_2,20,Kansas,all,29.46,140
+lambda_2,21,Kentucky,all,41.34,140
+lambda_2,22,Louisiana,all,48.44,140
+lambda_2,23,Maine,all,15.63,140
+lambda_2,24,Maryland,all,45.44,140
+lambda_2,25,Massachusetts,all,66.79,140
+lambda_2,26,Michigan,all,73.63,140
+lambda_2,27,Minnesota,all,62.4,140
+lambda_2,28,Mississippi,all,27.06,140
+lambda_2,29,Missouri,all,66.46,140
+lambda_2,30,Montana,all,12.29,140
+lambda_2,31,Nebraska,all,16.17,140
+lambda_2,32,Nevada,all,24.3,140
+lambda_2,33,New Hampshire,all,17.73,140
+lambda_2,34,New Jersey,all,102.82,140
+lambda_2,35,New Mexico,all,26.66,140
+lambda_2,36,New York,all,209.74,140
+lambda_2,37,North Carolina,all,157.01,140
+lambda_2,38,North Dakota,all,10.64,140
+lambda_2,39,Ohio,all,128.7,140
+lambda_2,40,Oklahoma,all,31.33,140
+lambda_2,41,Oregon,all,32.48,140
+lambda_2,42,Pennsylvania,all,216.11,140
+lambda_2,44,Rhode Island,all,17.35,140
+lambda_2,45,South Carolina,all,60.99,140
+lambda_2,46,South Dakota,all,8.49,140
+lambda_2,47,Tennessee,all,57.77,140
+lambda_2,48,Texas,all,162.98,140
+lambda_2,49,Utah,all,20.84,140
+lambda_2,50,Vermont,all,5.38,140
+lambda_2,51,Virginia,all,62.57,140
+lambda_2,53,Washington,all,21.83,140
+lambda_2,54,West Virginia,all,18.31,140
+lambda_2,55,Wisconsin,all,56.43,140
+lambda_2,56,Wyoming,all,6.47,140
+lambda_2,72,Puerto Rico,all,34.18,140
+lambda_2,01,Alabama,decline,52.89,24
+lambda_2,01,Alabama,growth,28.89,36
+lambda_2,01,Alabama,off_season,4.55,16
+lambda_2,01,Alabama,peak,123.62,36
+lambda_2,01,Alabama,plateau,3.06,28
+lambda_2,02,Alaska,decline,2.57,24
+lambda_2,02,Alaska,growth,5.85,36
+lambda_2,02,Alaska,off_season,1.59,16
+lambda_2,02,Alaska,peak,18.94,36
+lambda_2,02,Alaska,plateau,1.41,28
+lambda_2,04,Arizona,decline,42.6,24
+lambda_2,04,Arizona,growth,19.77,36
+lambda_2,04,Arizona,off_season,5.92,16
+lambda_2,04,Arizona,peak,105.13,36
+lambda_2,04,Arizona,plateau,11.83,28
+lambda_2,05,Arkansas,decline,35.18,24
+lambda_2,05,Arkansas,growth,16.03,36
+lambda_2,05,Arkansas,off_season,2.66,16
+lambda_2,05,Arkansas,peak,53.95,36
+lambda_2,05,Arkansas,plateau,3.21,28
+lambda_2,06,California,decline,118.35,24
+lambda_2,06,California,growth,75.43,36
+lambda_2,06,California,off_season,12.67,16
+lambda_2,06,California,peak,302.01,36
+lambda_2,06,California,plateau,34.14,28
+lambda_2,08,Colorado,decline,18.47,24
+lambda_2,08,Colorado,growth,39.19,36
+lambda_2,08,Colorado,off_season,2.62,16
+lambda_2,08,Colorado,peak,121.72,36
+lambda_2,08,Colorado,plateau,6.36,28
+lambda_2,09,Connecticut,decline,3.83,24
+lambda_2,09,Connecticut,growth,48.69,36
+lambda_2,09,Connecticut,off_season,1.6,16
+lambda_2,09,Connecticut,peak,120.52,36
+lambda_2,09,Connecticut,plateau,4.34,28
+lambda_2,10,Delaware,decline,8.53,24
+lambda_2,10,Delaware,growth,15.62,36
+lambda_2,10,Delaware,off_season,1.77,16
+lambda_2,10,Delaware,peak,34.25,36
+lambda_2,10,Delaware,plateau,1.62,28
+lambda_2,11,District of Columbia,decline,3.48,24
+lambda_2,11,District of Columbia,growth,6.79,36
+lambda_2,11,District of Columbia,off_season,1.3,16
+lambda_2,11,District of Columbia,peak,26.92,36
+lambda_2,11,District of Columbia,plateau,0.78,28
+lambda_2,12,Florida,decline,108.62,24
+lambda_2,12,Florida,growth,120.08,36
+lambda_2,12,Florida,off_season,21.32,16
+lambda_2,12,Florida,peak,649.4,36
+lambda_2,12,Florida,plateau,32.04,28
+lambda_2,13,Georgia,decline,51.59,24
+lambda_2,13,Georgia,growth,98.54,36
+lambda_2,13,Georgia,off_season,3.97,16
+lambda_2,13,Georgia,peak,220.34,36
+lambda_2,13,Georgia,plateau,5.35,28
+lambda_2,15,Hawaii,decline,5.57,24
+lambda_2,15,Hawaii,growth,10.39,36
+lambda_2,15,Hawaii,off_season,1.54,16
+lambda_2,15,Hawaii,peak,22.78,36
+lambda_2,15,Hawaii,plateau,5.33,28
+lambda_2,16,Idaho,decline,11.1,24
+lambda_2,16,Idaho,growth,10.07,36
+lambda_2,16,Idaho,off_season,1.29,16
+lambda_2,16,Idaho,peak,42.98,36
+lambda_2,16,Idaho,plateau,3.24,28
+lambda_2,17,Illinois,decline,39.13,24
+lambda_2,17,Illinois,growth,109.77,36
+lambda_2,17,Illinois,off_season,8.51,16
+lambda_2,17,Illinois,peak,257.52,36
+lambda_2,17,Illinois,plateau,12.79,28
+lambda_2,18,Indiana,decline,46.31,24
+lambda_2,18,Indiana,growth,36.9,36
+lambda_2,18,Indiana,off_season,3.43,16
+lambda_2,18,Indiana,peak,140.38,36
+lambda_2,18,Indiana,plateau,3.66,28
+lambda_2,19,Iowa,decline,21.67,24
+lambda_2,19,Iowa,growth,20.78,36
+lambda_2,19,Iowa,off_season,1.37,16
+lambda_2,19,Iowa,peak,65.5,36
+lambda_2,19,Iowa,plateau,2.96,28
+lambda_2,20,Kansas,decline,25.74,24
+lambda_2,20,Kansas,growth,27.42,36
+lambda_2,20,Kansas,off_season,1.52,16
+lambda_2,20,Kansas,peak,67.92,36
+lambda_2,20,Kansas,plateau,1.77,28
+lambda_2,21,Kentucky,decline,34.18,24
+lambda_2,21,Kentucky,growth,35.93,36
+lambda_2,21,Kentucky,off_season,3.73,16
+lambda_2,21,Kentucky,peak,97.74,36
+lambda_2,21,Kentucky,plateau,3.41,28
+lambda_2,22,Louisiana,decline,43.19,24
+lambda_2,22,Louisiana,growth,43.3,36
+lambda_2,22,Louisiana,off_season,4.88,16
+lambda_2,22,Louisiana,peak,109.67,36
+lambda_2,22,Louisiana,plateau,5.7,28
+lambda_2,23,Maine,decline,9.33,24
+lambda_2,23,Maine,growth,9.75,36
+lambda_2,23,Maine,off_season,1.23,16
+lambda_2,23,Maine,peak,42.89,36
+lambda_2,23,Maine,plateau,1.74,28
+lambda_2,24,Maryland,decline,13.05,24
+lambda_2,24,Maryland,growth,31.4,36
+lambda_2,24,Maryland,off_season,2.41,16
+lambda_2,24,Maryland,peak,132.24,36
+lambda_2,24,Maryland,plateau,4.24,28
+lambda_2,25,Massachusetts,decline,9.72,24
+lambda_2,25,Massachusetts,growth,51.45,36
+lambda_2,25,Massachusetts,off_season,4.54,16
+lambda_2,25,Massachusetts,peak,196.3,36
+lambda_2,25,Massachusetts,plateau,4.46,28
+lambda_2,26,Michigan,decline,25.39,24
+lambda_2,26,Michigan,growth,58.41,36
+lambda_2,26,Michigan,off_season,4.58,16
+lambda_2,26,Michigan,peak,205.64,36
+lambda_2,26,Michigan,plateau,4.29,28
+lambda_2,27,Minnesota,decline,26.6,24
+lambda_2,27,Minnesota,growth,72.66,36
+lambda_2,27,Minnesota,off_season,3.37,16
+lambda_2,27,Minnesota,peak,146.71,36
+lambda_2,27,Minnesota,plateau,5.21,28
+lambda_2,28,Mississippi,decline,40.66,24
+lambda_2,28,Mississippi,growth,17.19,36
+lambda_2,28,Mississippi,off_season,2.71,16
+lambda_2,28,Mississippi,peak,56.26,36
+lambda_2,28,Mississippi,plateau,4.43,28
+lambda_2,29,Missouri,decline,46.2,24
+lambda_2,29,Missouri,growth,59.7,36
+lambda_2,29,Missouri,off_season,2.75,16
+lambda_2,29,Missouri,peak,163.38,36
+lambda_2,29,Missouri,plateau,4.32,28
+lambda_2,30,Montana,decline,9.54,24
+lambda_2,30,Montana,growth,8.57,36
+lambda_2,30,Montana,off_season,1.53,16
+lambda_2,30,Montana,peak,30.33,36
+lambda_2,30,Montana,plateau,2.35,28
+lambda_2,31,Nebraska,decline,18.73,24
+lambda_2,31,Nebraska,growth,12.58,36
+lambda_2,31,Nebraska,off_season,2.07,16
+lambda_2,31,Nebraska,peak,35.22,36
+lambda_2,31,Nebraska,plateau,2.17,28
+lambda_2,32,Nevada,decline,7.36,24
+lambda_2,32,Nevada,growth,22.49,36
+lambda_2,32,Nevada,off_season,4.54,16
+lambda_2,32,Nevada,peak,57.75,36
+lambda_2,32,Nevada,plateau,9.44,28
+lambda_2,33,New Hampshire,decline,6.17,24
+lambda_2,33,New Hampshire,growth,13.3,36
+lambda_2,33,New Hampshire,off_season,1.35,16
+lambda_2,33,New Hampshire,peak,49.57,36
+lambda_2,33,New Hampshire,plateau,1.78,28
+lambda_2,34,New Jersey,decline,22.95,24
+lambda_2,34,New Jersey,growth,144.01,36
+lambda_2,34,New Jersey,off_season,3.6,16
+lambda_2,34,New Jersey,peak,232.85,36
+lambda_2,34,New Jersey,plateau,7.85,28
+lambda_2,35,New Mexico,decline,14.2,24
+lambda_2,35,New Mexico,growth,23.78,36
+lambda_2,35,New Mexico,off_season,1.99,16
+lambda_2,35,New Mexico,peak,67.76,36
+lambda_2,35,New Mexico,plateau,2.31,28
+lambda_2,36,New York,decline,26.38,24
+lambda_2,36,New York,growth,510.37,36
+lambda_2,36,New York,off_season,4.07,16
+lambda_2,36,New York,peak,276.89,36
+lambda_2,36,New York,plateau,11.57,28
+lambda_2,37,North Carolina,decline,33.09,24
+lambda_2,37,North Carolina,growth,254.69,36
+lambda_2,37,North Carolina,off_season,2.48,16
+lambda_2,37,North Carolina,peak,329.78,36
+lambda_2,37,North Carolina,plateau,3.78,28
+lambda_2,38,North Dakota,decline,3.58,24
+lambda_2,38,North Dakota,growth,8.22,36
+lambda_2,38,North Dakota,off_season,1.35,16
+lambda_2,38,North Dakota,peak,28.71,36
+lambda_2,38,North Dakota,plateau,1.88,28
+lambda_2,39,Ohio,decline,77.98,24
+lambda_2,39,Ohio,growth,125.49,36
+lambda_2,39,Ohio,off_season,2.86,16
+lambda_2,39,Ohio,peak,317.43,36
+lambda_2,39,Ohio,plateau,5.58,28
+lambda_2,40,Oklahoma,decline,49.28,24
+lambda_2,40,Oklahoma,growth,18.92,36
+lambda_2,40,Oklahoma,off_season,3.6,16
+lambda_2,40,Oklahoma,peak,65.6,36
+lambda_2,40,Oklahoma,plateau,3.7,28
+lambda_2,41,Oregon,decline,64.36,24
+lambda_2,41,Oregon,growth,8.08,36
+lambda_2,41,Oregon,off_season,2.06,16
+lambda_2,41,Oregon,peak,71.64,36
+lambda_2,41,Oregon,plateau,3.58,28
+lambda_2,42,Pennsylvania,decline,192.44,24
+lambda_2,42,Pennsylvania,growth,206.62,36
+lambda_2,42,Pennsylvania,off_season,28.49,16
+lambda_2,42,Pennsylvania,peak,462.81,36
+lambda_2,42,Pennsylvania,plateau,38.65,28
+lambda_2,44,Rhode Island,decline,3.41,24
+lambda_2,44,Rhode Island,growth,17.17,36
+lambda_2,44,Rhode Island,off_season,2.34,16
+lambda_2,44,Rhode Island,peak,45.45,36
+lambda_2,44,Rhode Island,plateau,1.99,28
+lambda_2,45,South Carolina,decline,31.07,24
+lambda_2,45,South Carolina,growth,67.45,36
+lambda_2,45,South Carolina,off_season,4.17,16
+lambda_2,45,South Carolina,peak,144.71,36
+lambda_2,45,South Carolina,plateau,3.14,28
+lambda_2,46,South Dakota,decline,6.84,24
+lambda_2,46,South Dakota,growth,5.72,36
+lambda_2,46,South Dakota,off_season,0.91,16
+lambda_2,46,South Dakota,peak,21.01,36
+lambda_2,46,South Dakota,plateau,1.72,28
+lambda_2,47,Tennessee,decline,21.36,24
+lambda_2,47,Tennessee,growth,68.11,36
+lambda_2,47,Tennessee,off_season,4.62,16
+lambda_2,47,Tennessee,peak,135.6,36
+lambda_2,47,Tennessee,plateau,5.98,28
+lambda_2,48,Texas,decline,52.06,24
+lambda_2,48,Texas,growth,167.42,36
+lambda_2,48,Texas,off_season,11.5,16
+lambda_2,48,Texas,peak,411.41,36
+lambda_2,48,Texas,plateau,19.49,28
+lambda_2,49,Utah,decline,14.33,24
+lambda_2,49,Utah,growth,11.74,36
+lambda_2,49,Utah,off_season,1.4,16
+lambda_2,49,Utah,peak,56.77,36
+lambda_2,49,Utah,plateau,3.01,28
+lambda_2,50,Vermont,decline,4.73,24
+lambda_2,50,Vermont,growth,3.96,36
+lambda_2,50,Vermont,off_season,0.53,16
+lambda_2,50,Vermont,peak,12.66,36
+lambda_2,50,Vermont,plateau,1.16,28
+lambda_2,51,Virginia,decline,30.48,24
+lambda_2,51,Virginia,growth,45.98,36
+lambda_2,51,Virginia,off_season,3.31,16
+lambda_2,51,Virginia,peak,172.66,36
+lambda_2,51,Virginia,plateau,3.7,28
+lambda_2,53,Washington,decline,29.25,24
+lambda_2,53,Washington,growth,9.77,36
+lambda_2,53,Washington,off_season,2.82,16
+lambda_2,53,Washington,peak,51.08,36
+lambda_2,53,Washington,plateau,4.22,28
+lambda_2,54,West Virginia,decline,24.64,24
+lambda_2,54,West Virginia,growth,16.46,36
+lambda_2,54,West Virginia,off_season,0.87,16
+lambda_2,54,West Virginia,peak,35.5,36
+lambda_2,54,West Virginia,plateau,3.14,28
+lambda_2,55,Wisconsin,decline,15.08,24
+lambda_2,55,Wisconsin,growth,59.55,36
+lambda_2,55,Wisconsin,off_season,1.69,16
+lambda_2,55,Wisconsin,peak,144.18,36
+lambda_2,55,Wisconsin,plateau,6.32,28
+lambda_2,56,Wyoming,decline,3.78,24
+lambda_2,56,Wyoming,growth,4.2,36
+lambda_2,56,Wyoming,off_season,1.46,16
+lambda_2,56,Wyoming,peak,16.58,36
+lambda_2,56,Wyoming,plateau,1.57,28
+lambda_2,72,Puerto Rico,decline,20.64,24
+lambda_2,72,Puerto Rico,growth,48.76,36
+lambda_2,72,Puerto Rico,off_season,11.9,16
+lambda_2,72,Puerto Rico,peak,52.36,36
+lambda_2,72,Puerto Rico,plateau,16.39,28
+lambda_3,01,Alabama,all,51.28,140
+lambda_3,02,Alaska,all,7.47,140
+lambda_3,04,Arizona,all,45.26,140
+lambda_3,05,Arkansas,all,25.41,140
+lambda_3,06,California,all,120.95,140
+lambda_3,08,Colorado,all,47.5,140
+lambda_3,09,Connecticut,all,47.21,140
+lambda_3,10,Delaware,all,14.94,140
+lambda_3,11,District of Columbia,all,9.78,140
+lambda_3,12,Florida,all,231.11,140
+lambda_3,13,Georgia,all,95.26,140
+lambda_3,15,Hawaii,all,10.93,140
+lambda_3,16,Idaho,all,16.79,140
+lambda_3,17,Illinois,all,108.59,140
+lambda_3,18,Indiana,all,56.77,140
+lambda_3,19,Iowa,all,26.81,140
+lambda_3,20,Kansas,all,29.02,140
+lambda_3,21,Kentucky,all,43.57,140
+lambda_3,22,Louisiana,all,48.72,140
+lambda_3,23,Maine,all,15.85,140
+lambda_3,24,Maryland,all,48.21,140
+lambda_3,25,Massachusetts,all,70.26,140
+lambda_3,26,Michigan,all,77.35,140
+lambda_3,27,Minnesota,all,64.57,140
+lambda_3,28,Mississippi,all,27.51,140
+lambda_3,29,Missouri,all,70.27,140
+lambda_3,30,Montana,all,12.38,140
+lambda_3,31,Nebraska,all,16.45,140
+lambda_3,32,Nevada,all,25.55,140
+lambda_3,33,New Hampshire,all,18.35,140
+lambda_3,34,New Jersey,all,104.78,140
+lambda_3,35,New Mexico,all,28.01,140
+lambda_3,36,New York,all,205.81,140
+lambda_3,37,North Carolina,all,161.07,140
+lambda_3,38,North Dakota,all,10.92,140
+lambda_3,39,Ohio,all,131.99,140
+lambda_3,40,Oklahoma,all,31.89,140
+lambda_3,41,Oregon,all,32.23,140
+lambda_3,42,Pennsylvania,all,223.86,140
+lambda_3,44,Rhode Island,all,17.55,140
+lambda_3,45,South Carolina,all,64.15,140
+lambda_3,46,South Dakota,all,8.81,140
+lambda_3,47,Tennessee,all,60.37,140
+lambda_3,48,Texas,all,165.51,140
+lambda_3,49,Utah,all,21.48,140
+lambda_3,50,Vermont,all,5.58,140
+lambda_3,51,Virginia,all,64.33,140
+lambda_3,53,Washington,all,23.32,140
+lambda_3,54,West Virginia,all,18.16,140
+lambda_3,55,Wisconsin,all,58.79,140
+lambda_3,56,Wyoming,all,6.48,140
+lambda_3,72,Puerto Rico,all,34.19,140
+lambda_3,01,Alabama,decline,55.4,24
+lambda_3,01,Alabama,growth,28.31,36
+lambda_3,01,Alabama,off_season,4.56,16
+lambda_3,01,Alabama,peak,129.7,36
+lambda_3,01,Alabama,plateau,3.18,28
+lambda_3,02,Alaska,decline,2.66,24
+lambda_3,02,Alaska,growth,5.63,36
+lambda_3,02,Alaska,off_season,1.59,16
+lambda_3,02,Alaska,peak,19.85,36
+lambda_3,02,Alaska,plateau,1.39,28
+lambda_3,04,Arizona,decline,47.77,24
+lambda_3,04,Arizona,growth,20.58,36
+lambda_3,04,Arizona,off_season,5.81,16
+lambda_3,04,Arizona,peak,111.62,36
+lambda_3,04,Arizona,plateau,12.09,28
+lambda_3,05,Arkansas,decline,36.72,24
+lambda_3,05,Arkansas,growth,16.35,36
+lambda_3,05,Arkansas,off_season,2.72,16
+lambda_3,05,Arkansas,peak,54.25,36
+lambda_3,05,Arkansas,plateau,3.23,28
+lambda_3,06,California,decline,140.76,24
+lambda_3,06,California,growth,71.93,36
+lambda_3,06,California,off_season,13.69,16
+lambda_3,06,California,peak,271.4,36
+lambda_3,06,California,plateau,34.85,28
+lambda_3,08,Colorado,decline,18.21,24
+lambda_3,08,Colorado,growth,38.12,36
+lambda_3,08,Colorado,off_season,2.6,16
+lambda_3,08,Colorado,peak,128.46,36
+lambda_3,08,Colorado,plateau,6.24,28
+lambda_3,09,Connecticut,decline,3.86,24
+lambda_3,09,Connecticut,growth,47.91,36
+lambda_3,09,Connecticut,off_season,1.59,16
+lambda_3,09,Connecticut,peak,129.04,36
+lambda_3,09,Connecticut,plateau,4.29,28
+lambda_3,10,Delaware,decline,8.65,24
+lambda_3,10,Delaware,growth,15.32,36
+lambda_3,10,Delaware,off_season,1.76,16
+lambda_3,10,Delaware,peak,34.99,36
+lambda_3,10,Delaware,plateau,1.61,28
+lambda_3,11,District of Columbia,decline,3.61,24
+lambda_3,11,District of Columbia,growth,6.88,36
+lambda_3,11,District of Columbia,off_season,1.29,16
+lambda_3,11,District of Columbia,peak,27.58,36
+lambda_3,11,District of Columbia,plateau,0.78,28
+lambda_3,12,Florida,decline,137.96,24
+lambda_3,12,Florida,growth,116.58,36
+lambda_3,12,Florida,off_season,22.2,16
+lambda_3,12,Florida,peak,655.28,36
+lambda_3,12,Florida,plateau,32.24,28
+lambda_3,13,Georgia,decline,52.56,24
+lambda_3,13,Georgia,growth,101.37,36
+lambda_3,13,Georgia,off_season,3.83,16
+lambda_3,13,Georgia,peak,228.13,36
+lambda_3,13,Georgia,plateau,5.43,28
+lambda_3,15,Hawaii,decline,5.68,24
+lambda_3,15,Hawaii,growth,10.91,36
+lambda_3,15,Hawaii,off_season,1.52,16
+lambda_3,15,Hawaii,peak,23.08,36
+lambda_3,15,Hawaii,plateau,5.2,28
+lambda_3,16,Idaho,decline,12.13,24
+lambda_3,16,Idaho,growth,10.53,36
+lambda_3,16,Idaho,off_season,1.29,16
+lambda_3,16,Idaho,peak,43.54,36
+lambda_3,16,Idaho,plateau,3.32,28
+lambda_3,17,Illinois,decline,37.2,24
+lambda_3,17,Illinois,growth,112.05,36
+lambda_3,17,Illinois,off_season,8.54,16
+lambda_3,17,Illinois,peak,271.59,36
+lambda_3,17,Illinois,plateau,12.94,28
+lambda_3,18,Indiana,decline,43.0,24
+lambda_3,18,Indiana,growth,35.69,36
+lambda_3,18,Indiana,off_season,3.47,16
+lambda_3,18,Indiana,peak,152.02,36
+lambda_3,18,Indiana,plateau,3.66,28
+lambda_3,19,Iowa,decline,21.09,24
+lambda_3,19,Iowa,growth,20.63,36
+lambda_3,19,Iowa,off_season,1.4,16
+lambda_3,19,Iowa,peak,66.7,36
+lambda_3,19,Iowa,plateau,2.91,28
+lambda_3,20,Kansas,decline,24.99,24
+lambda_3,20,Kansas,growth,27.19,36
+lambda_3,20,Kansas,off_season,1.54,16
+lambda_3,20,Kansas,peak,67.03,36
+lambda_3,20,Kansas,plateau,1.69,28
+lambda_3,21,Kentucky,decline,32.49,24
+lambda_3,21,Kentucky,growth,35.7,36
+lambda_3,21,Kentucky,off_season,3.83,16
+lambda_3,21,Kentucky,peak,107.66,36
+lambda_3,21,Kentucky,plateau,3.47,28
+lambda_3,22,Louisiana,decline,43.54,24
+lambda_3,22,Louisiana,growth,44.52,36
+lambda_3,22,Louisiana,off_season,4.95,16
+lambda_3,22,Louisiana,peak,109.26,36
+lambda_3,22,Louisiana,plateau,5.74,28
+lambda_3,23,Maine,decline,9.55,24
+lambda_3,23,Maine,growth,9.45,36
+lambda_3,23,Maine,off_season,1.22,16
+lambda_3,23,Maine,peak,43.94,36
+lambda_3,23,Maine,plateau,1.72,28
+lambda_3,24,Maryland,decline,13.03,24
+lambda_3,24,Maryland,growth,31.43,36
+lambda_3,24,Maryland,off_season,2.39,16
+lambda_3,24,Maryland,peak,143.02,36
+lambda_3,24,Maryland,plateau,4.2,28
+lambda_3,25,Massachusetts,decline,9.45,24
+lambda_3,25,Massachusetts,growth,51.5,36
+lambda_3,25,Massachusetts,off_season,4.38,16
+lambda_3,25,Massachusetts,peak,210.12,36
+lambda_3,25,Massachusetts,plateau,4.34,28
+lambda_3,26,Michigan,decline,22.51,24
+lambda_3,26,Michigan,growth,58.54,36
+lambda_3,26,Michigan,off_season,4.4,16
+lambda_3,26,Michigan,peak,221.92,36
+lambda_3,26,Michigan,plateau,4.37,28
+lambda_3,27,Minnesota,decline,25.83,24
+lambda_3,27,Minnesota,growth,70.09,36
+lambda_3,27,Minnesota,off_season,3.36,16
+lambda_3,27,Minnesota,peak,158.32,36
+lambda_3,27,Minnesota,plateau,5.14,28
+lambda_3,28,Mississippi,decline,42.54,24
+lambda_3,28,Mississippi,growth,16.48,36
+lambda_3,28,Mississippi,off_season,2.6,16
+lambda_3,28,Mississippi,peak,57.45,36
+lambda_3,28,Mississippi,plateau,4.53,28
+lambda_3,29,Missouri,decline,48.6,24
+lambda_3,29,Missouri,growth,59.68,36
+lambda_3,29,Missouri,off_season,2.8,16
+lambda_3,29,Missouri,peak,176.59,36
+lambda_3,29,Missouri,plateau,4.31,28
+lambda_3,30,Montana,decline,9.86,24
+lambda_3,30,Montana,growth,8.37,36
+lambda_3,30,Montana,off_season,1.53,16
+lambda_3,30,Montana,peak,30.74,36
+lambda_3,30,Montana,plateau,2.3,28
+lambda_3,31,Nebraska,decline,18.65,24
+lambda_3,31,Nebraska,growth,12.25,36
+lambda_3,31,Nebraska,off_season,2.09,16
+lambda_3,31,Nebraska,peak,36.72,36
+lambda_3,31,Nebraska,plateau,2.13,28
+lambda_3,32,Nevada,decline,8.02,24
+lambda_3,32,Nevada,growth,22.29,36
+lambda_3,32,Nevada,off_season,4.4,16
+lambda_3,32,Nevada,peak,62.36,36
+lambda_3,32,Nevada,plateau,9.51,28
+lambda_3,33,New Hampshire,decline,6.35,24
+lambda_3,33,New Hampshire,growth,13.02,36
+lambda_3,33,New Hampshire,off_season,1.36,16
+lambda_3,33,New Hampshire,peak,52.17,36
+lambda_3,33,New Hampshire,plateau,1.72,28
+lambda_3,34,New Jersey,decline,21.67,24
+lambda_3,34,New Jersey,growth,141.65,36
+lambda_3,34,New Jersey,off_season,3.54,16
+lambda_3,34,New Jersey,peak,243.72,36
+lambda_3,34,New Jersey,plateau,7.83,28
+lambda_3,35,New Mexico,decline,15.12,24
+lambda_3,35,New Mexico,growth,22.88,36
+lambda_3,35,New Mexico,off_season,1.97,16
+lambda_3,35,New Mexico,peak,73.31,36
+lambda_3,35,New Mexico,plateau,2.29,28
+lambda_3,36,New York,decline,25.43,24
+lambda_3,36,New York,growth,489.04,36
+lambda_3,36,New York,off_season,4.02,16
+lambda_3,36,New York,peak,283.36,36
+lambda_3,36,New York,plateau,11.84,28
+lambda_3,37,North Carolina,decline,32.33,24
+lambda_3,37,North Carolina,growth,254.03,36
+lambda_3,37,North Carolina,off_season,2.35,16
+lambda_3,37,North Carolina,peak,346.62,36
+lambda_3,37,North Carolina,plateau,4.02,28
+lambda_3,38,North Dakota,decline,3.68,24
+lambda_3,38,North Dakota,growth,8.25,36
+lambda_3,38,North Dakota,off_season,1.37,16
+lambda_3,38,North Dakota,peak,29.69,36
+lambda_3,38,North Dakota,plateau,1.88,28
+lambda_3,39,Ohio,decline,76.15,24
+lambda_3,39,Ohio,growth,125.55,36
+lambda_3,39,Ohio,off_season,2.82,16
+lambda_3,39,Ohio,peak,331.24,36
+lambda_3,39,Ohio,plateau,5.74,28
+lambda_3,40,Oklahoma,decline,51.35,24
+lambda_3,40,Oklahoma,growth,18.67,36
+lambda_3,40,Oklahoma,off_season,3.67,16
+lambda_3,40,Oklahoma,peak,66.57,36
+lambda_3,40,Oklahoma,plateau,3.73,28
+lambda_3,41,Oregon,decline,66.22,24
+lambda_3,41,Oregon,growth,7.99,36
+lambda_3,41,Oregon,off_season,2.05,16
+lambda_3,41,Oregon,peak,69.48,36
+lambda_3,41,Oregon,plateau,3.61,28
+lambda_3,42,Pennsylvania,decline,200.51,24
+lambda_3,42,Pennsylvania,growth,208.21,36
+lambda_3,42,Pennsylvania,off_season,27.99,16
+lambda_3,42,Pennsylvania,peak,485.01,36
+lambda_3,42,Pennsylvania,plateau,40.17,28
+lambda_3,44,Rhode Island,decline,3.4,24
+lambda_3,44,Rhode Island,growth,16.57,36
+lambda_3,44,Rhode Island,off_season,2.34,16
+lambda_3,44,Rhode Island,peak,46.85,36
+lambda_3,44,Rhode Island,plateau,1.97,28
+lambda_3,45,South Carolina,decline,30.46,24
+lambda_3,45,South Carolina,growth,66.61,36
+lambda_3,45,South Carolina,off_season,4.33,16
+lambda_3,45,South Carolina,peak,158.16,36
+lambda_3,45,South Carolina,plateau,3.18,28
+lambda_3,46,South Dakota,decline,7.13,24
+lambda_3,46,South Dakota,growth,5.83,36
+lambda_3,46,South Dakota,off_season,0.91,16
+lambda_3,46,South Dakota,peak,21.94,36
+lambda_3,46,South Dakota,plateau,1.71,28
+lambda_3,47,Tennessee,decline,19.19,24
+lambda_3,47,Tennessee,growth,66.84,36
+lambda_3,47,Tennessee,off_season,4.3,16
+lambda_3,47,Tennessee,peak,148.42,36
+lambda_3,47,Tennessee,plateau,6.16,28
+lambda_3,48,Texas,decline,56.93,24
+lambda_3,48,Texas,growth,162.72,36
+lambda_3,48,Texas,off_season,12.27,16
+lambda_3,48,Texas,peak,421.39,36
+lambda_3,48,Texas,plateau,20.72,28
+lambda_3,49,Utah,decline,15.15,24
+lambda_3,49,Utah,growth,10.71,36
+lambda_3,49,Utah,off_season,1.41,16
+lambda_3,49,Utah,peak,59.77,36
+lambda_3,49,Utah,plateau,3.01,28
+lambda_3,50,Vermont,decline,4.6,24
+lambda_3,50,Vermont,growth,4.01,36
+lambda_3,50,Vermont,off_season,0.53,16
+lambda_3,50,Vermont,peak,13.51,36
+lambda_3,50,Vermont,plateau,1.13,28
+lambda_3,51,Virginia,decline,29.6,24
+lambda_3,51,Virginia,growth,44.7,36
+lambda_3,51,Virginia,off_season,3.27,16
+lambda_3,51,Virginia,peak,181.37,36
+lambda_3,51,Virginia,plateau,3.76,28
+lambda_3,53,Washington,decline,31.49,24
+lambda_3,53,Washington,growth,10.38,36
+lambda_3,53,Washington,off_season,2.81,16
+lambda_3,53,Washington,peak,54.79,36
+lambda_3,53,Washington,plateau,4.22,28
+lambda_3,54,West Virginia,decline,24.11,24
+lambda_3,54,West Virginia,growth,15.99,36
+lambda_3,54,West Virginia,off_season,0.9,16
+lambda_3,54,West Virginia,peak,35.74,36
+lambda_3,54,West Virginia,plateau,3.1,28
+lambda_3,55,Wisconsin,decline,14.08,24
+lambda_3,55,Wisconsin,growth,58.74,36
+lambda_3,55,Wisconsin,off_season,1.68,16
+lambda_3,55,Wisconsin,peak,154.88,36
+lambda_3,55,Wisconsin,plateau,6.26,28
+lambda_3,56,Wyoming,decline,3.82,24
+lambda_3,56,Wyoming,growth,4.17,36
+lambda_3,56,Wyoming,off_season,1.41,16
+lambda_3,56,Wyoming,peak,16.62,36
+lambda_3,56,Wyoming,plateau,1.58,28
+lambda_3,72,Puerto Rico,decline,20.2,24
+lambda_3,72,Puerto Rico,growth,44.82,36
+lambda_3,72,Puerto Rico,off_season,12.05,16
+lambda_3,72,Puerto Rico,peak,56.75,36
+lambda_3,72,Puerto Rico,plateau,16.16,28
+lambda_5,01,Alabama,all,54.12,140
+lambda_5,02,Alaska,all,7.61,140
+lambda_5,04,Arizona,all,46.97,140
+lambda_5,05,Arkansas,all,26.46,140
+lambda_5,06,California,all,126.85,140
+lambda_5,08,Colorado,all,50.75,140
+lambda_5,09,Connecticut,all,48.59,140
+lambda_5,10,Delaware,all,15.1,140
+lambda_5,11,District of Columbia,all,9.82,140
+lambda_5,12,Florida,all,235.03,140
+lambda_5,13,Georgia,all,101.78,140
+lambda_5,15,Hawaii,all,11.5,140
+lambda_5,16,Idaho,all,17.18,140
+lambda_5,17,Illinois,all,114.0,140
+lambda_5,18,Indiana,all,61.43,140
+lambda_5,19,Iowa,all,28.3,140
+lambda_5,20,Kansas,all,29.89,140
+lambda_5,21,Kentucky,all,46.11,140
+lambda_5,22,Louisiana,all,49.58,140
+lambda_5,23,Maine,all,16.59,140
+lambda_5,24,Maryland,all,49.68,140
+lambda_5,25,Massachusetts,all,75.89,140
+lambda_5,26,Michigan,all,83.7,140
+lambda_5,27,Minnesota,all,67.04,140
+lambda_5,28,Mississippi,all,28.01,140
+lambda_5,29,Missouri,all,73.95,140
+lambda_5,30,Montana,all,12.6,140
+lambda_5,31,Nebraska,all,16.33,140
+lambda_5,32,Nevada,all,27.06,140
+lambda_5,33,New Hampshire,all,18.56,140
+lambda_5,34,New Jersey,all,108.15,140
+lambda_5,35,New Mexico,all,28.68,140
+lambda_5,36,New York,all,209.46,140
+lambda_5,37,North Carolina,all,164.8,140
+lambda_5,38,North Dakota,all,11.33,140
+lambda_5,39,Ohio,all,133.41,140
+lambda_5,40,Oklahoma,all,32.81,140
+lambda_5,41,Oregon,all,34.26,140
+lambda_5,42,Pennsylvania,all,235.45,140
+lambda_5,44,Rhode Island,all,17.7,140
+lambda_5,45,South Carolina,all,65.92,140
+lambda_5,46,South Dakota,all,9.06,140
+lambda_5,47,Tennessee,all,64.23,140
+lambda_5,48,Texas,all,174.74,140
+lambda_5,49,Utah,all,22.31,140
+lambda_5,50,Vermont,all,5.65,140
+lambda_5,51,Virginia,all,66.77,140
+lambda_5,53,Washington,all,24.16,140
+lambda_5,54,West Virginia,all,18.09,140
+lambda_5,55,Wisconsin,all,60.1,140
+lambda_5,56,Wyoming,all,6.45,140
+lambda_5,72,Puerto Rico,all,34.0,140
+lambda_5,01,Alabama,decline,57.42,24
+lambda_5,01,Alabama,growth,27.8,36
+lambda_5,01,Alabama,off_season,4.58,16
+lambda_5,01,Alabama,peak,139.8,36
+lambda_5,01,Alabama,plateau,3.31,28
+lambda_5,02,Alaska,decline,2.59,24
+lambda_5,02,Alaska,growth,5.57,36
+lambda_5,02,Alaska,off_season,1.67,16
+lambda_5,02,Alaska,peak,20.5,36
+lambda_5,02,Alaska,plateau,1.33,28
+lambda_5,04,Arizona,decline,50.39,24
+lambda_5,04,Arizona,growth,20.4,36
+lambda_5,04,Arizona,off_season,5.86,16
+lambda_5,04,Arizona,peak,116.57,36
+lambda_5,04,Arizona,plateau,12.19,28
+lambda_5,05,Arkansas,decline,37.61,24
+lambda_5,05,Arkansas,growth,17.04,36
+lambda_5,05,Arkansas,off_season,2.78,16
+lambda_5,05,Arkansas,peak,57.01,36
+lambda_5,05,Arkansas,plateau,3.29,28
+lambda_5,06,California,decline,149.77,24
+lambda_5,06,California,growth,70.09,36
+lambda_5,06,California,off_season,15.72,16
+lambda_5,06,California,peak,288.45,36
+lambda_5,06,California,plateau,35.92,28
+lambda_5,08,Colorado,decline,17.54,24
+lambda_5,08,Colorado,growth,36.69,36
+lambda_5,08,Colorado,off_season,2.66,16
+lambda_5,08,Colorado,peak,142.89,36
+lambda_5,08,Colorado,plateau,6.33,28
+lambda_5,09,Connecticut,decline,4.19,24
+lambda_5,09,Connecticut,growth,46.88,36
+lambda_5,09,Connecticut,off_season,1.67,16
+lambda_5,09,Connecticut,peak,135.3,36
+lambda_5,09,Connecticut,plateau,4.17,28
+lambda_5,10,Delaware,decline,8.58,24
+lambda_5,10,Delaware,growth,15.42,36
+lambda_5,10,Delaware,off_season,1.76,16
+lambda_5,10,Delaware,peak,35.5,36
+lambda_5,10,Delaware,plateau,1.66,28
+lambda_5,11,District of Columbia,decline,3.7,24
+lambda_5,11,District of Columbia,growth,7.01,36
+lambda_5,11,District of Columbia,off_season,1.36,16
+lambda_5,11,District of Columbia,peak,27.47,36
+lambda_5,11,District of Columbia,plateau,0.8,28
+lambda_5,12,Florida,decline,139.4,24
+lambda_5,12,Florida,growth,109.14,36
+lambda_5,12,Florida,off_season,22.05,16
+lambda_5,12,Florida,peak,676.17,36
+lambda_5,12,Florida,plateau,33.39,28
+lambda_5,13,Georgia,decline,53.79,24
+lambda_5,13,Georgia,growth,97.45,36
+lambda_5,13,Georgia,off_season,3.93,16
+lambda_5,13,Georgia,peak,256.4,36
+lambda_5,13,Georgia,plateau,5.61,28
+lambda_5,15,Hawaii,decline,5.68,24
+lambda_5,15,Hawaii,growth,11.1,36
+lambda_5,15,Hawaii,off_season,1.52,16
+lambda_5,15,Hawaii,peak,24.97,36
+lambda_5,15,Hawaii,plateau,5.4,28
+lambda_5,16,Idaho,decline,13.06,24
+lambda_5,16,Idaho,growth,10.55,36
+lambda_5,16,Idaho,off_season,1.32,16
+lambda_5,16,Idaho,peak,44.39,36
+lambda_5,16,Idaho,plateau,3.31,28
+lambda_5,17,Illinois,decline,35.0,24
+lambda_5,17,Illinois,growth,108.45,36
+lambda_5,17,Illinois,off_season,9.4,16
+lambda_5,17,Illinois,peak,297.75,36
+lambda_5,17,Illinois,plateau,12.38,28
+lambda_5,18,Indiana,decline,43.34,24
+lambda_5,18,Indiana,growth,34.61,36
+lambda_5,18,Indiana,off_season,3.45,16
+lambda_5,18,Indiana,peak,171.0,36
+lambda_5,18,Indiana,plateau,3.67,28
+lambda_5,19,Iowa,decline,21.61,24
+lambda_5,19,Iowa,growth,19.9,36
+lambda_5,19,Iowa,off_season,1.4,16
+lambda_5,19,Iowa,peak,72.83,36
+lambda_5,19,Iowa,plateau,2.97,28
+lambda_5,20,Kansas,decline,24.61,24
+lambda_5,20,Kansas,growth,27.24,36
+lambda_5,20,Kansas,off_season,1.61,16
+lambda_5,20,Kansas,peak,70.57,36
+lambda_5,20,Kansas,plateau,1.67,28
+lambda_5,21,Kentucky,decline,31.42,24
+lambda_5,21,Kentucky,growth,35.09,36
+lambda_5,21,Kentucky,off_season,3.87,16
+lambda_5,21,Kentucky,peak,118.88,36
+lambda_5,21,Kentucky,plateau,3.46,28
+lambda_5,22,Louisiana,decline,44.14,24
+lambda_5,22,Louisiana,growth,43.05,36
+lambda_5,22,Louisiana,off_season,4.73,16
+lambda_5,22,Louisiana,peak,113.79,36
+lambda_5,22,Louisiana,plateau,5.72,28
+lambda_5,23,Maine,decline,9.7,24
+lambda_5,23,Maine,growth,9.22,36
+lambda_5,23,Maine,off_season,1.21,16
+lambda_5,23,Maine,peak,46.92,36
+lambda_5,23,Maine,plateau,1.78,28
+lambda_5,24,Maryland,decline,13.43,24
+lambda_5,24,Maryland,growth,29.04,36
+lambda_5,24,Maryland,off_season,2.27,16
+lambda_5,24,Maryland,peak,150.88,36
+lambda_5,24,Maryland,plateau,4.28,28
+lambda_5,25,Massachusetts,decline,9.59,24
+lambda_5,25,Massachusetts,growth,51.68,36
+lambda_5,25,Massachusetts,off_season,4.42,16
+lambda_5,25,Massachusetts,peak,231.77,36
+lambda_5,25,Massachusetts,plateau,4.27,28
+lambda_5,26,Michigan,decline,22.93,24
+lambda_5,26,Michigan,growth,57.71,36
+lambda_5,26,Michigan,off_season,4.44,16
+lambda_5,26,Michigan,peak,247.21,36
+lambda_5,26,Michigan,plateau,4.25,28
+lambda_5,27,Minnesota,decline,25.42,24
+lambda_5,27,Minnesota,growth,65.96,36
+lambda_5,27,Minnesota,off_season,3.34,16
+lambda_5,27,Minnesota,peak,172.27,36
+lambda_5,27,Minnesota,plateau,5.24,28
+lambda_5,28,Mississippi,decline,42.14,24
+lambda_5,28,Mississippi,growth,16.25,36
+lambda_5,28,Mississippi,off_season,2.67,16
+lambda_5,28,Mississippi,peak,59.75,36
+lambda_5,28,Mississippi,plateau,4.7,28
+lambda_5,29,Missouri,decline,47.87,24
+lambda_5,29,Missouri,growth,59.49,36
+lambda_5,29,Missouri,off_season,3.01,16
+lambda_5,29,Missouri,peak,191.52,36
+lambda_5,29,Missouri,plateau,4.29,28
+lambda_5,30,Montana,decline,10.45,24
+lambda_5,30,Montana,growth,8.28,36
+lambda_5,30,Montana,off_season,1.54,16
+lambda_5,30,Montana,peak,31.26,36
+lambda_5,30,Montana,plateau,2.31,28
+lambda_5,31,Nebraska,decline,19.14,24
+lambda_5,31,Nebraska,growth,11.65,36
+lambda_5,31,Nebraska,off_season,2.14,16
+lambda_5,31,Nebraska,peak,36.48,36
+lambda_5,31,Nebraska,plateau,2.17,28
+lambda_5,32,Nevada,decline,8.88,24
+lambda_5,32,Nevada,growth,22.32,36
+lambda_5,32,Nevada,off_season,4.73,16
+lambda_5,32,Nevada,peak,67.18,36
+lambda_5,32,Nevada,plateau,9.88,28
+lambda_5,33,New Hampshire,decline,6.19,24
+lambda_5,33,New Hampshire,growth,12.79,36
+lambda_5,33,New Hampshire,off_season,1.36,16
+lambda_5,33,New Hampshire,peak,53.28,36
+lambda_5,33,New Hampshire,plateau,1.75,28
+lambda_5,34,New Jersey,decline,22.23,24
+lambda_5,34,New Jersey,growth,137.17,36
+lambda_5,34,New Jersey,off_season,3.39,16
+lambda_5,34,New Jersey,peak,261.2,36
+lambda_5,34,New Jersey,plateau,7.59,28
+lambda_5,35,New Mexico,decline,16.05,24
+lambda_5,35,New Mexico,growth,21.81,36
+lambda_5,35,New Mexico,off_season,1.92,16
+lambda_5,35,New Mexico,peak,76.44,36
+lambda_5,35,New Mexico,plateau,2.25,28
+lambda_5,36,New York,decline,27.55,24
+lambda_5,36,New York,growth,467.41,36
+lambda_5,36,New York,off_season,4.41,16
+lambda_5,36,New York,peak,317.38,36
+lambda_5,36,New York,plateau,12.16,28
+lambda_5,37,North Carolina,decline,31.57,24
+lambda_5,37,North Carolina,growth,247.0,36
+lambda_5,37,North Carolina,off_season,2.32,16
+lambda_5,37,North Carolina,peak,368.63,36
+lambda_5,37,North Carolina,plateau,4.08,28
+lambda_5,38,North Dakota,decline,3.66,24
+lambda_5,38,North Dakota,growth,8.23,36
+lambda_5,38,North Dakota,off_season,1.38,16
+lambda_5,38,North Dakota,peak,31.26,36
+lambda_5,38,North Dakota,plateau,1.93,28
+lambda_5,39,Ohio,decline,72.66,24
+lambda_5,39,Ohio,growth,121.64,36
+lambda_5,39,Ohio,off_season,2.89,16
+lambda_5,39,Ohio,peak,343.21,36
+lambda_5,39,Ohio,plateau,5.43,28
+lambda_5,40,Oklahoma,decline,52.21,24
+lambda_5,40,Oklahoma,growth,18.85,36
+lambda_5,40,Oklahoma,off_season,3.72,16
+lambda_5,40,Oklahoma,peak,69.29,36
+lambda_5,40,Oklahoma,plateau,3.85,28
+lambda_5,41,Oregon,decline,70.63,24
+lambda_5,41,Oregon,growth,8.55,36
+lambda_5,41,Oregon,off_season,1.99,16
+lambda_5,41,Oregon,peak,73.84,36
+lambda_5,41,Oregon,plateau,3.71,28
+lambda_5,42,Pennsylvania,decline,201.08,24
+lambda_5,42,Pennsylvania,growth,212.34,36
+lambda_5,42,Pennsylvania,off_season,29.5,16
+lambda_5,42,Pennsylvania,peak,524.92,36
+lambda_5,42,Pennsylvania,plateau,40.13,28
+lambda_5,44,Rhode Island,decline,3.44,24
+lambda_5,44,Rhode Island,growth,16.21,36
+lambda_5,44,Rhode Island,off_season,2.39,16
+lambda_5,44,Rhode Island,peak,47.71,36
+lambda_5,44,Rhode Island,plateau,1.99,28
+lambda_5,45,South Carolina,decline,30.65,24
+lambda_5,45,South Carolina,growth,64.25,36
+lambda_5,45,South Carolina,off_season,4.45,16
+lambda_5,45,South Carolina,peak,167.26,36
+lambda_5,45,South Carolina,plateau,3.12,28
+lambda_5,46,South Dakota,decline,7.24,24
+lambda_5,46,South Dakota,growth,5.83,36
+lambda_5,46,South Dakota,off_season,0.93,16
+lambda_5,46,South Dakota,peak,22.82,36
+lambda_5,46,South Dakota,plateau,1.72,28
+lambda_5,47,Tennessee,decline,18.92,24
+lambda_5,47,Tennessee,growth,66.3,36
+lambda_5,47,Tennessee,off_season,4.67,16
+lambda_5,47,Tennessee,peak,164.03,36
+lambda_5,47,Tennessee,plateau,6.12,28
+lambda_5,48,Texas,decline,60.87,24
+lambda_5,48,Texas,growth,156.25,36
+lambda_5,48,Texas,off_season,13.02,16
+lambda_5,48,Texas,peak,459.29,36
+lambda_5,48,Texas,plateau,22.68,28
+lambda_5,49,Utah,decline,15.65,24
+lambda_5,49,Utah,growth,10.4,36
+lambda_5,49,Utah,off_season,1.4,16
+lambda_5,49,Utah,peak,63.0,36
+lambda_5,49,Utah,plateau,2.97,28
+lambda_5,50,Vermont,decline,4.58,24
+lambda_5,50,Vermont,growth,4.05,36
+lambda_5,50,Vermont,off_season,0.55,16
+lambda_5,50,Vermont,peak,13.76,36
+lambda_5,50,Vermont,plateau,1.12,28
+lambda_5,51,Virginia,decline,29.54,24
+lambda_5,51,Virginia,growth,42.61,36
+lambda_5,51,Virginia,off_season,3.4,16
+lambda_5,51,Virginia,peak,192.89,36
+lambda_5,51,Virginia,plateau,3.83,28
+lambda_5,53,Washington,decline,32.23,24
+lambda_5,53,Washington,growth,10.8,36
+lambda_5,53,Washington,off_season,2.88,16
+lambda_5,53,Washington,peak,57.11,36
+lambda_5,53,Washington,plateau,4.23,28
+lambda_5,54,West Virginia,decline,23.78,24
+lambda_5,54,West Virginia,growth,15.42,36
+lambda_5,54,West Virginia,off_season,0.93,16
+lambda_5,54,West Virginia,peak,36.25,36
+lambda_5,54,West Virginia,plateau,3.1,28
+lambda_5,55,Wisconsin,decline,13.63,24
+lambda_5,55,Wisconsin,growth,55.42,36
+lambda_5,55,Wisconsin,off_season,1.67,16
+lambda_5,55,Wisconsin,peak,163.59,36
+lambda_5,55,Wisconsin,plateau,6.27,28
+lambda_5,56,Wyoming,decline,3.85,24
+lambda_5,56,Wyoming,growth,4.36,36
+lambda_5,56,Wyoming,off_season,1.45,16
+lambda_5,56,Wyoming,peak,16.27,36
+lambda_5,56,Wyoming,plateau,1.6,28
+lambda_5,72,Puerto Rico,decline,20.21,24
+lambda_5,72,Puerto Rico,growth,43.94,36
+lambda_5,72,Puerto Rico,off_season,12.33,16
+lambda_5,72,Puerto Rico,peak,56.35,36
+lambda_5,72,Puerto Rico,plateau,16.69,28
+lambda_calendar_2,01,Alabama,all,48.29,140
+lambda_calendar_2,02,Alaska,all,6.63,140
+lambda_calendar_2,04,Arizona,all,41.26,140
+lambda_calendar_2,05,Arkansas,all,25.15,140
+lambda_calendar_2,06,California,all,120.54,140
+lambda_calendar_2,08,Colorado,all,43.46,140
+lambda_calendar_2,09,Connecticut,all,44.77,140
+lambda_calendar_2,10,Delaware,all,13.99,140
+lambda_calendar_2,11,District of Columbia,all,8.93,140
+lambda_calendar_2,12,Florida,all,221.29,140
+lambda_calendar_2,13,Georgia,all,90.74,140
+lambda_calendar_2,15,Hawaii,all,10.38,140
+lambda_calendar_2,16,Idaho,all,15.38,140
+lambda_calendar_2,17,Illinois,all,98.68,140
+lambda_calendar_2,18,Indiana,all,52.05,140
+lambda_calendar_2,19,Iowa,all,26.19,140
+lambda_calendar_2,20,Kansas,all,27.79,140
+lambda_calendar_2,21,Kentucky,all,39.67,140
+lambda_calendar_2,22,Louisiana,all,47.37,140
+lambda_calendar_2,23,Maine,all,14.35,140
+lambda_calendar_2,24,Maryland,all,44.19,140
+lambda_calendar_2,25,Massachusetts,all,63.49,140
+lambda_calendar_2,26,Michigan,all,70.68,140
+lambda_calendar_2,27,Minnesota,all,61.38,140
+lambda_calendar_2,28,Mississippi,all,26.23,140
+lambda_calendar_2,29,Missouri,all,61.9,140
+lambda_calendar_2,30,Montana,all,11.2,140
+lambda_calendar_2,31,Nebraska,all,16.06,140
+lambda_calendar_2,32,Nevada,all,22.73,140
+lambda_calendar_2,33,New Hampshire,all,16.51,140
+lambda_calendar_2,34,New Jersey,all,97.77,140
+lambda_calendar_2,35,New Mexico,all,25.78,140
+lambda_calendar_2,36,New York,all,203.83,140
+lambda_calendar_2,37,North Carolina,all,149.56,140
+lambda_calendar_2,38,North Dakota,all,9.48,140
+lambda_calendar_2,39,Ohio,all,124.75,140
+lambda_calendar_2,40,Oklahoma,all,30.68,140
+lambda_calendar_2,41,Oregon,all,31.63,140
+lambda_calendar_2,42,Pennsylvania,all,191.34,140
+lambda_calendar_2,44,Rhode Island,all,16.59,140
+lambda_calendar_2,45,South Carolina,all,58.06,140
+lambda_calendar_2,46,South Dakota,all,7.79,140
+lambda_calendar_2,47,Tennessee,all,54.57,140
+lambda_calendar_2,48,Texas,all,156.53,140
+lambda_calendar_2,49,Utah,all,20.52,140
+lambda_calendar_2,50,Vermont,all,4.94,140
+lambda_calendar_2,51,Virginia,all,59.01,140
+lambda_calendar_2,53,Washington,all,22.25,140
+lambda_calendar_2,54,West Virginia,all,18.64,140
+lambda_calendar_2,55,Wisconsin,all,55.35,140
+lambda_calendar_2,56,Wyoming,all,6.19,140
+lambda_calendar_2,72,Puerto Rico,all,37.27,140
+lambda_calendar_2,01,Alabama,decline,56.78,24
+lambda_calendar_2,01,Alabama,growth,28.28,36
+lambda_calendar_2,01,Alabama,off_season,4.36,16
+lambda_calendar_2,01,Alabama,peak,117.38,36
+lambda_calendar_2,01,Alabama,plateau,3.02,28
+lambda_calendar_2,02,Alaska,decline,2.58,24
+lambda_calendar_2,02,Alaska,growth,5.92,36
+lambda_calendar_2,02,Alaska,off_season,1.55,16
+lambda_calendar_2,02,Alaska,peak,16.31,36
+lambda_calendar_2,02,Alaska,plateau,1.45,28
+lambda_calendar_2,04,Arizona,decline,49.78,24
+lambda_calendar_2,04,Arizona,growth,19.1,36
+lambda_calendar_2,04,Arizona,off_season,5.78,16
+lambda_calendar_2,04,Arizona,peak,96.37,36
+lambda_calendar_2,04,Arizona,plateau,11.86,28
+lambda_calendar_2,05,Arkansas,decline,39.81,24
+lambda_calendar_2,05,Arkansas,growth,17.2,36
+lambda_calendar_2,05,Arkansas,off_season,2.65,16
+lambda_calendar_2,05,Arkansas,peak,50.41,36
+lambda_calendar_2,05,Arkansas,plateau,3.18,28
+lambda_calendar_2,06,California,decline,110.32,24
+lambda_calendar_2,06,California,growth,65.85,36
+lambda_calendar_2,06,California,off_season,11.45,16
+lambda_calendar_2,06,California,peak,300.08,36
+lambda_calendar_2,06,California,plateau,31.13,28
+lambda_calendar_2,08,Colorado,decline,19.3,24
+lambda_calendar_2,08,Colorado,growth,40.6,36
+lambda_calendar_2,08,Colorado,off_season,2.54,16
+lambda_calendar_2,08,Colorado,peak,109.4,36
+lambda_calendar_2,08,Colorado,plateau,6.43,28
+lambda_calendar_2,09,Connecticut,decline,3.88,24
+lambda_calendar_2,09,Connecticut,growth,53.68,36
+lambda_calendar_2,09,Connecticut,off_season,1.56,16
+lambda_calendar_2,09,Connecticut,peak,113.82,36
+lambda_calendar_2,09,Connecticut,plateau,4.29,28
+lambda_calendar_2,10,Delaware,decline,8.66,24
+lambda_calendar_2,10,Delaware,growth,16.16,36
+lambda_calendar_2,10,Delaware,off_season,1.76,16
+lambda_calendar_2,10,Delaware,peak,30.44,36
+lambda_calendar_2,10,Delaware,plateau,1.59,28
+lambda_calendar_2,11,District of Columbia,decline,3.6,24
+lambda_calendar_2,11,District of Columbia,growth,6.99,36
+lambda_calendar_2,11,District of Columbia,off_season,1.31,16
+lambda_calendar_2,11,District of Columbia,peak,24.15,36
+lambda_calendar_2,11,District of Columbia,plateau,0.77,28
+lambda_calendar_2,12,Florida,decline,124.97,24
+lambda_calendar_2,12,Florida,growth,121.07,36
+lambda_calendar_2,12,Florida,off_season,18.09,16
+lambda_calendar_2,12,Florida,peak,626.14,36
+lambda_calendar_2,12,Florida,plateau,28.27,28
+lambda_calendar_2,13,Georgia,decline,54.6,24
+lambda_calendar_2,13,Georgia,growth,99.93,36
+lambda_calendar_2,13,Georgia,off_season,4.03,16
+lambda_calendar_2,13,Georgia,peak,210.54,36
+lambda_calendar_2,13,Georgia,plateau,5.41,28
+lambda_calendar_2,15,Hawaii,decline,5.59,24
+lambda_calendar_2,15,Hawaii,growth,9.98,36
+lambda_calendar_2,15,Hawaii,off_season,1.49,16
+lambda_calendar_2,15,Hawaii,peak,21.81,36
+lambda_calendar_2,15,Hawaii,plateau,5.37,28
+lambda_calendar_2,16,Idaho,decline,12.21,24
+lambda_calendar_2,16,Idaho,growth,9.98,36
+lambda_calendar_2,16,Idaho,off_season,1.32,16
+lambda_calendar_2,16,Idaho,peak,38.62,36
+lambda_calendar_2,16,Idaho,plateau,3.17,28
+lambda_calendar_2,17,Illinois,decline,42.63,24
+lambda_calendar_2,17,Illinois,growth,106.5,36
+lambda_calendar_2,17,Illinois,off_season,8.49,16
+lambda_calendar_2,17,Illinois,peak,235.09,36
+lambda_calendar_2,17,Illinois,plateau,12.8,28
+lambda_calendar_2,18,Indiana,decline,48.29,24
+lambda_calendar_2,18,Indiana,growth,36.78,36
+lambda_calendar_2,18,Indiana,off_season,3.5,16
+lambda_calendar_2,18,Indiana,peak,128.84,36
+lambda_calendar_2,18,Indiana,plateau,3.93,28
+lambda_calendar_2,19,Iowa,decline,23.92,24
+lambda_calendar_2,19,Iowa,growth,21.65,36
+lambda_calendar_2,19,Iowa,off_season,1.32,16
+lambda_calendar_2,19,Iowa,peak,61.38,36
+lambda_calendar_2,19,Iowa,plateau,2.92,28
+lambda_calendar_2,20,Kansas,decline,29.11,24
+lambda_calendar_2,20,Kansas,growth,27.43,36
+lambda_calendar_2,20,Kansas,off_season,1.5,16
+lambda_calendar_2,20,Kansas,peak,59.26,36
+lambda_calendar_2,20,Kansas,plateau,1.68,28
+lambda_calendar_2,21,Kentucky,decline,37.54,24
+lambda_calendar_2,21,Kentucky,growth,37.61,36
+lambda_calendar_2,21,Kentucky,off_season,3.63,16
+lambda_calendar_2,21,Kentucky,peak,87.29,36
+lambda_calendar_2,21,Kentucky,plateau,3.5,28
+lambda_calendar_2,22,Louisiana,decline,48.02,24
+lambda_calendar_2,22,Louisiana,growth,41.38,36
+lambda_calendar_2,22,Louisiana,off_season,4.76,16
+lambda_calendar_2,22,Louisiana,peak,104.28,36
+lambda_calendar_2,22,Louisiana,plateau,5.71,28
+lambda_calendar_2,23,Maine,decline,9.71,24
+lambda_calendar_2,23,Maine,growth,10.03,36
+lambda_calendar_2,23,Maine,off_season,1.24,16
+lambda_calendar_2,23,Maine,peak,37.4,36
+lambda_calendar_2,23,Maine,plateau,1.73,28
+lambda_calendar_2,24,Maryland,decline,14.59,24
+lambda_calendar_2,24,Maryland,growth,35.17,36
+lambda_calendar_2,24,Maryland,off_season,2.42,16
+lambda_calendar_2,24,Maryland,peak,122.54,36
+lambda_calendar_2,24,Maryland,plateau,4.26,28
+lambda_calendar_2,25,Massachusetts,decline,10.38,24
+lambda_calendar_2,25,Massachusetts,growth,52.11,36
+lambda_calendar_2,25,Massachusetts,off_season,4.33,16
+lambda_calendar_2,25,Massachusetts,peak,182.51,36
+lambda_calendar_2,25,Massachusetts,plateau,4.42,28
+lambda_calendar_2,26,Michigan,decline,28.22,24
+lambda_calendar_2,26,Michigan,growth,60.06,36
+lambda_calendar_2,26,Michigan,off_season,4.49,16
+lambda_calendar_2,26,Michigan,peak,190.43,36
+lambda_calendar_2,26,Michigan,plateau,4.6,28
+lambda_calendar_2,27,Minnesota,decline,27.72,24
+lambda_calendar_2,27,Minnesota,growth,79.05,36
+lambda_calendar_2,27,Minnesota,off_season,3.24,16
+lambda_calendar_2,27,Minnesota,peak,135.51,36
+lambda_calendar_2,27,Minnesota,plateau,5.45,28
+lambda_calendar_2,28,Mississippi,decline,43.59,24
+lambda_calendar_2,28,Mississippi,growth,17.16,36
+lambda_calendar_2,28,Mississippi,off_season,2.68,16
+lambda_calendar_2,28,Mississippi,peak,51.08,36
+lambda_calendar_2,28,Mississippi,plateau,4.53,28
+lambda_calendar_2,29,Missouri,decline,49.63,24
+lambda_calendar_2,29,Missouri,growth,60.68,36
+lambda_calendar_2,29,Missouri,off_season,2.81,16
+lambda_calendar_2,29,Missouri,peak,142.21,36
+lambda_calendar_2,29,Missouri,plateau,4.5,28
+lambda_calendar_2,30,Montana,decline,9.75,24
+lambda_calendar_2,30,Montana,growth,8.66,36
+lambda_calendar_2,30,Montana,off_season,1.54,16
+lambda_calendar_2,30,Montana,peak,26.0,36
+lambda_calendar_2,30,Montana,plateau,2.22,28
+lambda_calendar_2,31,Nebraska,decline,20.84,24
+lambda_calendar_2,31,Nebraska,growth,12.85,36
+lambda_calendar_2,31,Nebraska,off_season,2.08,16
+lambda_calendar_2,31,Nebraska,peak,33.15,36
+lambda_calendar_2,31,Nebraska,plateau,2.11,28
+lambda_calendar_2,32,Nevada,decline,7.77,24
+lambda_calendar_2,32,Nevada,growth,21.67,36
+lambda_calendar_2,32,Nevada,off_season,4.62,16
+lambda_calendar_2,32,Nevada,peak,52.23,36
+lambda_calendar_2,32,Nevada,plateau,9.35,28
+lambda_calendar_2,33,New Hampshire,decline,6.26,24
+lambda_calendar_2,33,New Hampshire,growth,13.86,36
+lambda_calendar_2,33,New Hampshire,off_season,1.35,16
+lambda_calendar_2,33,New Hampshire,peak,44.22,36
+lambda_calendar_2,33,New Hampshire,plateau,1.73,28
+lambda_calendar_2,34,New Jersey,decline,25.2,24
+lambda_calendar_2,34,New Jersey,growth,142.46,36
+lambda_calendar_2,34,New Jersey,off_season,3.76,16
+lambda_calendar_2,34,New Jersey,peak,213.05,36
+lambda_calendar_2,34,New Jersey,plateau,8.0,28
+lambda_calendar_2,35,New Mexico,decline,15.5,24
+lambda_calendar_2,35,New Mexico,growth,24.69,36
+lambda_calendar_2,35,New Mexico,off_season,1.99,16
+lambda_calendar_2,35,New Mexico,peak,62.54,36
+lambda_calendar_2,35,New Mexico,plateau,2.32,28
+lambda_calendar_2,36,New York,decline,25.03,24
+lambda_calendar_2,36,New York,growth,511.47,36
+lambda_calendar_2,36,New York,off_season,4.12,16
+lambda_calendar_2,36,New York,peak,253.66,36
+lambda_calendar_2,36,New York,plateau,11.61,28
+lambda_calendar_2,37,North Carolina,decline,39.14,24
+lambda_calendar_2,37,North Carolina,growth,260.51,36
+lambda_calendar_2,37,North Carolina,off_season,2.58,16
+lambda_calendar_2,37,North Carolina,peak,290.75,36
+lambda_calendar_2,37,North Carolina,plateau,4.03,28
+lambda_calendar_2,38,North Dakota,decline,3.59,24
+lambda_calendar_2,38,North Dakota,growth,8.21,36
+lambda_calendar_2,38,North Dakota,off_season,1.33,16
+lambda_calendar_2,38,North Dakota,peak,24.2,36
+lambda_calendar_2,38,North Dakota,plateau,1.88,28
+lambda_calendar_2,39,Ohio,decline,83.09,24
+lambda_calendar_2,39,Ohio,growth,127.8,36
+lambda_calendar_2,39,Ohio,off_season,2.73,16
+lambda_calendar_2,39,Ohio,peak,296.2,36
+lambda_calendar_2,39,Ohio,plateau,5.83,28
+lambda_calendar_2,40,Oklahoma,decline,51.85,24
+lambda_calendar_2,40,Oklahoma,growth,19.12,36
+lambda_calendar_2,40,Oklahoma,off_season,3.61,16
+lambda_calendar_2,40,Oklahoma,peak,61.15,36
+lambda_calendar_2,40,Oklahoma,plateau,3.7,28
+lambda_calendar_2,41,Oregon,decline,64.53,24
+lambda_calendar_2,41,Oregon,growth,7.97,36
+lambda_calendar_2,41,Oregon,off_season,2.1,16
+lambda_calendar_2,41,Oregon,peak,68.23,36
+lambda_calendar_2,41,Oregon,plateau,3.65,28
+lambda_calendar_2,42,Pennsylvania,decline,170.69,24
+lambda_calendar_2,42,Pennsylvania,growth,192.79,36
+lambda_calendar_2,42,Pennsylvania,off_season,27.3,16
+lambda_calendar_2,42,Pennsylvania,peak,398.17,36
+lambda_calendar_2,42,Pennsylvania,plateau,34.99,28
+lambda_calendar_2,44,Rhode Island,decline,3.51,24
+lambda_calendar_2,44,Rhode Island,growth,17.44,36
+lambda_calendar_2,44,Rhode Island,off_season,2.33,16
+lambda_calendar_2,44,Rhode Island,peak,42.18,36
+lambda_calendar_2,44,Rhode Island,plateau,1.97,28
+lambda_calendar_2,45,South Carolina,decline,35.63,24
+lambda_calendar_2,45,South Carolina,growth,69.82,36
+lambda_calendar_2,45,South Carolina,off_season,4.14,16
+lambda_calendar_2,45,South Carolina,peak,127.87,36
+lambda_calendar_2,45,South Carolina,plateau,3.21,28
+lambda_calendar_2,46,South Dakota,decline,6.79,24
+lambda_calendar_2,46,South Dakota,growth,5.64,36
+lambda_calendar_2,46,South Dakota,off_season,0.93,16
+lambda_calendar_2,46,South Dakota,peak,18.36,36
+lambda_calendar_2,46,South Dakota,plateau,1.72,28
+lambda_calendar_2,47,Tennessee,decline,24.54,24
+lambda_calendar_2,47,Tennessee,growth,66.74,36
+lambda_calendar_2,47,Tennessee,off_season,4.48,16
+lambda_calendar_2,47,Tennessee,peak,122.33,36
+lambda_calendar_2,47,Tennessee,plateau,6.17,28
+lambda_calendar_2,48,Texas,decline,56.11,24
+lambda_calendar_2,48,Texas,growth,158.5,36
+lambda_calendar_2,48,Texas,off_season,10.36,16
+lambda_calendar_2,48,Texas,peak,393.61,36
+lambda_calendar_2,48,Texas,plateau,18.78,28
+lambda_calendar_2,49,Utah,decline,14.99,24
+lambda_calendar_2,49,Utah,growth,12.5,36
+lambda_calendar_2,49,Utah,off_season,1.44,16
+lambda_calendar_2,49,Utah,peak,54.4,36
+lambda_calendar_2,49,Utah,plateau,2.92,28
+lambda_calendar_2,50,Vermont,decline,4.91,24
+lambda_calendar_2,50,Vermont,growth,3.85,36
+lambda_calendar_2,50,Vermont,off_season,0.53,16
+lambda_calendar_2,50,Vermont,peak,10.95,36
+lambda_calendar_2,50,Vermont,plateau,1.15,28
+lambda_calendar_2,51,Virginia,decline,35.87,24
+lambda_calendar_2,51,Virginia,growth,47.32,36
+lambda_calendar_2,51,Virginia,off_season,3.25,16
+lambda_calendar_2,51,Virginia,peak,153.74,36
+lambda_calendar_2,51,Virginia,plateau,3.93,28
+lambda_calendar_2,53,Washington,decline,35.8,24
+lambda_calendar_2,53,Washington,growth,9.99,36
+lambda_calendar_2,53,Washington,off_season,2.74,16
+lambda_calendar_2,53,Washington,peak,48.16,36
+lambda_calendar_2,53,Washington,plateau,4.22,28
+lambda_calendar_2,54,West Virginia,decline,26.59,24
+lambda_calendar_2,54,West Virginia,growth,16.69,36
+lambda_calendar_2,54,West Virginia,off_season,0.86,16
+lambda_calendar_2,54,West Virginia,peak,35.22,36
+lambda_calendar_2,54,West Virginia,plateau,3.18,28
+lambda_calendar_2,55,Wisconsin,decline,18.64,24
+lambda_calendar_2,55,Wisconsin,growth,63.43,36
+lambda_calendar_2,55,Wisconsin,off_season,1.66,16
+lambda_calendar_2,55,Wisconsin,peak,133.56,36
+lambda_calendar_2,55,Wisconsin,plateau,6.57,28
+lambda_calendar_2,56,Wyoming,decline,3.79,24
+lambda_calendar_2,56,Wyoming,growth,4.17,36
+lambda_calendar_2,56,Wyoming,off_season,1.45,16
+lambda_calendar_2,56,Wyoming,peak,15.51,36
+lambda_calendar_2,56,Wyoming,plateau,1.58,28
+lambda_calendar_2,72,Puerto Rico,decline,22.01,24
+lambda_calendar_2,72,Puerto Rico,growth,56.1,36
+lambda_calendar_2,72,Puerto Rico,off_season,12.3,16
+lambda_calendar_2,72,Puerto Rico,peak,57.04,36
+lambda_calendar_2,72,Puerto Rico,plateau,15.01,28
+lambda_calendar_3,01,Alabama,all,48.94,140
+lambda_calendar_3,02,Alaska,all,6.45,140
+lambda_calendar_3,04,Arizona,all,41.73,140
+lambda_calendar_3,05,Arkansas,all,24.77,140
+lambda_calendar_3,06,California,all,117.66,140
+lambda_calendar_3,08,Colorado,all,45.24,140
+lambda_calendar_3,09,Connecticut,all,44.99,140
+lambda_calendar_3,10,Delaware,all,13.92,140
+lambda_calendar_3,11,District of Columbia,all,8.96,140
+lambda_calendar_3,12,Florida,all,223.55,140
+lambda_calendar_3,13,Georgia,all,93.81,140
+lambda_calendar_3,15,Hawaii,all,10.63,140
+lambda_calendar_3,16,Idaho,all,15.47,140
+lambda_calendar_3,17,Illinois,all,102.72,140
+lambda_calendar_3,18,Indiana,all,53.6,140
+lambda_calendar_3,19,Iowa,all,27.13,140
+lambda_calendar_3,20,Kansas,all,28.51,140
+lambda_calendar_3,21,Kentucky,all,41.3,140
+lambda_calendar_3,22,Louisiana,all,46.73,140
+lambda_calendar_3,23,Maine,all,14.64,140
+lambda_calendar_3,24,Maryland,all,45.04,140
+lambda_calendar_3,25,Massachusetts,all,66.96,140
+lambda_calendar_3,26,Michigan,all,73.54,140
+lambda_calendar_3,27,Minnesota,all,63.37,140
+lambda_calendar_3,28,Mississippi,all,26.13,140
+lambda_calendar_3,29,Missouri,all,63.28,140
+lambda_calendar_3,30,Montana,all,11.33,140
+lambda_calendar_3,31,Nebraska,all,16.07,140
+lambda_calendar_3,32,Nevada,all,23.01,140
+lambda_calendar_3,33,New Hampshire,all,16.18,140
+lambda_calendar_3,34,New Jersey,all,98.15,140
+lambda_calendar_3,35,New Mexico,all,26.41,140
+lambda_calendar_3,36,New York,all,193.02,140
+lambda_calendar_3,37,North Carolina,all,149.29,140
+lambda_calendar_3,38,North Dakota,all,9.44,140
+lambda_calendar_3,39,Ohio,all,127.03,140
+lambda_calendar_3,40,Oklahoma,all,31.23,140
+lambda_calendar_3,41,Oregon,all,31.9,140
+lambda_calendar_3,42,Pennsylvania,all,190.28,140
+lambda_calendar_3,44,Rhode Island,all,15.86,140
+lambda_calendar_3,45,South Carolina,all,60.58,140
+lambda_calendar_3,46,South Dakota,all,7.68,140
+lambda_calendar_3,47,Tennessee,all,56.19,140
+lambda_calendar_3,48,Texas,all,152.07,140
+lambda_calendar_3,49,Utah,all,20.66,140
+lambda_calendar_3,50,Vermont,all,4.99,140
+lambda_calendar_3,51,Virginia,all,60.49,140
+lambda_calendar_3,53,Washington,all,22.64,140
+lambda_calendar_3,54,West Virginia,all,18.63,140
+lambda_calendar_3,55,Wisconsin,all,56.9,140
+lambda_calendar_3,56,Wyoming,all,6.18,140
+lambda_calendar_3,72,Puerto Rico,all,38.24,140
+lambda_calendar_3,01,Alabama,decline,58.86,24
+lambda_calendar_3,01,Alabama,growth,28.64,36
+lambda_calendar_3,01,Alabama,off_season,4.17,16
+lambda_calendar_3,01,Alabama,peak,118.15,36
+lambda_calendar_3,01,Alabama,plateau,3.12,28
+lambda_calendar_3,02,Alaska,decline,2.72,24
+lambda_calendar_3,02,Alaska,growth,5.59,36
+lambda_calendar_3,02,Alaska,off_season,1.52,16
+lambda_calendar_3,02,Alaska,peak,15.88,36
+lambda_calendar_3,02,Alaska,plateau,1.43,28
+lambda_calendar_3,04,Arizona,decline,55.72,24
+lambda_calendar_3,04,Arizona,growth,18.74,36
+lambda_calendar_3,04,Arizona,off_season,5.77,16
+lambda_calendar_3,04,Arizona,peak,94.77,36
+lambda_calendar_3,04,Arizona,plateau,11.68,28
+lambda_calendar_3,05,Arkansas,decline,42.78,24
+lambda_calendar_3,05,Arkansas,growth,17.22,36
+lambda_calendar_3,05,Arkansas,off_season,2.6,16
+lambda_calendar_3,05,Arkansas,peak,46.95,36
+lambda_calendar_3,05,Arkansas,plateau,3.21,28
+lambda_calendar_3,06,California,decline,119.19,24
+lambda_calendar_3,06,California,growth,63.41,36
+lambda_calendar_3,06,California,off_season,12.05,16
+lambda_calendar_3,06,California,peak,286.14,36
+lambda_calendar_3,06,California,plateau,29.84,28
+lambda_calendar_3,08,Colorado,decline,20.26,24
+lambda_calendar_3,08,Colorado,growth,41.23,36
+lambda_calendar_3,08,Colorado,off_season,2.7,16
+lambda_calendar_3,08,Colorado,peak,115.04,36
+lambda_calendar_3,08,Colorado,plateau,6.37,28
+lambda_calendar_3,09,Connecticut,decline,3.99,24
+lambda_calendar_3,09,Connecticut,growth,53.87,36
+lambda_calendar_3,09,Connecticut,off_season,1.56,16
+lambda_calendar_3,09,Connecticut,peak,114.41,36
+lambda_calendar_3,09,Connecticut,plateau,4.3,28
+lambda_calendar_3,10,Delaware,decline,8.57,24
+lambda_calendar_3,10,Delaware,growth,16.23,36
+lambda_calendar_3,10,Delaware,off_season,1.75,16
+lambda_calendar_3,10,Delaware,peak,30.16,36
+lambda_calendar_3,10,Delaware,plateau,1.6,28
+lambda_calendar_3,11,District of Columbia,decline,3.72,24
+lambda_calendar_3,11,District of Columbia,growth,7.19,36
+lambda_calendar_3,11,District of Columbia,off_season,1.32,16
+lambda_calendar_3,11,District of Columbia,peak,23.98,36
+lambda_calendar_3,11,District of Columbia,plateau,0.78,28
+lambda_calendar_3,12,Florida,decline,146.03,24
+lambda_calendar_3,12,Florida,growth,123.24,36
+lambda_calendar_3,12,Florida,off_season,18.83,16
+lambda_calendar_3,12,Florida,peak,620.4,36
+lambda_calendar_3,12,Florida,plateau,25.7,28
+lambda_calendar_3,13,Georgia,decline,57.94,24
+lambda_calendar_3,13,Georgia,growth,100.63,36
+lambda_calendar_3,13,Georgia,off_season,4.04,16
+lambda_calendar_3,13,Georgia,peak,219.49,36
+lambda_calendar_3,13,Georgia,plateau,5.5,28
+lambda_calendar_3,15,Hawaii,decline,5.7,24
+lambda_calendar_3,15,Hawaii,growth,10.17,36
+lambda_calendar_3,15,Hawaii,off_season,1.54,16
+lambda_calendar_3,15,Hawaii,peak,22.44,36
+lambda_calendar_3,15,Hawaii,plateau,5.45,28
+lambda_calendar_3,16,Idaho,decline,13.54,24
+lambda_calendar_3,16,Idaho,growth,9.84,36
+lambda_calendar_3,16,Idaho,off_season,1.31,16
+lambda_calendar_3,16,Idaho,peak,38.22,36
+lambda_calendar_3,16,Idaho,plateau,3.17,28
+lambda_calendar_3,17,Illinois,decline,45.11,24
+lambda_calendar_3,17,Illinois,growth,106.33,36
+lambda_calendar_3,17,Illinois,off_season,8.84,16
+lambda_calendar_3,17,Illinois,peak,249.38,36
+lambda_calendar_3,17,Illinois,plateau,12.54,28
+lambda_calendar_3,18,Indiana,decline,49.86,24
+lambda_calendar_3,18,Indiana,growth,36.49,36
+lambda_calendar_3,18,Indiana,off_season,3.49,16
+lambda_calendar_3,18,Indiana,peak,133.86,36
+lambda_calendar_3,18,Indiana,plateau,4.23,28
+lambda_calendar_3,19,Iowa,decline,25.35,24
+lambda_calendar_3,19,Iowa,growth,21.55,36
+lambda_calendar_3,19,Iowa,off_season,1.32,16
+lambda_calendar_3,19,Iowa,peak,64.19,36
+lambda_calendar_3,19,Iowa,plateau,2.93,28
+lambda_calendar_3,20,Kansas,decline,30.32,24
+lambda_calendar_3,20,Kansas,growth,27.46,36
+lambda_calendar_3,20,Kansas,off_season,1.53,16
+lambda_calendar_3,20,Kansas,peak,61.21,36
+lambda_calendar_3,20,Kansas,plateau,1.71,28
+lambda_calendar_3,21,Kentucky,decline,38.14,24
+lambda_calendar_3,21,Kentucky,growth,38.09,36
+lambda_calendar_3,21,Kentucky,off_season,3.59,16
+lambda_calendar_3,21,Kentucky,peak,92.65,36
+lambda_calendar_3,21,Kentucky,plateau,3.68,28
+lambda_calendar_3,22,Louisiana,decline,49.1,24
+lambda_calendar_3,22,Louisiana,growth,39.56,36
+lambda_calendar_3,22,Louisiana,off_season,4.83,16
+lambda_calendar_3,22,Louisiana,peak,102.81,36
+lambda_calendar_3,22,Louisiana,plateau,5.77,28
+lambda_calendar_3,23,Maine,decline,9.64,24
+lambda_calendar_3,23,Maine,growth,9.84,36
+lambda_calendar_3,23,Maine,off_season,1.21,16
+lambda_calendar_3,23,Maine,peak,38.8,36
+lambda_calendar_3,23,Maine,plateau,1.73,28
+lambda_calendar_3,24,Maryland,decline,15.35,24
+lambda_calendar_3,24,Maryland,growth,35.62,36
+lambda_calendar_3,24,Maryland,off_season,2.32,16
+lambda_calendar_3,24,Maryland,peak,124.9,36
+lambda_calendar_3,24,Maryland,plateau,4.32,28
+lambda_calendar_3,25,Massachusetts,decline,11.54,24
+lambda_calendar_3,25,Massachusetts,growth,53.74,36
+lambda_calendar_3,25,Massachusetts,off_season,4.28,16
+lambda_calendar_3,25,Massachusetts,peak,193.5,36
+lambda_calendar_3,25,Massachusetts,plateau,4.56,28
+lambda_calendar_3,26,Michigan,decline,30.51,24
+lambda_calendar_3,26,Michigan,growth,59.9,36
+lambda_calendar_3,26,Michigan,off_season,4.44,16
+lambda_calendar_3,26,Michigan,peak,199.81,36
+lambda_calendar_3,26,Michigan,plateau,5.12,28
+lambda_calendar_3,27,Minnesota,decline,28.25,24
+lambda_calendar_3,27,Minnesota,growth,76.58,36
+lambda_calendar_3,27,Minnesota,off_season,3.15,16
+lambda_calendar_3,27,Minnesota,peak,145.33,36
+lambda_calendar_3,27,Minnesota,plateau,5.51,28
+lambda_calendar_3,28,Mississippi,decline,44.78,24
+lambda_calendar_3,28,Mississippi,growth,17.26,36
+lambda_calendar_3,28,Mississippi,off_season,2.69,16
+lambda_calendar_3,28,Mississippi,peak,49.68,36
+lambda_calendar_3,28,Mississippi,plateau,4.65,28
+lambda_calendar_3,29,Missouri,decline,51.71,24
+lambda_calendar_3,29,Missouri,growth,61.37,36
+lambda_calendar_3,29,Missouri,off_season,2.91,16
+lambda_calendar_3,29,Missouri,peak,145.22,36
+lambda_calendar_3,29,Missouri,plateau,4.79,28
+lambda_calendar_3,30,Montana,decline,9.66,24
+lambda_calendar_3,30,Montana,growth,8.54,36
+lambda_calendar_3,30,Montana,off_season,1.54,16
+lambda_calendar_3,30,Montana,peak,26.68,36
+lambda_calendar_3,30,Montana,plateau,2.23,28
+lambda_calendar_3,31,Nebraska,decline,21.23,24
+lambda_calendar_3,31,Nebraska,growth,12.67,36
+lambda_calendar_3,31,Nebraska,off_season,2.05,16
+lambda_calendar_3,31,Nebraska,peak,33.11,36
+lambda_calendar_3,31,Nebraska,plateau,2.1,28
+lambda_calendar_3,32,Nevada,decline,8.47,24
+lambda_calendar_3,32,Nevada,growth,21.7,36
+lambda_calendar_3,32,Nevada,off_season,4.7,16
+lambda_calendar_3,32,Nevada,peak,52.65,36
+lambda_calendar_3,32,Nevada,plateau,9.5,28
+lambda_calendar_3,33,New Hampshire,decline,6.3,24
+lambda_calendar_3,33,New Hampshire,growth,13.66,36
+lambda_calendar_3,33,New Hampshire,off_season,1.35,16
+lambda_calendar_3,33,New Hampshire,peak,43.12,36
+lambda_calendar_3,33,New Hampshire,plateau,1.73,28
+lambda_calendar_3,34,New Jersey,decline,25.3,24
+lambda_calendar_3,34,New Jersey,growth,142.38,36
+lambda_calendar_3,34,New Jersey,off_season,3.54,16
+lambda_calendar_3,34,New Jersey,peak,214.43,36
+lambda_calendar_3,34,New Jersey,plateau,8.27,28
+lambda_calendar_3,35,New Mexico,decline,16.38,24
+lambda_calendar_3,35,New Mexico,growth,24.57,36
+lambda_calendar_3,35,New Mexico,off_season,2.0,16
+lambda_calendar_3,35,New Mexico,peak,64.54,36
+lambda_calendar_3,35,New Mexico,plateau,2.32,28
+lambda_calendar_3,36,New York,decline,23.36,24
+lambda_calendar_3,36,New York,growth,477.46,36
+lambda_calendar_3,36,New York,off_season,4.19,16
+lambda_calendar_3,36,New York,peak,246.56,36
+lambda_calendar_3,36,New York,plateau,11.78,28
+lambda_calendar_3,37,North Carolina,decline,41.53,24
+lambda_calendar_3,37,North Carolina,growth,252.87,36
+lambda_calendar_3,37,North Carolina,off_season,2.72,16
+lambda_calendar_3,37,North Carolina,peak,295.49,36
+lambda_calendar_3,37,North Carolina,plateau,4.25,28
+lambda_calendar_3,38,North Dakota,decline,3.66,24
+lambda_calendar_3,38,North Dakota,growth,8.02,36
+lambda_calendar_3,38,North Dakota,off_season,1.34,16
+lambda_calendar_3,38,North Dakota,peak,24.19,36
+lambda_calendar_3,38,North Dakota,plateau,1.89,28
+lambda_calendar_3,39,Ohio,decline,86.72,24
+lambda_calendar_3,39,Ohio,growth,126.06,36
+lambda_calendar_3,39,Ohio,off_season,2.7,16
+lambda_calendar_3,39,Ohio,peak,304.19,36
+lambda_calendar_3,39,Ohio,plateau,6.1,28
+lambda_calendar_3,40,Oklahoma,decline,54.51,24
+lambda_calendar_3,40,Oklahoma,growth,18.79,36
+lambda_calendar_3,40,Oklahoma,off_season,3.67,16
+lambda_calendar_3,40,Oklahoma,peak,61.71,36
+lambda_calendar_3,40,Oklahoma,plateau,3.81,28
+lambda_calendar_3,41,Oregon,decline,65.31,24
+lambda_calendar_3,41,Oregon,growth,8.3,36
+lambda_calendar_3,41,Oregon,off_season,2.12,16
+lambda_calendar_3,41,Oregon,peak,68.52,36
+lambda_calendar_3,41,Oregon,plateau,3.55,28
+lambda_calendar_3,42,Pennsylvania,decline,160.61,24
+lambda_calendar_3,42,Pennsylvania,growth,186.14,36
+lambda_calendar_3,42,Pennsylvania,off_season,26.05,16
+lambda_calendar_3,42,Pennsylvania,peak,410.83,36
+lambda_calendar_3,42,Pennsylvania,plateau,31.3,28
+lambda_calendar_3,44,Rhode Island,decline,3.56,24
+lambda_calendar_3,44,Rhode Island,growth,17.15,36
+lambda_calendar_3,44,Rhode Island,off_season,2.28,16
+lambda_calendar_3,44,Rhode Island,peak,39.59,36
+lambda_calendar_3,44,Rhode Island,plateau,1.98,28
+lambda_calendar_3,45,South Carolina,decline,38.6,24
+lambda_calendar_3,45,South Carolina,growth,70.72,36
+lambda_calendar_3,45,South Carolina,off_season,4.16,16
+lambda_calendar_3,45,South Carolina,peak,134.71,36
+lambda_calendar_3,45,South Carolina,plateau,3.3,28
+lambda_calendar_3,46,South Dakota,decline,6.57,24
+lambda_calendar_3,46,South Dakota,growth,5.48,36
+lambda_calendar_3,46,South Dakota,off_season,0.95,16
+lambda_calendar_3,46,South Dakota,peak,18.26,36
+lambda_calendar_3,46,South Dakota,plateau,1.74,28
+lambda_calendar_3,47,Tennessee,decline,27.06,24
+lambda_calendar_3,47,Tennessee,growth,65.41,36
+lambda_calendar_3,47,Tennessee,off_season,4.28,16
+lambda_calendar_3,47,Tennessee,peak,128.2,36
+lambda_calendar_3,47,Tennessee,plateau,6.41,28
+lambda_calendar_3,48,Texas,decline,57.92,24
+lambda_calendar_3,48,Texas,growth,140.79,36
+lambda_calendar_3,48,Texas,off_season,11.04,16
+lambda_calendar_3,48,Texas,peak,392.5,36
+lambda_calendar_3,48,Texas,plateau,18.72,28
+lambda_calendar_3,49,Utah,decline,15.95,24
+lambda_calendar_3,49,Utah,growth,12.87,36
+lambda_calendar_3,49,Utah,off_season,1.45,16
+lambda_calendar_3,49,Utah,peak,53.93,36
+lambda_calendar_3,49,Utah,plateau,2.89,28
+lambda_calendar_3,50,Vermont,decline,4.8,24
+lambda_calendar_3,50,Vermont,growth,3.92,36
+lambda_calendar_3,50,Vermont,off_season,0.51,16
+lambda_calendar_3,50,Vermont,peak,11.2,36
+lambda_calendar_3,50,Vermont,plateau,1.09,28
+lambda_calendar_3,51,Virginia,decline,38.09,24
+lambda_calendar_3,51,Virginia,growth,46.89,36
+lambda_calendar_3,51,Virginia,off_season,3.15,16
+lambda_calendar_3,51,Virginia,peak,158.38,36
+lambda_calendar_3,51,Virginia,plateau,4.07,28
+lambda_calendar_3,53,Washington,decline,37.58,24
+lambda_calendar_3,53,Washington,growth,9.74,36
+lambda_calendar_3,53,Washington,off_season,2.67,16
+lambda_calendar_3,53,Washington,peak,48.78,36
+lambda_calendar_3,53,Washington,plateau,4.24,28
+lambda_calendar_3,54,West Virginia,decline,27.19,24
+lambda_calendar_3,54,West Virginia,growth,16.54,36
+lambda_calendar_3,54,West Virginia,off_season,0.87,16
+lambda_calendar_3,54,West Virginia,peak,34.89,36
+lambda_calendar_3,54,West Virginia,plateau,3.22,28
+lambda_calendar_3,55,Wisconsin,decline,19.25,24
+lambda_calendar_3,55,Wisconsin,growth,63.77,36
+lambda_calendar_3,55,Wisconsin,off_season,1.75,16
+lambda_calendar_3,55,Wisconsin,peak,138.73,36
+lambda_calendar_3,55,Wisconsin,plateau,6.64,28
+lambda_calendar_3,56,Wyoming,decline,3.88,24
+lambda_calendar_3,56,Wyoming,growth,4.17,36
+lambda_calendar_3,56,Wyoming,off_season,1.47,16
+lambda_calendar_3,56,Wyoming,peak,15.37,36
+lambda_calendar_3,56,Wyoming,plateau,1.61,28
+lambda_calendar_3,72,Puerto Rico,decline,22.56,24
+lambda_calendar_3,72,Puerto Rico,growth,56.16,36
+lambda_calendar_3,72,Puerto Rico,off_season,12.01,16
+lambda_calendar_3,72,Puerto Rico,peak,60.62,36
+lambda_calendar_3,72,Puerto Rico,plateau,14.84,28
+oversample_2,01,Alabama,all,47.87,140
+oversample_2,02,Alaska,all,6.71,140
+oversample_2,04,Arizona,all,41.42,140
+oversample_2,05,Arkansas,all,24.45,140
+oversample_2,06,California,all,123.28,140
+oversample_2,08,Colorado,all,43.93,140
+oversample_2,09,Connecticut,all,44.15,140
+oversample_2,10,Delaware,all,13.88,140
+oversample_2,11,District of Columbia,all,9.05,140
+oversample_2,12,Florida,all,218.95,140
+oversample_2,13,Georgia,all,87.65,140
+oversample_2,15,Hawaii,all,10.48,140
+oversample_2,16,Idaho,all,15.36,140
+oversample_2,17,Illinois,all,97.4,140
+oversample_2,18,Indiana,all,51.56,140
+oversample_2,19,Iowa,all,26.36,140
+oversample_2,20,Kansas,all,28.21,140
+oversample_2,21,Kentucky,all,39.36,140
+oversample_2,22,Louisiana,all,47.64,140
+oversample_2,23,Maine,all,14.39,140
+oversample_2,24,Maryland,all,43.84,140
+oversample_2,25,Massachusetts,all,63.03,140
+oversample_2,26,Michigan,all,69.04,140
+oversample_2,27,Minnesota,all,60.7,140
+oversample_2,28,Mississippi,all,26.35,140
+oversample_2,29,Missouri,all,61.52,140
+oversample_2,30,Montana,all,11.26,140
+oversample_2,31,Nebraska,all,15.85,140
+oversample_2,32,Nevada,all,22.61,140
+oversample_2,33,New Hampshire,all,16.53,140
+oversample_2,34,New Jersey,all,96.59,140
+oversample_2,35,New Mexico,all,25.89,140
+oversample_2,36,New York,all,200.93,140
+oversample_2,37,North Carolina,all,147.63,140
+oversample_2,38,North Dakota,all,9.49,140
+oversample_2,39,Ohio,all,123.08,140
+oversample_2,40,Oklahoma,all,29.93,140
+oversample_2,41,Oregon,all,31.34,140
+oversample_2,42,Pennsylvania,all,189.87,140
+oversample_2,44,Rhode Island,all,16.73,140
+oversample_2,45,South Carolina,all,57.78,140
+oversample_2,46,South Dakota,all,7.84,140
+oversample_2,47,Tennessee,all,53.37,140
+oversample_2,48,Texas,all,151.29,140
+oversample_2,49,Utah,all,20.37,140
+oversample_2,50,Vermont,all,5.0,140
+oversample_2,51,Virginia,all,57.14,140
+oversample_2,53,Washington,all,21.48,140
+oversample_2,54,West Virginia,all,18.62,140
+oversample_2,55,Wisconsin,all,54.22,140
+oversample_2,56,Wyoming,all,6.26,140
+oversample_2,72,Puerto Rico,all,36.6,140
+oversample_2,01,Alabama,decline,54.65,24
+oversample_2,01,Alabama,growth,29.22,36
+oversample_2,01,Alabama,off_season,4.31,16
+oversample_2,01,Alabama,peak,116.29,36
+oversample_2,01,Alabama,plateau,2.98,28
+oversample_2,02,Alaska,decline,2.64,24
+oversample_2,02,Alaska,growth,5.94,36
+oversample_2,02,Alaska,off_season,1.55,16
+oversample_2,02,Alaska,peak,16.57,36
+oversample_2,02,Alaska,plateau,1.45,28
+oversample_2,04,Arizona,decline,46.98,24
+oversample_2,04,Arizona,growth,19.81,36
+oversample_2,04,Arizona,off_season,5.97,16
+oversample_2,04,Arizona,peak,98.27,36
+oversample_2,04,Arizona,plateau,11.6,28
+oversample_2,05,Arkansas,decline,37.43,24
+oversample_2,05,Arkansas,growth,17.65,36
+oversample_2,05,Arkansas,off_season,2.66,16
+oversample_2,05,Arkansas,peak,48.83,36
+oversample_2,05,Arkansas,plateau,3.18,28
+oversample_2,06,California,decline,107.68,24
+oversample_2,06,California,growth,62.92,36
+oversample_2,06,California,off_season,11.45,16
+oversample_2,06,California,peak,314.78,36
+oversample_2,06,California,plateau,31.95,28
+oversample_2,08,Colorado,decline,19.48,24
+oversample_2,08,Colorado,growth,42.5,36
+oversample_2,08,Colorado,off_season,2.64,16
+oversample_2,08,Colorado,peak,109.17,36
+oversample_2,08,Colorado,plateau,6.45,28
+oversample_2,09,Connecticut,decline,3.89,24
+oversample_2,09,Connecticut,growth,54.26,36
+oversample_2,09,Connecticut,off_season,1.57,16
+oversample_2,09,Connecticut,peak,110.73,36
+oversample_2,09,Connecticut,plateau,4.36,28
+oversample_2,10,Delaware,decline,8.7,24
+oversample_2,10,Delaware,growth,16.3,36
+oversample_2,10,Delaware,off_season,1.79,16
+oversample_2,10,Delaware,peak,29.83,36
+oversample_2,10,Delaware,plateau,1.59,28
+oversample_2,11,District of Columbia,decline,3.71,24
+oversample_2,11,District of Columbia,growth,7.01,36
+oversample_2,11,District of Columbia,off_season,1.3,16
+oversample_2,11,District of Columbia,peak,24.52,36
+oversample_2,11,District of Columbia,plateau,0.78,28
+oversample_2,12,Florida,decline,120.08,24
+oversample_2,12,Florida,growth,115.28,36
+oversample_2,12,Florida,off_season,19.17,16
+oversample_2,12,Florida,peak,625.86,36
+oversample_2,12,Florida,plateau,28.0,28
+oversample_2,13,Georgia,decline,51.25,24
+oversample_2,13,Georgia,growth,99.92,36
+oversample_2,13,Georgia,off_season,4.04,16
+oversample_2,13,Georgia,peak,200.83,36
+oversample_2,13,Georgia,plateau,5.35,28
+oversample_2,15,Hawaii,decline,5.77,24
+oversample_2,15,Hawaii,growth,10.02,36
+oversample_2,15,Hawaii,off_season,1.51,16
+oversample_2,15,Hawaii,peak,22.0,36
+oversample_2,15,Hawaii,plateau,5.41,28
+oversample_2,16,Idaho,decline,13.0,24
+oversample_2,16,Idaho,growth,9.71,36
+oversample_2,16,Idaho,off_season,1.3,16
+oversample_2,16,Idaho,peak,38.31,36
+oversample_2,16,Idaho,plateau,3.16,28
+oversample_2,17,Illinois,decline,42.38,24
+oversample_2,17,Illinois,growth,106.06,36
+oversample_2,17,Illinois,off_season,8.8,16
+oversample_2,17,Illinois,peak,230.61,36
+oversample_2,17,Illinois,plateau,12.78,28
+oversample_2,18,Indiana,decline,47.68,24
+oversample_2,18,Indiana,growth,36.0,36
+oversample_2,18,Indiana,off_season,3.48,16
+oversample_2,18,Indiana,peak,128.08,36
+oversample_2,18,Indiana,plateau,3.99,28
+oversample_2,19,Iowa,decline,24.69,24
+oversample_2,19,Iowa,growth,21.38,36
+oversample_2,19,Iowa,off_season,1.34,16
+oversample_2,19,Iowa,peak,61.79,36
+oversample_2,19,Iowa,plateau,2.94,28
+oversample_2,20,Kansas,decline,29.45,24
+oversample_2,20,Kansas,growth,27.41,36
+oversample_2,20,Kansas,off_season,1.48,16
+oversample_2,20,Kansas,peak,60.67,36
+oversample_2,20,Kansas,plateau,1.7,28
+oversample_2,21,Kentucky,decline,37.42,24
+oversample_2,21,Kentucky,growth,38.55,36
+oversample_2,21,Kentucky,off_season,3.6,16
+oversample_2,21,Kentucky,peak,85.21,36
+oversample_2,21,Kentucky,plateau,3.53,28
+oversample_2,22,Louisiana,decline,47.62,24
+oversample_2,22,Louisiana,growth,40.18,36
+oversample_2,22,Louisiana,off_season,4.83,16
+oversample_2,22,Louisiana,peak,106.7,36
+oversample_2,22,Louisiana,plateau,5.76,28
+oversample_2,23,Maine,decline,9.79,24
+oversample_2,23,Maine,growth,9.9,36
+oversample_2,23,Maine,off_season,1.21,16
+oversample_2,23,Maine,peak,37.69,36
+oversample_2,23,Maine,plateau,1.72,28
+oversample_2,24,Maryland,decline,14.96,24
+oversample_2,24,Maryland,growth,35.1,36
+oversample_2,24,Maryland,off_season,2.32,16
+oversample_2,24,Maryland,peak,121.08,36
+oversample_2,24,Maryland,plateau,4.23,28
+oversample_2,25,Massachusetts,decline,10.66,24
+oversample_2,25,Massachusetts,growth,53.94,36
+oversample_2,25,Massachusetts,off_season,4.37,16
+oversample_2,25,Massachusetts,peak,178.64,36
+oversample_2,25,Massachusetts,plateau,4.49,28
+oversample_2,26,Michigan,decline,27.87,24
+oversample_2,26,Michigan,growth,61.16,36
+oversample_2,26,Michigan,off_season,4.46,16
+oversample_2,26,Michigan,peak,183.19,36
+oversample_2,26,Michigan,plateau,4.57,28
+oversample_2,27,Minnesota,decline,27.56,24
+oversample_2,27,Minnesota,growth,77.9,36
+oversample_2,27,Minnesota,off_season,3.29,16
+oversample_2,27,Minnesota,peak,134.15,36
+oversample_2,27,Minnesota,plateau,5.37,28
+oversample_2,28,Mississippi,decline,42.41,24
+oversample_2,28,Mississippi,growth,17.33,36
+oversample_2,28,Mississippi,off_season,2.7,16
+oversample_2,28,Mississippi,peak,52.14,36
+oversample_2,28,Mississippi,plateau,4.53,28
+oversample_2,29,Missouri,decline,50.52,24
+oversample_2,29,Missouri,growth,60.74,36
+oversample_2,29,Missouri,off_season,2.81,16
+oversample_2,29,Missouri,peak,140.03,36
+oversample_2,29,Missouri,plateau,4.55,28
+oversample_2,30,Montana,decline,9.77,24
+oversample_2,30,Montana,growth,8.82,36
+oversample_2,30,Montana,off_season,1.5,16
+oversample_2,30,Montana,peak,26.03,36
+oversample_2,30,Montana,plateau,2.26,28
+oversample_2,31,Nebraska,decline,20.71,24
+oversample_2,31,Nebraska,growth,13.05,36
+oversample_2,31,Nebraska,off_season,2.07,16
+oversample_2,31,Nebraska,peak,32.21,36
+oversample_2,31,Nebraska,plateau,2.11,28
+oversample_2,32,Nevada,decline,7.92,24
+oversample_2,32,Nevada,growth,21.99,36
+oversample_2,32,Nevada,off_season,4.82,16
+oversample_2,32,Nevada,peak,51.34,36
+oversample_2,32,Nevada,plateau,9.21,28
+oversample_2,33,New Hampshire,decline,6.46,24
+oversample_2,33,New Hampshire,growth,13.83,36
+oversample_2,33,New Hampshire,off_season,1.35,16
+oversample_2,33,New Hampshire,peak,44.2,36
+oversample_2,33,New Hampshire,plateau,1.74,28
+oversample_2,34,New Jersey,decline,23.93,24
+oversample_2,34,New Jersey,growth,144.18,36
+oversample_2,34,New Jersey,off_season,3.59,16
+oversample_2,34,New Jersey,peak,207.83,36
+oversample_2,34,New Jersey,plateau,7.82,28
+oversample_2,35,New Mexico,decline,15.45,24
+oversample_2,35,New Mexico,growth,24.9,36
+oversample_2,35,New Mexico,off_season,1.99,16
+oversample_2,35,New Mexico,peak,62.82,36
+oversample_2,35,New Mexico,plateau,2.31,28
+oversample_2,36,New York,decline,24.21,24
+oversample_2,36,New York,growth,521.7,36
+oversample_2,36,New York,off_season,4.18,16
+oversample_2,36,New York,peak,232.69,36
+oversample_2,36,New York,plateau,11.59,28
+oversample_2,37,North Carolina,decline,39.46,24
+oversample_2,37,North Carolina,growth,262.47,36
+oversample_2,37,North Carolina,off_season,2.58,16
+oversample_2,37,North Carolina,peak,281.09,36
+oversample_2,37,North Carolina,plateau,3.97,28
+oversample_2,38,North Dakota,decline,3.67,24
+oversample_2,38,North Dakota,growth,8.14,36
+oversample_2,38,North Dakota,off_season,1.36,16
+oversample_2,38,North Dakota,peak,24.25,36
+oversample_2,38,North Dakota,plateau,1.88,28
+oversample_2,39,Ohio,decline,81.76,24
+oversample_2,39,Ohio,growth,128.33,36
+oversample_2,39,Ohio,off_season,2.69,16
+oversample_2,39,Ohio,peak,289.94,36
+oversample_2,39,Ohio,plateau,5.99,28
+oversample_2,40,Oklahoma,decline,50.29,24
+oversample_2,40,Oklahoma,growth,19.18,36
+oversample_2,40,Oklahoma,off_season,3.59,16
+oversample_2,40,Oklahoma,peak,59.2,36
+oversample_2,40,Oklahoma,plateau,3.73,28
+oversample_2,41,Oregon,decline,63.94,24
+oversample_2,41,Oregon,growth,7.91,36
+oversample_2,41,Oregon,off_season,2.12,16
+oversample_2,41,Oregon,peak,67.63,36
+oversample_2,41,Oregon,plateau,3.57,28
+oversample_2,42,Pennsylvania,decline,168.55,24
+oversample_2,42,Pennsylvania,growth,196.24,36
+oversample_2,42,Pennsylvania,off_season,27.2,16
+oversample_2,42,Pennsylvania,peak,389.84,36
+oversample_2,42,Pennsylvania,plateau,35.83,28
+oversample_2,44,Rhode Island,decline,3.69,24
+oversample_2,44,Rhode Island,growth,17.66,36
+oversample_2,44,Rhode Island,off_season,2.36,16
+oversample_2,44,Rhode Island,peak,42.33,36
+oversample_2,44,Rhode Island,plateau,1.98,28
+oversample_2,45,South Carolina,decline,36.97,24
+oversample_2,45,South Carolina,growth,69.32,36
+oversample_2,45,South Carolina,off_season,4.16,16
+oversample_2,45,South Carolina,peak,126.42,36
+oversample_2,45,South Carolina,plateau,3.19,28
+oversample_2,46,South Dakota,decline,7.09,24
+oversample_2,46,South Dakota,growth,5.6,36
+oversample_2,46,South Dakota,off_season,0.96,16
+oversample_2,46,South Dakota,peak,18.4,36
+oversample_2,46,South Dakota,plateau,1.73,28
+oversample_2,47,Tennessee,decline,25.07,24
+oversample_2,47,Tennessee,growth,65.41,36
+oversample_2,47,Tennessee,off_season,4.44,16
+oversample_2,47,Tennessee,peak,118.64,36
+oversample_2,47,Tennessee,plateau,6.17,28
+oversample_2,48,Texas,decline,54.85,24
+oversample_2,48,Texas,growth,155.42,36
+oversample_2,48,Texas,off_season,10.82,16
+oversample_2,48,Texas,peak,376.82,36
+oversample_2,48,Texas,plateau,18.96,28
+oversample_2,49,Utah,decline,15.14,24
+oversample_2,49,Utah,growth,12.55,36
+oversample_2,49,Utah,off_season,1.45,16
+oversample_2,49,Utah,peak,53.63,36
+oversample_2,49,Utah,plateau,2.94,28
+oversample_2,50,Vermont,decline,4.97,24
+oversample_2,50,Vermont,growth,3.8,36
+oversample_2,50,Vermont,off_season,0.53,16
+oversample_2,50,Vermont,peak,11.19,36
+oversample_2,50,Vermont,plateau,1.16,28
+oversample_2,51,Virginia,decline,36.1,24
+oversample_2,51,Virginia,growth,46.59,36
+oversample_2,51,Virginia,off_season,3.25,16
+oversample_2,51,Virginia,peak,147.12,36
+oversample_2,51,Virginia,plateau,3.86,28
+oversample_2,53,Washington,decline,34.32,24
+oversample_2,53,Washington,growth,9.77,36
+oversample_2,53,Washington,off_season,2.8,16
+oversample_2,53,Washington,peak,46.26,36
+oversample_2,53,Washington,plateau,4.31,28
+oversample_2,54,West Virginia,decline,26.92,24
+oversample_2,54,West Virginia,growth,16.78,36
+oversample_2,54,West Virginia,off_season,0.87,16
+oversample_2,54,West Virginia,peak,34.84,36
+oversample_2,54,West Virginia,plateau,3.16,28
+oversample_2,55,Wisconsin,decline,18.35,24
+oversample_2,55,Wisconsin,growth,63.97,36
+oversample_2,55,Wisconsin,off_season,1.66,16
+oversample_2,55,Wisconsin,peak,128.83,36
+oversample_2,55,Wisconsin,plateau,6.53,28
+oversample_2,56,Wyoming,decline,3.96,24
+oversample_2,56,Wyoming,growth,4.21,36
+oversample_2,56,Wyoming,off_season,1.48,16
+oversample_2,56,Wyoming,peak,15.62,36
+oversample_2,56,Wyoming,plateau,1.59,28
+oversample_2,72,Puerto Rico,decline,21.69,24
+oversample_2,72,Puerto Rico,growth,56.13,36
+oversample_2,72,Puerto Rico,off_season,12.25,16
+oversample_2,72,Puerto Rico,peak,54.53,36
+oversample_2,72,Puerto Rico,plateau,15.1,28
+oversample_3,01,Alabama,all,48.39,140
+oversample_3,02,Alaska,all,6.75,140
+oversample_3,04,Arizona,all,40.55,140
+oversample_3,05,Arkansas,all,24.71,140
+oversample_3,06,California,all,118.17,140
+oversample_3,08,Colorado,all,44.32,140
+oversample_3,09,Connecticut,all,45.23,140
+oversample_3,10,Delaware,all,14.18,140
+oversample_3,11,District of Columbia,all,9.18,140
+oversample_3,12,Florida,all,223.66,140
+oversample_3,13,Georgia,all,92.04,140
+oversample_3,15,Hawaii,all,10.76,140
+oversample_3,16,Idaho,all,15.67,140
+oversample_3,17,Illinois,all,101.32,140
+oversample_3,18,Indiana,all,54.32,140
+oversample_3,19,Iowa,all,26.8,140
+oversample_3,20,Kansas,all,27.98,140
+oversample_3,21,Kentucky,all,40.63,140
+oversample_3,22,Louisiana,all,46.7,140
+oversample_3,23,Maine,all,14.69,140
+oversample_3,24,Maryland,all,45.24,140
+oversample_3,25,Massachusetts,all,67.15,140
+oversample_3,26,Michigan,all,72.88,140
+oversample_3,27,Minnesota,all,64.34,140
+oversample_3,28,Mississippi,all,26.2,140
+oversample_3,29,Missouri,all,63.21,140
+oversample_3,30,Montana,all,11.47,140
+oversample_3,31,Nebraska,all,16.14,140
+oversample_3,32,Nevada,all,22.58,140
+oversample_3,33,New Hampshire,all,16.62,140
+oversample_3,34,New Jersey,all,99.73,140
+oversample_3,35,New Mexico,all,26.58,140
+oversample_3,36,New York,all,195.28,140
+oversample_3,37,North Carolina,all,148.16,140
+oversample_3,38,North Dakota,all,9.61,140
+oversample_3,39,Ohio,all,125.92,140
+oversample_3,40,Oklahoma,all,30.32,140
+oversample_3,41,Oregon,all,32.03,140
+oversample_3,42,Pennsylvania,all,187.67,140
+oversample_3,44,Rhode Island,all,16.41,140
+oversample_3,45,South Carolina,all,59.93,140
+oversample_3,46,South Dakota,all,7.75,140
+oversample_3,47,Tennessee,all,56.06,140
+oversample_3,48,Texas,all,149.93,140
+oversample_3,49,Utah,all,20.75,140
+oversample_3,50,Vermont,all,5.04,140
+oversample_3,51,Virginia,all,60.1,140
+oversample_3,53,Washington,all,22.73,140
+oversample_3,54,West Virginia,all,18.81,140
+oversample_3,55,Wisconsin,all,56.23,140
+oversample_3,56,Wyoming,all,6.31,140
+oversample_3,72,Puerto Rico,all,38.88,140
+oversample_3,01,Alabama,decline,58.69,24
+oversample_3,01,Alabama,growth,29.42,36
+oversample_3,01,Alabama,off_season,4.25,16
+oversample_3,01,Alabama,peak,115.34,36
+oversample_3,01,Alabama,plateau,3.1,28
+oversample_3,02,Alaska,decline,2.71,24
+oversample_3,02,Alaska,growth,5.74,36
+oversample_3,02,Alaska,off_season,1.57,16
+oversample_3,02,Alaska,peak,16.88,36
+oversample_3,02,Alaska,plateau,1.44,28
+oversample_3,04,Arizona,decline,52.0,24
+oversample_3,04,Arizona,growth,19.0,36
+oversample_3,04,Arizona,off_season,6.02,16
+oversample_3,04,Arizona,peak,92.28,36
+oversample_3,04,Arizona,plateau,11.69,28
+oversample_3,05,Arkansas,decline,42.15,24
+oversample_3,05,Arkansas,growth,17.51,36
+oversample_3,05,Arkansas,off_season,2.7,16
+oversample_3,05,Arkansas,peak,46.77,36
+oversample_3,05,Arkansas,plateau,3.23,28
+oversample_3,06,California,decline,118.33,24
+oversample_3,06,California,growth,62.77,36
+oversample_3,06,California,off_season,12.09,16
+oversample_3,06,California,peak,289.84,36
+oversample_3,06,California,plateau,29.15,28
+oversample_3,08,Colorado,decline,20.5,24
+oversample_3,08,Colorado,growth,40.64,36
+oversample_3,08,Colorado,off_season,2.71,16
+oversample_3,08,Colorado,peak,111.92,36
+oversample_3,08,Colorado,plateau,6.33,28
+oversample_3,09,Connecticut,decline,4.22,24
+oversample_3,09,Connecticut,growth,55.33,36
+oversample_3,09,Connecticut,off_season,1.58,16
+oversample_3,09,Connecticut,peak,113.7,36
+oversample_3,09,Connecticut,plateau,4.31,28
+oversample_3,10,Delaware,decline,8.93,24
+oversample_3,10,Delaware,growth,16.35,36
+oversample_3,10,Delaware,off_season,1.72,16
+oversample_3,10,Delaware,peak,30.83,36
+oversample_3,10,Delaware,plateau,1.59,28
+oversample_3,11,District of Columbia,decline,3.87,24
+oversample_3,11,District of Columbia,growth,7.19,36
+oversample_3,11,District of Columbia,off_season,1.29,16
+oversample_3,11,District of Columbia,peak,24.75,36
+oversample_3,11,District of Columbia,plateau,0.79,28
+oversample_3,12,Florida,decline,139.27,24
+oversample_3,12,Florida,growth,119.52,36
+oversample_3,12,Florida,off_season,18.62,16
+oversample_3,12,Florida,peak,628.79,36
+oversample_3,12,Florida,plateau,26.18,28
+oversample_3,13,Georgia,decline,55.12,24
+oversample_3,13,Georgia,growth,101.63,36
+oversample_3,13,Georgia,off_season,4.09,16
+oversample_3,13,Georgia,peak,213.48,36
+oversample_3,13,Georgia,plateau,5.46,28
+oversample_3,15,Hawaii,decline,5.96,24
+oversample_3,15,Hawaii,growth,10.23,36
+oversample_3,15,Hawaii,off_season,1.58,16
+oversample_3,15,Hawaii,peak,22.69,36
+oversample_3,15,Hawaii,plateau,5.46,28
+oversample_3,16,Idaho,decline,14.02,24
+oversample_3,16,Idaho,growth,10.16,36
+oversample_3,16,Idaho,off_season,1.32,16
+oversample_3,16,Idaho,peak,38.43,36
+oversample_3,16,Idaho,plateau,3.12,28
+oversample_3,17,Illinois,decline,42.95,24
+oversample_3,17,Illinois,growth,106.2,36
+oversample_3,17,Illinois,off_season,9.01,16
+oversample_3,17,Illinois,peak,245.42,36
+oversample_3,17,Illinois,plateau,12.53,28
+oversample_3,18,Indiana,decline,50.55,24
+oversample_3,18,Indiana,growth,37.71,36
+oversample_3,18,Indiana,off_season,3.56,16
+oversample_3,18,Indiana,peak,134.98,36
+oversample_3,18,Indiana,plateau,4.21,28
+oversample_3,19,Iowa,decline,26.26,24
+oversample_3,19,Iowa,growth,21.23,36
+oversample_3,19,Iowa,off_season,1.32,16
+oversample_3,19,Iowa,peak,62.59,36
+oversample_3,19,Iowa,plateau,2.95,28
+oversample_3,20,Kansas,decline,30.99,24
+oversample_3,20,Kansas,growth,27.44,36
+oversample_3,20,Kansas,off_season,1.49,16
+oversample_3,20,Kansas,peak,58.72,36
+oversample_3,20,Kansas,plateau,1.69,28
+oversample_3,21,Kentucky,decline,38.51,24
+oversample_3,21,Kentucky,growth,39.1,36
+oversample_3,21,Kentucky,off_season,3.63,16
+oversample_3,21,Kentucky,peak,88.76,36
+oversample_3,21,Kentucky,plateau,3.68,28
+oversample_3,22,Louisiana,decline,48.29,24
+oversample_3,22,Louisiana,growth,39.51,36
+oversample_3,22,Louisiana,off_season,4.95,16
+oversample_3,22,Louisiana,peak,103.25,36
+oversample_3,22,Louisiana,plateau,5.73,28
+oversample_3,23,Maine,decline,10.06,24
+oversample_3,23,Maine,growth,10.02,36
+oversample_3,23,Maine,off_season,1.22,16
+oversample_3,23,Maine,peak,38.5,36
+oversample_3,23,Maine,plateau,1.76,28
+oversample_3,24,Maryland,decline,15.44,24
+oversample_3,24,Maryland,growth,35.45,36
+oversample_3,24,Maryland,off_season,2.32,16
+oversample_3,24,Maryland,peak,125.74,36
+oversample_3,24,Maryland,plateau,4.39,28
+oversample_3,25,Massachusetts,decline,11.5,24
+oversample_3,25,Massachusetts,growth,53.99,36
+oversample_3,25,Massachusetts,off_season,4.32,16
+oversample_3,25,Massachusetts,peak,194.08,36
+oversample_3,25,Massachusetts,plateau,4.49,28
+oversample_3,26,Michigan,decline,30.39,24
+oversample_3,26,Michigan,growth,61.75,36
+oversample_3,26,Michigan,off_season,4.53,16
+oversample_3,26,Michigan,peak,195.41,36
+oversample_3,26,Michigan,plateau,5.13,28
+oversample_3,27,Minnesota,decline,29.21,24
+oversample_3,27,Minnesota,growth,78.55,36
+oversample_3,27,Minnesota,off_season,3.26,16
+oversample_3,27,Minnesota,peak,146.48,36
+oversample_3,27,Minnesota,plateau,5.51,28
+oversample_3,28,Mississippi,decline,45.26,24
+oversample_3,28,Mississippi,growth,16.98,36
+oversample_3,28,Mississippi,off_season,2.64,16
+oversample_3,28,Mississippi,peak,50.02,36
+oversample_3,28,Mississippi,plateau,4.56,28
+oversample_3,29,Missouri,decline,52.91,24
+oversample_3,29,Missouri,growth,62.58,36
+oversample_3,29,Missouri,off_season,2.87,16
+oversample_3,29,Missouri,peak,142.96,36
+oversample_3,29,Missouri,plateau,4.78,28
+oversample_3,30,Montana,decline,10.06,24
+oversample_3,30,Montana,growth,8.55,36
+oversample_3,30,Montana,off_season,1.52,16
+oversample_3,30,Montana,peak,26.92,36
+oversample_3,30,Montana,plateau,2.27,28
+oversample_3,31,Nebraska,decline,21.89,24
+oversample_3,31,Nebraska,growth,12.84,36
+oversample_3,31,Nebraska,off_season,2.05,16
+oversample_3,31,Nebraska,peak,32.77,36
+oversample_3,31,Nebraska,plateau,2.11,28
+oversample_3,32,Nevada,decline,8.46,24
+oversample_3,32,Nevada,growth,21.61,36
+oversample_3,32,Nevada,off_season,4.73,16
+oversample_3,32,Nevada,peak,51.14,36
+oversample_3,32,Nevada,plateau,9.42,28
+oversample_3,33,New Hampshire,decline,6.67,24
+oversample_3,33,New Hampshire,growth,13.7,36
+oversample_3,33,New Hampshire,off_season,1.31,16
+oversample_3,33,New Hampshire,peak,44.56,36
+oversample_3,33,New Hampshire,plateau,1.75,28
+oversample_3,34,New Jersey,decline,26.11,24
+oversample_3,34,New Jersey,growth,143.73,36
+oversample_3,34,New Jersey,off_season,3.57,16
+oversample_3,34,New Jersey,peak,218.75,36
+oversample_3,34,New Jersey,plateau,8.18,28
+oversample_3,35,New Mexico,decline,16.58,24
+oversample_3,35,New Mexico,growth,25.22,36
+oversample_3,35,New Mexico,off_season,2.03,16
+oversample_3,35,New Mexico,peak,64.39,36
+oversample_3,35,New Mexico,plateau,2.33,28
+oversample_3,36,New York,decline,25.05,24
+oversample_3,36,New York,growth,487.41,36
+oversample_3,36,New York,off_season,4.28,16
+oversample_3,36,New York,peak,244.05,36
+oversample_3,36,New York,plateau,12.02,28
+oversample_3,37,North Carolina,decline,41.35,24
+oversample_3,37,North Carolina,growth,256.21,36
+oversample_3,37,North Carolina,off_season,2.61,16
+oversample_3,37,North Carolina,peak,288.02,36
+oversample_3,37,North Carolina,plateau,4.18,28
+oversample_3,38,North Dakota,decline,3.85,24
+oversample_3,38,North Dakota,growth,8.04,36
+oversample_3,38,North Dakota,off_season,1.36,16
+oversample_3,38,North Dakota,peak,24.68,36
+oversample_3,38,North Dakota,plateau,1.92,28
+oversample_3,39,Ohio,decline,85.3,24
+oversample_3,39,Ohio,growth,126.25,36
+oversample_3,39,Ohio,off_season,2.74,16
+oversample_3,39,Ohio,peak,300.7,36
+oversample_3,39,Ohio,plateau,6.02,28
+oversample_3,40,Oklahoma,decline,53.89,24
+oversample_3,40,Oklahoma,growth,18.87,36
+oversample_3,40,Oklahoma,off_season,3.63,16
+oversample_3,40,Oklahoma,peak,58.51,36
+oversample_3,40,Oklahoma,plateau,3.85,28
+oversample_3,41,Oregon,decline,67.7,24
+oversample_3,41,Oregon,growth,8.18,36
+oversample_3,41,Oregon,off_season,2.11,16
+oversample_3,41,Oregon,peak,67.5,36
+oversample_3,41,Oregon,plateau,3.64,28
+oversample_3,42,Pennsylvania,decline,158.87,24
+oversample_3,42,Pennsylvania,growth,190.49,36
+oversample_3,42,Pennsylvania,off_season,25.39,16
+oversample_3,42,Pennsylvania,peak,396.91,36
+oversample_3,42,Pennsylvania,plateau,32.44,28
+oversample_3,44,Rhode Island,decline,3.71,24
+oversample_3,44,Rhode Island,growth,17.05,36
+oversample_3,44,Rhode Island,off_season,2.32,16
+oversample_3,44,Rhode Island,peak,41.72,36
+oversample_3,44,Rhode Island,plateau,2.0,28
+oversample_3,45,South Carolina,decline,37.77,24
+oversample_3,45,South Carolina,growth,71.54,36
+oversample_3,45,South Carolina,off_season,4.19,16
+oversample_3,45,South Carolina,peak,131.95,36
+oversample_3,45,South Carolina,plateau,3.27,28
+oversample_3,46,South Dakota,decline,6.81,24
+oversample_3,46,South Dakota,growth,5.45,36
+oversample_3,46,South Dakota,off_season,0.97,16
+oversample_3,46,South Dakota,peak,18.35,36
+oversample_3,46,South Dakota,plateau,1.73,28
+oversample_3,47,Tennessee,decline,27.01,24
+oversample_3,47,Tennessee,growth,66.73,36
+oversample_3,47,Tennessee,off_season,4.38,16
+oversample_3,47,Tennessee,peak,126.33,36
+oversample_3,47,Tennessee,plateau,6.44,28
+oversample_3,48,Texas,decline,57.48,24
+oversample_3,48,Texas,growth,142.02,36
+oversample_3,48,Texas,off_season,11.38,16
+oversample_3,48,Texas,peak,383.11,36
+oversample_3,48,Texas,plateau,18.69,28
+oversample_3,49,Utah,decline,16.42,24
+oversample_3,49,Utah,growth,13.08,36
+oversample_3,49,Utah,off_season,1.42,16
+oversample_3,49,Utah,peak,53.7,36
+oversample_3,49,Utah,plateau,3.01,28
+oversample_3,50,Vermont,decline,5.12,24
+oversample_3,50,Vermont,growth,3.93,36
+oversample_3,50,Vermont,off_season,0.51,16
+oversample_3,50,Vermont,peak,11.13,36
+oversample_3,50,Vermont,plateau,1.13,28
+oversample_3,51,Virginia,decline,37.78,24
+oversample_3,51,Virginia,growth,48.76,36
+oversample_3,51,Virginia,off_season,3.13,16
+oversample_3,51,Virginia,peak,155.22,36
+oversample_3,51,Virginia,plateau,4.06,28
+oversample_3,53,Washington,decline,38.39,24
+oversample_3,53,Washington,growth,9.98,36
+oversample_3,53,Washington,off_season,2.76,16
+oversample_3,53,Washington,peak,48.26,36
+oversample_3,53,Washington,plateau,4.29,28
+oversample_3,54,West Virginia,decline,28.03,24
+oversample_3,54,West Virginia,growth,16.57,36
+oversample_3,54,West Virginia,off_season,0.88,16
+oversample_3,54,West Virginia,peak,34.96,36
+oversample_3,54,West Virginia,plateau,3.26,28
+oversample_3,55,Wisconsin,decline,18.96,24
+oversample_3,55,Wisconsin,growth,65.14,36
+oversample_3,55,Wisconsin,off_season,1.77,16
+oversample_3,55,Wisconsin,peak,134.77,36
+oversample_3,55,Wisconsin,plateau,6.86,28
+oversample_3,56,Wyoming,decline,4.17,24
+oversample_3,56,Wyoming,growth,4.17,36
+oversample_3,56,Wyoming,off_season,1.48,16
+oversample_3,56,Wyoming,peak,15.67,36
+oversample_3,56,Wyoming,plateau,1.64,28
+oversample_3,72,Puerto Rico,decline,23.08,24
+oversample_3,72,Puerto Rico,growth,56.85,36
+oversample_3,72,Puerto Rico,off_season,12.34,16
+oversample_3,72,Puerto Rico,peak,61.65,36
+oversample_3,72,Puerto Rico,plateau,15.21,28
+oversample_5,01,Alabama,all,50.29,140
+oversample_5,02,Alaska,all,6.83,140
+oversample_5,04,Arizona,all,40.66,140
+oversample_5,05,Arkansas,all,23.77,140
+oversample_5,06,California,all,114.79,140
+oversample_5,08,Colorado,all,44.96,140
+oversample_5,09,Connecticut,all,46.39,140
+oversample_5,10,Delaware,all,14.21,140
+oversample_5,11,District of Columbia,all,9.32,140
+oversample_5,12,Florida,all,224.32,140
+oversample_5,13,Georgia,all,93.8,140
+oversample_5,15,Hawaii,all,11.06,140
+oversample_5,16,Idaho,all,15.93,140
+oversample_5,17,Illinois,all,99.84,140
+oversample_5,18,Indiana,all,55.71,140
+oversample_5,19,Iowa,all,28.0,140
+oversample_5,20,Kansas,all,28.67,140
+oversample_5,21,Kentucky,all,43.01,140
+oversample_5,22,Louisiana,all,46.82,140
+oversample_5,23,Maine,all,14.9,140
+oversample_5,24,Maryland,all,45.36,140
+oversample_5,25,Massachusetts,all,70.89,140
+oversample_5,26,Michigan,all,76.37,140
+oversample_5,27,Minnesota,all,64.09,140
+oversample_5,28,Mississippi,all,25.17,140
+oversample_5,29,Missouri,all,64.51,140
+oversample_5,30,Montana,all,11.72,140
+oversample_5,31,Nebraska,all,15.78,140
+oversample_5,32,Nevada,all,23.39,140
+oversample_5,33,New Hampshire,all,16.55,140
+oversample_5,34,New Jersey,all,99.84,140
+oversample_5,35,New Mexico,all,27.93,140
+oversample_5,36,New York,all,189.31,140
+oversample_5,37,North Carolina,all,152.81,140
+oversample_5,38,North Dakota,all,9.84,140
+oversample_5,39,Ohio,all,126.25,140
+oversample_5,40,Oklahoma,all,30.52,140
+oversample_5,41,Oregon,all,32.45,140
+oversample_5,42,Pennsylvania,all,185.9,140
+oversample_5,44,Rhode Island,all,16.07,140
+oversample_5,45,South Carolina,all,61.66,140
+oversample_5,46,South Dakota,all,7.99,140
+oversample_5,47,Tennessee,all,56.83,140
+oversample_5,48,Texas,all,147.61,140
+oversample_5,49,Utah,all,21.13,140
+oversample_5,50,Vermont,all,5.12,140
+oversample_5,51,Virginia,all,62.09,140
+oversample_5,53,Washington,all,23.23,140
+oversample_5,54,West Virginia,all,19.41,140
+oversample_5,55,Wisconsin,all,57.6,140
+oversample_5,56,Wyoming,all,6.18,140
+oversample_5,72,Puerto Rico,all,41.15,140
+oversample_5,01,Alabama,decline,59.78,24
+oversample_5,01,Alabama,growth,28.42,36
+oversample_5,01,Alabama,off_season,4.33,16
+oversample_5,01,Alabama,peak,122.81,36
+oversample_5,01,Alabama,plateau,3.29,28
+oversample_5,02,Alaska,decline,2.76,24
+oversample_5,02,Alaska,growth,5.59,36
+oversample_5,02,Alaska,off_season,1.52,16
+oversample_5,02,Alaska,peak,17.31,36
+oversample_5,02,Alaska,plateau,1.48,28
+oversample_5,04,Arizona,decline,57.2,24
+oversample_5,04,Arizona,growth,20.04,36
+oversample_5,04,Arizona,off_season,5.94,16
+oversample_5,04,Arizona,peak,88.25,36
+oversample_5,04,Arizona,plateau,11.66,28
+oversample_5,05,Arkansas,decline,42.76,24
+oversample_5,05,Arkansas,growth,17.15,36
+oversample_5,05,Arkansas,off_season,2.66,16
+oversample_5,05,Arkansas,peak,42.96,36
+oversample_5,05,Arkansas,plateau,3.41,28
+oversample_5,06,California,decline,115.06,24
+oversample_5,06,California,growth,62.93,36
+oversample_5,06,California,off_season,12.63,16
+oversample_5,06,California,peak,278.71,36
+oversample_5,06,California,plateau,28.85,28
+oversample_5,08,Colorado,decline,21.61,24
+oversample_5,08,Colorado,growth,40.92,36
+oversample_5,08,Colorado,off_season,2.65,16
+oversample_5,08,Colorado,peak,113.54,36
+oversample_5,08,Colorado,plateau,6.15,28
+oversample_5,09,Connecticut,decline,4.86,24
+oversample_5,09,Connecticut,growth,56.63,36
+oversample_5,09,Connecticut,off_season,1.54,16
+oversample_5,09,Connecticut,peak,116.41,36
+oversample_5,09,Connecticut,plateau,4.44,28
+oversample_5,10,Delaware,decline,8.88,24
+oversample_5,10,Delaware,growth,16.0,36
+oversample_5,10,Delaware,off_season,1.79,16
+oversample_5,10,Delaware,peak,31.33,36
+oversample_5,10,Delaware,plateau,1.57,28
+oversample_5,11,District of Columbia,decline,4.09,24
+oversample_5,11,District of Columbia,growth,7.4,36
+oversample_5,11,District of Columbia,off_season,1.35,16
+oversample_5,11,District of Columbia,peak,24.91,36
+oversample_5,11,District of Columbia,plateau,0.8,28
+oversample_5,12,Florida,decline,150.07,24
+oversample_5,12,Florida,growth,123.27,36
+oversample_5,12,Florida,off_season,18.42,16
+oversample_5,12,Florida,peak,622.69,36
+oversample_5,12,Florida,plateau,23.37,28
+oversample_5,13,Georgia,decline,59.36,24
+oversample_5,13,Georgia,growth,100.22,36
+oversample_5,13,Georgia,off_season,4.09,16
+oversample_5,13,Georgia,peak,218.44,36
+oversample_5,13,Georgia,plateau,6.1,28
+oversample_5,15,Hawaii,decline,6.02,24
+oversample_5,15,Hawaii,growth,10.5,36
+oversample_5,15,Hawaii,off_season,1.61,16
+oversample_5,15,Hawaii,peak,23.3,36
+oversample_5,15,Hawaii,plateau,5.75,28
+oversample_5,16,Idaho,decline,14.91,24
+oversample_5,16,Idaho,growth,10.88,36
+oversample_5,16,Idaho,off_season,1.28,16
+oversample_5,16,Idaho,peak,38.08,36
+oversample_5,16,Idaho,plateau,3.18,28
+oversample_5,17,Illinois,decline,48.84,24
+oversample_5,17,Illinois,growth,101.72,36
+oversample_5,17,Illinois,off_season,9.21,16
+oversample_5,17,Illinois,peak,240.27,36
+oversample_5,17,Illinois,plateau,12.38,28
+oversample_5,18,Indiana,decline,53.52,24
+oversample_5,18,Indiana,growth,37.48,36
+oversample_5,18,Indiana,off_season,3.47,16
+oversample_5,18,Indiana,peak,138.41,36
+oversample_5,18,Indiana,plateau,4.55,28
+oversample_5,19,Iowa,decline,28.12,24
+oversample_5,19,Iowa,growth,21.27,36
+oversample_5,19,Iowa,off_season,1.31,16
+oversample_5,19,Iowa,peak,65.97,36
+oversample_5,19,Iowa,plateau,3.0,28
+oversample_5,20,Kansas,decline,32.2,24
+oversample_5,20,Kansas,growth,27.21,36
+oversample_5,20,Kansas,off_season,1.57,16
+oversample_5,20,Kansas,peak,60.79,36
+oversample_5,20,Kansas,plateau,1.72,28
+oversample_5,21,Kentucky,decline,39.37,24
+oversample_5,21,Kentucky,growth,37.83,36
+oversample_5,21,Kentucky,off_season,3.7,16
+oversample_5,21,Kentucky,peak,98.35,36
+oversample_5,21,Kentucky,plateau,4.11,28
+oversample_5,22,Louisiana,decline,52.2,24
+oversample_5,22,Louisiana,growth,38.73,36
+oversample_5,22,Louisiana,off_season,4.69,16
+oversample_5,22,Louisiana,peak,101.94,36
+oversample_5,22,Louisiana,plateau,5.79,28
+oversample_5,23,Maine,decline,9.48,24
+oversample_5,23,Maine,growth,9.71,36
+oversample_5,23,Maine,off_season,1.24,16
+oversample_5,23,Maine,peak,39.98,36
+oversample_5,23,Maine,plateau,1.79,28
+oversample_5,24,Maryland,decline,15.81,24
+oversample_5,24,Maryland,growth,36.09,36
+oversample_5,24,Maryland,off_season,2.46,16
+oversample_5,24,Maryland,peak,125.28,36
+oversample_5,24,Maryland,plateau,4.4,28
+oversample_5,25,Massachusetts,decline,12.65,24
+oversample_5,25,Massachusetts,growth,53.51,36
+oversample_5,25,Massachusetts,off_season,4.22,16
+oversample_5,25,Massachusetts,peak,208.29,36
+oversample_5,25,Massachusetts,plateau,4.61,28
+oversample_5,26,Michigan,decline,32.3,24
+oversample_5,26,Michigan,growth,60.03,36
+oversample_5,26,Michigan,off_season,4.47,16
+oversample_5,26,Michigan,peak,208.71,36
+oversample_5,26,Michigan,plateau,6.08,28
+oversample_5,27,Minnesota,decline,30.39,24
+oversample_5,27,Minnesota,growth,75.12,36
+oversample_5,27,Minnesota,off_season,3.12,16
+oversample_5,27,Minnesota,peak,148.16,36
+oversample_5,27,Minnesota,plateau,5.54,28
+oversample_5,28,Mississippi,decline,42.98,24
+oversample_5,28,Mississippi,growth,16.82,36
+oversample_5,28,Mississippi,off_season,2.72,16
+oversample_5,28,Mississippi,peak,47.41,36
+oversample_5,28,Mississippi,plateau,4.89,28
+oversample_5,29,Missouri,decline,54.03,24
+oversample_5,29,Missouri,growth,60.06,36
+oversample_5,29,Missouri,off_season,3.06,16
+oversample_5,29,Missouri,peak,149.29,36
+oversample_5,29,Missouri,plateau,5.31,28
+oversample_5,30,Montana,decline,10.14,24
+oversample_5,30,Montana,growth,8.41,36
+oversample_5,30,Montana,off_season,1.55,16
+oversample_5,30,Montana,peak,27.98,36
+oversample_5,30,Montana,plateau,2.25,28
+oversample_5,31,Nebraska,decline,21.38,24
+oversample_5,31,Nebraska,growth,12.43,36
+oversample_5,31,Nebraska,off_season,2.05,16
+oversample_5,31,Nebraska,peak,32.12,36
+oversample_5,31,Nebraska,plateau,2.14,28
+oversample_5,32,Nevada,decline,9.59,24
+oversample_5,32,Nevada,growth,21.07,36
+oversample_5,32,Nevada,off_season,4.89,16
+oversample_5,32,Nevada,peak,53.94,36
+oversample_5,32,Nevada,plateau,9.52,28
+oversample_5,33,New Hampshire,decline,6.24,24
+oversample_5,33,New Hampshire,growth,13.08,36
+oversample_5,33,New Hampshire,off_season,1.35,16
+oversample_5,33,New Hampshire,peak,45.19,36
+oversample_5,33,New Hampshire,plateau,1.72,28
+oversample_5,34,New Jersey,decline,27.34,24
+oversample_5,34,New Jersey,growth,140.21,36
+oversample_5,34,New Jersey,off_season,3.53,16
+oversample_5,34,New Jersey,peak,222.02,36
+oversample_5,34,New Jersey,plateau,8.02,28
+oversample_5,35,New Mexico,decline,17.96,24
+oversample_5,35,New Mexico,growth,24.41,36
+oversample_5,35,New Mexico,off_season,1.97,16
+oversample_5,35,New Mexico,peak,69.42,36
+oversample_5,35,New Mexico,plateau,2.47,28
+oversample_5,36,New York,decline,24.94,24
+oversample_5,36,New York,growth,453.95,36
+oversample_5,36,New York,off_season,4.16,16
+oversample_5,36,New York,peak,254.05,36
+oversample_5,36,New York,plateau,12.52,28
+oversample_5,37,North Carolina,decline,44.84,24
+oversample_5,37,North Carolina,growth,252.95,36
+oversample_5,37,North Carolina,off_season,2.65,16
+oversample_5,37,North Carolina,peak,306.57,36
+oversample_5,37,North Carolina,plateau,4.7,28
+oversample_5,38,North Dakota,decline,4.03,24
+oversample_5,38,North Dakota,growth,8.15,36
+oversample_5,38,North Dakota,off_season,1.41,16
+oversample_5,38,North Dakota,peak,25.35,36
+oversample_5,38,North Dakota,plateau,1.88,28
+oversample_5,39,Ohio,decline,87.49,24
+oversample_5,39,Ohio,growth,127.27,36
+oversample_5,39,Ohio,off_season,2.66,16
+oversample_5,39,Ohio,peak,299.31,36
+oversample_5,39,Ohio,plateau,6.27,28
+oversample_5,40,Oklahoma,decline,54.45,24
+oversample_5,40,Oklahoma,growth,18.74,36
+oversample_5,40,Oklahoma,off_season,3.7,16
+oversample_5,40,Oklahoma,peak,58.83,36
+oversample_5,40,Oklahoma,plateau,4.1,28
+oversample_5,41,Oregon,decline,68.55,24
+oversample_5,41,Oregon,growth,9.29,36
+oversample_5,41,Oregon,off_season,2.19,16
+oversample_5,41,Oregon,peak,67.21,36
+oversample_5,41,Oregon,plateau,3.88,28
+oversample_5,42,Pennsylvania,decline,148.54,24
+oversample_5,42,Pennsylvania,growth,180.65,36
+oversample_5,42,Pennsylvania,off_season,23.64,16
+oversample_5,42,Pennsylvania,peak,408.5,36
+oversample_5,42,Pennsylvania,plateau,31.22,28
+oversample_5,44,Rhode Island,decline,3.8,24
+oversample_5,44,Rhode Island,growth,16.49,36
+oversample_5,44,Rhode Island,off_season,2.3,16
+oversample_5,44,Rhode Island,peak,40.86,36
+oversample_5,44,Rhode Island,plateau,2.06,28
+oversample_5,45,South Carolina,decline,40.05,24
+oversample_5,45,South Carolina,growth,71.95,36
+oversample_5,45,South Carolina,off_season,4.22,16
+oversample_5,45,South Carolina,peak,136.59,36
+oversample_5,45,South Carolina,plateau,3.42,28
+oversample_5,46,South Dakota,decline,6.6,24
+oversample_5,46,South Dakota,growth,5.43,36
+oversample_5,46,South Dakota,off_season,0.97,16
+oversample_5,46,South Dakota,peak,19.53,36
+oversample_5,46,South Dakota,plateau,1.64,28
+oversample_5,47,Tennessee,decline,29.16,24
+oversample_5,47,Tennessee,growth,63.56,36
+oversample_5,47,Tennessee,off_season,4.46,16
+oversample_5,47,Tennessee,peak,130.64,36
+oversample_5,47,Tennessee,plateau,6.94,28
+oversample_5,48,Texas,decline,61.69,24
+oversample_5,48,Texas,growth,135.9,36
+oversample_5,48,Texas,off_season,10.49,16
+oversample_5,48,Texas,peak,378.36,36
+oversample_5,48,Texas,plateau,18.0,28
+oversample_5,49,Utah,decline,17.09,24
+oversample_5,49,Utah,growth,12.71,36
+oversample_5,49,Utah,off_season,1.44,16
+oversample_5,49,Utah,peak,55.03,36
+oversample_5,49,Utah,plateau,3.08,28
+oversample_5,50,Vermont,decline,4.81,24
+oversample_5,50,Vermont,growth,3.95,36
+oversample_5,50,Vermont,off_season,0.51,16
+oversample_5,50,Vermont,peak,11.6,36
+oversample_5,50,Vermont,plateau,1.18,28
+oversample_5,51,Virginia,decline,39.62,24
+oversample_5,51,Virginia,growth,47.2,36
+oversample_5,51,Virginia,off_season,3.08,16
+oversample_5,51,Virginia,peak,163.01,36
+oversample_5,51,Virginia,plateau,4.47,28
+oversample_5,53,Washington,decline,41.14,24
+oversample_5,53,Washington,growth,10.23,36
+oversample_5,53,Washington,off_season,2.62,16
+oversample_5,53,Washington,peak,47.98,36
+oversample_5,53,Washington,plateau,4.56,28
+oversample_5,54,West Virginia,decline,30.05,24
+oversample_5,54,West Virginia,growth,15.84,36
+oversample_5,54,West Virginia,off_season,0.87,16
+oversample_5,54,West Virginia,peak,36.65,36
+oversample_5,54,West Virginia,plateau,3.32,28
+oversample_5,55,Wisconsin,decline,21.26,24
+oversample_5,55,Wisconsin,growth,63.47,36
+oversample_5,55,Wisconsin,off_season,1.7,16
+oversample_5,55,Wisconsin,peak,139.82,36
+oversample_5,55,Wisconsin,plateau,7.42,28
+oversample_5,56,Wyoming,decline,4.12,24
+oversample_5,56,Wyoming,growth,4.24,36
+oversample_5,56,Wyoming,off_season,1.5,16
+oversample_5,56,Wyoming,peak,15.12,36
+oversample_5,56,Wyoming,plateau,1.63,28
+oversample_5,72,Puerto Rico,decline,24.5,24
+oversample_5,72,Puerto Rico,growth,59.44,36
+oversample_5,72,Puerto Rico,off_season,12.82,16
+oversample_5,72,Puerto Rico,peak,67.33,36
+oversample_5,72,Puerto Rico,plateau,14.44,28
+window_12,01,Alabama,all,59.05,140
+window_12,02,Alaska,all,36.19,140
+window_12,04,Arizona,all,48.83,140
+window_12,05,Arkansas,all,48.33,140
+window_12,06,California,all,286.14,140
+window_12,08,Colorado,all,85.24,140
+window_12,09,Connecticut,all,84.28,140
+window_12,10,Delaware,all,47.99,140
+window_12,11,District of Columbia,all,46.05,140
+window_12,12,Florida,all,507.0,140
+window_12,13,Georgia,all,119.36,140
+window_12,15,Hawaii,all,44.45,140
+window_12,16,Idaho,all,41.35,140
+window_12,17,Illinois,all,146.25,140
+window_12,18,Indiana,all,71.77,140
+window_12,19,Iowa,all,44.32,140
+window_12,20,Kansas,all,45.43,140
+window_12,21,Kentucky,all,53.56,140
+window_12,22,Louisiana,all,75.03,140
+window_12,23,Maine,all,46.52,140
+window_12,24,Maryland,all,84.92,140
+window_12,25,Massachusetts,all,96.98,140
+window_12,26,Michigan,all,93.38,140
+window_12,27,Minnesota,all,91.99,140
+window_12,28,Mississippi,all,44.7,140
+window_12,29,Missouri,all,78.75,140
+window_12,30,Montana,all,39.32,140
+window_12,31,Nebraska,all,38.22,140
+window_12,32,Nevada,all,47.27,140
+window_12,33,New Hampshire,all,49.74,140
+window_12,34,New Jersey,all,159.66,140
+window_12,35,New Mexico,all,53.24,140
+window_12,36,New York,all,458.13,140
+window_12,37,North Carolina,all,216.01,140
+window_12,38,North Dakota,all,39.96,140
+window_12,39,Ohio,all,170.44,140
+window_12,40,Oklahoma,all,45.06,140
+window_12,41,Oregon,all,42.83,140
+window_12,42,Pennsylvania,all,352.73,140
+window_12,44,Rhode Island,all,56.69,140
+window_12,45,South Carolina,all,80.3,140
+window_12,46,South Dakota,all,30.54,140
+window_12,47,Tennessee,all,72.75,140
+window_12,48,Texas,all,384.54,140
+window_12,49,Utah,all,50.73,140
+window_12,50,Vermont,all,29.53,140
+window_12,51,Virginia,all,90.45,140
+window_12,53,Washington,all,40.4,140
+window_12,54,West Virginia,all,37.99,140
+window_12,55,Wisconsin,all,77.47,140
+window_12,56,Wyoming,all,33.54,140
+window_12,72,Puerto Rico,all,63.59,140
+window_12,01,Alabama,decline,88.83,24
+window_12,01,Alabama,growth,52.75,36
+window_12,01,Alabama,off_season,4.52,16
+window_12,01,Alabama,peak,110.38,36
+window_12,01,Alabama,plateau,6.8,28
+window_12,02,Alaska,decline,58.13,24
+window_12,02,Alaska,growth,7.48,36
+window_12,02,Alaska,off_season,2.94,16
+window_12,02,Alaska,peak,84.83,36
+window_12,02,Alaska,plateau,10.78,28
+window_12,04,Arizona,decline,67.41,24
+window_12,04,Arizona,growth,26.18,36
+window_12,04,Arizona,off_season,4.98,16
+window_12,04,Arizona,peak,102.74,36
+window_12,04,Arizona,plateau,17.75,28
+window_12,05,Arkansas,decline,76.1,24
+window_12,05,Arkansas,growth,31.5,36
+window_12,05,Arkansas,off_season,3.3,16
+window_12,05,Arkansas,peak,96.89,36
+window_12,05,Arkansas,plateau,9.45,28
+window_12,06,California,decline,119.8,24
+window_12,06,California,growth,236.75,36
+window_12,06,California,off_season,43.64,16
+window_12,06,California,peak,742.86,36
+window_12,06,California,plateau,43.58,28
+window_12,08,Colorado,decline,72.14,24
+window_12,08,Colorado,growth,142.49,36
+window_12,08,Colorado,off_season,2.63,16
+window_12,08,Colorado,peak,133.86,36
+window_12,08,Colorado,plateau,7.56,28
+window_12,09,Connecticut,decline,74.62,24
+window_12,09,Connecticut,growth,103.18,36
+window_12,09,Connecticut,off_season,3.44,16
+window_12,09,Connecticut,peak,167.17,36
+window_12,09,Connecticut,plateau,7.88,28
+window_12,10,Delaware,decline,65.64,24
+window_12,10,Delaware,growth,22.32,36
+window_12,10,Delaware,off_season,4.05,16
+window_12,10,Delaware,peak,110.89,36
+window_12,10,Delaware,plateau,10.08,28
+window_12,11,District of Columbia,decline,78.11,24
+window_12,11,District of Columbia,growth,8.61,36
+window_12,11,District of Columbia,off_season,3.02,16
+window_12,11,District of Columbia,peak,108.42,36
+window_12,11,District of Columbia,plateau,11.1,28
+window_12,12,Florida,decline,127.6,24
+window_12,12,Florida,growth,702.82,36
+window_12,12,Florida,off_season,72.96,16
+window_12,12,Florida,peak,1121.07,36
+window_12,12,Florida,plateau,38.96,28
+window_12,13,Georgia,decline,85.83,24
+window_12,13,Georgia,growth,215.61,36
+window_12,13,Georgia,off_season,3.98,16
+window_12,13,Georgia,peak,182.75,36
+window_12,13,Georgia,plateau,8.77,28
+window_12,15,Hawaii,decline,79.87,24
+window_12,15,Hawaii,growth,13.13,36
+window_12,15,Hawaii,off_season,2.69,16
+window_12,15,Hawaii,peak,99.14,36
+window_12,15,Hawaii,plateau,7.9,28
+window_12,16,Idaho,decline,57.92,24
+window_12,16,Idaho,growth,13.59,36
+window_12,16,Idaho,off_season,2.69,16
+window_12,16,Idaho,peak,100.55,36
+window_12,16,Idaho,plateau,8.84,28
+window_12,17,Illinois,decline,68.94,24
+window_12,17,Illinois,growth,213.18,36
+window_12,17,Illinois,off_season,4.66,16
+window_12,17,Illinois,peak,296.83,36
+window_12,17,Illinois,plateau,13.78,28
+window_12,18,Indiana,decline,71.19,24
+window_12,18,Indiana,growth,86.27,36
+window_12,18,Indiana,off_season,3.04,16
+window_12,18,Indiana,peak,137.22,36
+window_12,18,Indiana,plateau,8.75,28
+window_12,19,Iowa,decline,58.09,24
+window_12,19,Iowa,growth,26.01,36
+window_12,19,Iowa,off_season,2.79,16
+window_12,19,Iowa,peak,99.35,36
+window_12,19,Iowa,plateau,9.02,28
+window_12,20,Kansas,decline,63.7,24
+window_12,20,Kansas,growth,26.66,36
+window_12,20,Kansas,off_season,3.42,16
+window_12,20,Kansas,peak,98.36,36
+window_12,20,Kansas,plateau,9.85,28
+window_12,21,Kentucky,decline,61.55,24
+window_12,21,Kentucky,growth,52.65,36
+window_12,21,Kentucky,off_season,4.08,16
+window_12,21,Kentucky,peak,106.29,36
+window_12,21,Kentucky,plateau,8.34,28
+window_12,22,Louisiana,decline,89.58,24
+window_12,22,Louisiana,growth,108.3,36
+window_12,22,Louisiana,off_season,8.89,16
+window_12,22,Louisiana,peak,112.72,36
+window_12,22,Louisiana,plateau,9.09,28
+window_12,23,Maine,decline,61.41,24
+window_12,23,Maine,growth,16.05,36
+window_12,23,Maine,off_season,3.66,16
+window_12,23,Maine,peak,115.06,36
+window_12,23,Maine,plateau,9.33,28
+window_12,24,Maryland,decline,83.89,24
+window_12,24,Maryland,growth,100.98,36
+window_12,24,Maryland,off_season,3.99,16
+window_12,24,Maryland,peak,165.62,36
+window_12,24,Maryland,plateau,7.64,28
+window_12,25,Massachusetts,decline,74.85,24
+window_12,25,Massachusetts,growth,117.65,36
+window_12,25,Massachusetts,off_season,3.6,16
+window_12,25,Massachusetts,peak,202.95,36
+window_12,25,Massachusetts,plateau,6.49,28
+window_12,26,Michigan,decline,67.27,24
+window_12,26,Michigan,growth,120.89,36
+window_12,26,Michigan,off_season,3.21,16
+window_12,26,Michigan,peak,188.77,36
+window_12,26,Michigan,plateau,9.25,28
+window_12,27,Minnesota,decline,70.64,24
+window_12,27,Minnesota,growth,142.67,36
+window_12,27,Minnesota,off_season,2.98,16
+window_12,27,Minnesota,peak,160.72,36
+window_12,27,Minnesota,plateau,7.61,28
+window_12,28,Mississippi,decline,73.15,24
+window_12,28,Mississippi,growth,21.66,36
+window_12,28,Mississippi,off_season,2.46,16
+window_12,28,Mississippi,peak,96.63,36
+window_12,28,Mississippi,plateau,7.3,28
+window_12,29,Missouri,decline,79.81,24
+window_12,29,Missouri,growth,82.47,36
+window_12,29,Missouri,off_season,3.41,16
+window_12,29,Missouri,peak,160.85,36
+window_12,29,Missouri,plateau,10.55,28
+window_12,30,Montana,decline,53.38,24
+window_12,30,Montana,growth,11.09,36
+window_12,30,Montana,off_season,3.11,16
+window_12,30,Montana,peak,96.72,36
+window_12,30,Montana,plateau,10.45,28
+window_12,31,Nebraska,decline,53.41,24
+window_12,31,Nebraska,growth,16.08,36
+window_12,31,Nebraska,off_season,3.57,16
+window_12,31,Nebraska,peak,87.95,36
+window_12,31,Nebraska,plateau,9.52,28
+window_12,32,Nevada,decline,55.59,24
+window_12,32,Nevada,growth,26.45,36
+window_12,32,Nevada,off_season,3.33,16
+window_12,32,Nevada,peak,109.88,36
+window_12,32,Nevada,plateau,11.52,28
+window_12,33,New Hampshire,decline,64.89,24
+window_12,33,New Hampshire,growth,18.48,36
+window_12,33,New Hampshire,off_season,3.11,16
+window_12,33,New Hampshire,peak,122.18,36
+window_12,33,New Hampshire,plateau,10.49,28
+window_12,34,New Jersey,decline,73.06,24
+window_12,34,New Jersey,growth,297.09,36
+window_12,34,New Jersey,off_season,5.26,16
+window_12,34,New Jersey,peak,263.81,36
+window_12,34,New Jersey,plateau,11.53,28
+window_12,35,New Mexico,decline,66.43,24
+window_12,35,New Mexico,growth,37.42,36
+window_12,35,New Mexico,off_season,3.4,16
+window_12,35,New Mexico,peak,117.73,36
+window_12,35,New Mexico,plateau,7.87,28
+window_12,36,New York,decline,51.54,24
+window_12,36,New York,growth,1124.83,36
+window_12,36,New York,off_season,5.47,16
+window_12,36,New York,peak,608.36,36
+window_12,36,New York,plateau,14.98,28
+window_12,37,North Carolina,decline,91.48,24
+window_12,37,North Carolina,growth,432.77,36
+window_12,37,North Carolina,off_season,2.96,16
+window_12,37,North Carolina,peak,338.07,36
+window_12,37,North Carolina,plateau,8.85,28
+window_12,38,North Dakota,decline,50.85,24
+window_12,38,North Dakota,growth,10.39,36
+window_12,38,North Dakota,off_season,2.71,16
+window_12,38,North Dakota,peak,103.37,36
+window_12,38,North Dakota,plateau,8.4,28
+window_12,39,Ohio,decline,88.98,24
+window_12,39,Ohio,growth,244.8,36
+window_12,39,Ohio,off_season,2.55,16
+window_12,39,Ohio,peak,349.3,36
+window_12,39,Ohio,plateau,10.63,28
+window_12,40,Oklahoma,decline,76.3,24
+window_12,40,Oklahoma,growth,19.73,36
+window_12,40,Oklahoma,off_season,4.02,16
+window_12,40,Oklahoma,peak,95.86,36
+window_12,40,Oklahoma,plateau,8.99,28
+window_12,41,Oregon,decline,86.32,24
+window_12,41,Oregon,growth,10.22,36
+window_12,41,Oregon,off_season,2.9,16
+window_12,41,Oregon,peak,90.95,36
+window_12,41,Oregon,plateau,8.41,28
+window_12,42,Pennsylvania,decline,137.99,24
+window_12,42,Pennsylvania,growth,489.71,36
+window_12,42,Pennsylvania,off_season,70.27,16
+window_12,42,Pennsylvania,peak,730.46,36
+window_12,42,Pennsylvania,plateau,36.43,28
+window_12,44,Rhode Island,decline,74.19,24
+window_12,44,Rhode Island,growth,24.45,36
+window_12,44,Rhode Island,off_season,3.69,16
+window_12,44,Rhode Island,peak,138.19,36
+window_12,44,Rhode Island,plateau,8.62,28
+window_12,45,South Carolina,decline,91.13,24
+window_12,45,South Carolina,growth,106.13,36
+window_12,45,South Carolina,off_season,3.77,16
+window_12,45,South Carolina,peak,137.06,36
+window_12,45,South Carolina,plateau,8.59,28
+window_12,46,South Dakota,decline,45.26,24
+window_12,46,South Dakota,growth,5.36,36
+window_12,46,South Dakota,off_season,2.82,16
+window_12,46,South Dakota,peak,74.92,36
+window_12,46,South Dakota,plateau,9.11,28
+window_12,47,Tennessee,decline,69.04,24
+window_12,47,Tennessee,growth,96.69,36
+window_12,47,Tennessee,off_season,5.14,16
+window_12,47,Tennessee,peak,130.14,36
+window_12,47,Tennessee,plateau,9.99,28
+window_12,48,Texas,decline,80.69,24
+window_12,48,Texas,growth,708.16,36
+window_12,48,Texas,off_season,42.4,16
+window_12,48,Texas,peak,689.91,36
+window_12,48,Texas,plateau,31.82,28
+window_12,49,Utah,decline,77.21,24
+window_12,49,Utah,growth,21.23,36
+window_12,49,Utah,off_season,2.17,16
+window_12,49,Utah,peak,117.42,36
+window_12,49,Utah,plateau,7.98,28
+window_12,50,Vermont,decline,54.09,24
+window_12,50,Vermont,growth,3.7,36
+window_12,50,Vermont,off_season,4.03,16
+window_12,50,Vermont,peak,64.09,36
+window_12,50,Vermont,plateau,11.82,28
+window_12,51,Virginia,decline,89.39,24
+window_12,51,Virginia,growth,109.57,36
+window_12,51,Virginia,off_season,3.11,16
+window_12,51,Virginia,peak,174.75,36
+window_12,51,Virginia,plateau,8.29,28
+window_12,53,Washington,decline,71.32,24
+window_12,53,Washington,growth,13.77,36
+window_12,53,Washington,off_season,2.76,16
+window_12,53,Washington,peak,89.49,36
+window_12,53,Washington,plateau,6.54,28
+window_12,54,West Virginia,decline,49.66,24
+window_12,54,West Virginia,growth,19.57,36
+window_12,54,West Virginia,off_season,2.53,16
+window_12,54,West Virginia,peak,87.6,36
+window_12,54,West Virginia,plateau,8.16,28
+window_12,55,Wisconsin,decline,59.02,24
+window_12,55,Wisconsin,growth,92.84,36
+window_12,55,Wisconsin,off_season,3.71,16
+window_12,55,Wisconsin,peak,158.93,36
+window_12,55,Wisconsin,plateau,10.92,28
+window_12,56,Wyoming,decline,60.04,24
+window_12,56,Wyoming,growth,4.33,36
+window_12,56,Wyoming,off_season,3.6,16
+window_12,56,Wyoming,peak,77.01,36
+window_12,56,Wyoming,plateau,9.61,28
+window_12,72,Puerto Rico,decline,64.36,24
+window_12,72,Puerto Rico,growth,78.25,36
+window_12,72,Puerto Rico,off_season,18.58,16
+window_12,72,Puerto Rico,peak,99.76,36
+window_12,72,Puerto Rico,plateau,23.27,28
+window_26,01,Alabama,all,54.14,140
+window_26,02,Alaska,all,23.22,140
+window_26,04,Arizona,all,44.44,140
+window_26,05,Arkansas,all,41.26,140
+window_26,06,California,all,304.62,140
+window_26,08,Colorado,all,71.56,140
+window_26,09,Connecticut,all,67.67,140
+window_26,10,Delaware,all,34.99,140
+window_26,11,District of Columbia,all,27.87,140
+window_26,12,Florida,all,530.01,140
+window_26,13,Georgia,all,115.16,140
+window_26,15,Hawaii,all,29.35,140
+window_26,16,Idaho,all,29.37,140
+window_26,17,Illinois,all,147.79,140
+window_26,18,Indiana,all,65.8,140
+window_26,19,Iowa,all,36.95,140
+window_26,20,Kansas,all,37.38,140
+window_26,21,Kentucky,all,44.96,140
+window_26,22,Louisiana,all,70.54,140
+window_26,23,Maine,all,33.82,140
+window_26,24,Maryland,all,67.79,140
+window_26,25,Massachusetts,all,80.7,140
+window_26,26,Michigan,all,84.82,140
+window_26,27,Minnesota,all,81.6,140
+window_26,28,Mississippi,all,37.01,140
+window_26,29,Missouri,all,77.86,140
+window_26,30,Montana,all,27.55,140
+window_26,31,Nebraska,all,30.5,140
+window_26,32,Nevada,all,34.71,140
+window_26,33,New Hampshire,all,35.78,140
+window_26,34,New Jersey,all,147.99,140
+window_26,35,New Mexico,all,41.08,140
+window_26,36,New York,all,452.0,140
+window_26,37,North Carolina,all,206.56,140
+window_26,38,North Dakota,all,26.77,140
+window_26,39,Ohio,all,174.27,140
+window_26,40,Oklahoma,all,39.25,140
+window_26,41,Oregon,all,38.8,140
+window_26,42,Pennsylvania,all,364.77,140
+window_26,44,Rhode Island,all,39.63,140
+window_26,45,South Carolina,all,70.27,140
+window_26,46,South Dakota,all,19.32,140
+window_26,47,Tennessee,all,66.38,140
+window_26,48,Texas,all,406.62,140
+window_26,49,Utah,all,37.35,140
+window_26,50,Vermont,all,17.13,140
+window_26,51,Virginia,all,80.18,140
+window_26,53,Washington,all,32.51,140
+window_26,54,West Virginia,all,30.89,140
+window_26,55,Wisconsin,all,68.75,140
+window_26,56,Wyoming,all,19.98,140
+window_26,72,Puerto Rico,all,47.87,140
+window_26,01,Alabama,decline,70.15,24
+window_26,01,Alabama,growth,56.31,36
+window_26,01,Alabama,off_season,7.53,16
+window_26,01,Alabama,peak,98.17,36
+window_26,01,Alabama,plateau,7.65,28
+window_26,02,Alaska,decline,20.56,24
+window_26,02,Alaska,growth,8.58,36
+window_26,02,Alaska,off_season,7.6,16
+window_26,02,Alaska,peak,56.13,36
+window_26,02,Alaska,plateau,10.94,28
+window_26,04,Arizona,decline,53.21,24
+window_26,04,Arizona,growth,28.69,36
+window_26,04,Arizona,off_season,9.16,16
+window_26,04,Arizona,peak,92.28,36
+window_26,04,Arizona,plateau,15.84,28
+window_26,05,Arkansas,decline,60.47,24
+window_26,05,Arkansas,growth,33.3,36
+window_26,05,Arkansas,off_season,10.34,16
+window_26,05,Arkansas,peak,73.52,36
+window_26,05,Arkansas,plateau,11.22,28
+window_26,06,California,decline,127.78,24
+window_26,06,California,growth,226.56,36
+window_26,06,California,off_season,17.34,16
+window_26,06,California,peak,838.11,36
+window_26,06,California,plateau,34.84,28
+window_26,08,Colorado,decline,40.62,24
+window_26,08,Colorado,growth,141.73,36
+window_26,08,Colorado,off_season,8.69,16
+window_26,08,Colorado,peak,96.77,36
+window_26,08,Colorado,plateau,11.37,28
+window_26,09,Connecticut,decline,31.96,24
+window_26,09,Connecticut,growth,105.53,36
+window_26,09,Connecticut,off_season,8.69,16
+window_26,09,Connecticut,peak,124.38,36
+window_26,09,Connecticut,plateau,10.4,28
+window_26,10,Delaware,decline,33.6,24
+window_26,10,Delaware,growth,23.75,36
+window_26,10,Delaware,off_season,9.76,16
+window_26,10,Delaware,peak,76.44,36
+window_26,10,Delaware,plateau,11.77,28
+window_26,11,District of Columbia,decline,26.01,24
+window_26,11,District of Columbia,growth,9.92,36
+window_26,11,District of Columbia,off_season,8.71,16
+window_26,11,District of Columbia,peak,68.78,36
+window_26,11,District of Columbia,plateau,10.88,28
+window_26,12,Florida,decline,129.68,24
+window_26,12,Florida,growth,677.81,36
+window_26,12,Florida,off_season,39.54,16
+window_26,12,Florida,peak,1256.6,36
+window_26,12,Florida,plateau,29.22,28
+window_26,13,Georgia,decline,62.06,24
+window_26,13,Georgia,growth,217.41,36
+window_26,13,Georgia,off_season,10.06,16
+window_26,13,Georgia,peak,176.6,36
+window_26,13,Georgia,plateau,10.28,28
+window_26,15,Hawaii,decline,30.46,24
+window_26,15,Hawaii,growth,15.41,36
+window_26,15,Hawaii,off_season,9.05,16
+window_26,15,Hawaii,peak,63.74,36
+window_26,15,Hawaii,plateau,13.71,28
+window_26,16,Idaho,decline,34.09,24
+window_26,16,Idaho,growth,15.75,36
+window_26,16,Idaho,off_season,8.47,16
+window_26,16,Idaho,peak,63.2,36
+window_26,16,Idaho,plateau,11.26,28
+window_26,17,Illinois,decline,50.19,24
+window_26,17,Illinois,growth,214.64,36
+window_26,17,Illinois,off_season,13.2,16
+window_26,17,Illinois,peak,310.3,36
+window_26,17,Illinois,plateau,13.45,28
+window_26,18,Indiana,decline,52.07,24
+window_26,18,Indiana,growth,87.49,36
+window_26,18,Indiana,off_season,9.45,16
+window_26,18,Indiana,peak,122.03,36
+window_26,18,Indiana,plateau,9.59,28
+window_26,19,Iowa,decline,42.55,24
+window_26,19,Iowa,growth,26.97,36
+window_26,19,Iowa,off_season,8.29,16
+window_26,19,Iowa,peak,75.61,36
+window_26,19,Iowa,plateau,11.63,28
+window_26,20,Kansas,decline,49.22,24
+window_26,20,Kansas,growth,26.72,36
+window_26,20,Kansas,off_season,9.56,16
+window_26,20,Kansas,peak,72.47,36
+window_26,20,Kansas,plateau,11.73,28
+window_26,21,Kentucky,decline,41.04,24
+window_26,21,Kentucky,growth,55.78,36
+window_26,21,Kentucky,off_season,7.53,16
+window_26,21,Kentucky,peak,81.54,36
+window_26,21,Kentucky,plateau,8.79,28
+window_26,22,Louisiana,decline,62.37,24
+window_26,22,Louisiana,growth,113.4,36
+window_26,22,Louisiana,off_season,14.06,16
+window_26,22,Louisiana,peak,105.49,36
+window_26,22,Louisiana,plateau,9.76,28
+window_26,23,Maine,decline,33.08,24
+window_26,23,Maine,growth,17.67,36
+window_26,23,Maine,off_season,9.48,16
+window_26,23,Maine,peak,79.05,36
+window_26,23,Maine,plateau,10.97,28
+window_26,24,Maryland,decline,44.65,24
+window_26,24,Maryland,growth,101.96,36
+window_26,24,Maryland,off_season,10.21,16
+window_26,24,Maryland,peak,119.55,36
+window_26,24,Maryland,plateau,10.03,28
+window_26,25,Massachusetts,decline,37.26,24
+window_26,25,Massachusetts,growth,118.3,36
+window_26,25,Massachusetts,off_season,9.53,16
+window_26,25,Massachusetts,peak,159.78,36
+window_26,25,Massachusetts,plateau,8.58,28
+window_26,26,Michigan,decline,42.62,24
+window_26,26,Michigan,growth,120.87,36
+window_26,26,Michigan,off_season,9.93,16
+window_26,26,Michigan,peak,168.78,36
+window_26,26,Michigan,plateau,9.48,28
+window_26,27,Minnesota,decline,45.91,24
+window_26,27,Minnesota,growth,143.93,36
+window_26,27,Minnesota,off_season,9.55,16
+window_26,27,Minnesota,peak,130.38,36
+window_26,27,Minnesota,plateau,10.48,28
+window_26,28,Mississippi,decline,60.7,24
+window_26,28,Mississippi,growth,22.56,36
+window_26,28,Mississippi,off_season,9.21,16
+window_26,28,Mississippi,peak,68.75,36
+window_26,28,Mississippi,plateau,10.37,28
+window_26,29,Missouri,decline,56.1,24
+window_26,29,Missouri,growth,86.94,36
+window_26,29,Missouri,off_season,8.76,16
+window_26,29,Missouri,peak,165.83,36
+window_26,29,Missouri,plateau,11.22,28
+window_26,30,Montana,decline,29.86,24
+window_26,30,Montana,growth,12.12,36
+window_26,30,Montana,off_season,8.48,16
+window_26,30,Montana,peak,61.69,36
+window_26,30,Montana,plateau,12.4,28
+window_26,31,Nebraska,decline,38.52,24
+window_26,31,Nebraska,growth,17.92,36
+window_26,31,Nebraska,off_season,8.81,16
+window_26,31,Nebraska,peak,61.9,36
+window_26,31,Nebraska,plateau,11.8,28
+window_26,32,Nevada,decline,31.72,24
+window_26,32,Nevada,growth,27.71,36
+window_26,32,Nevada,off_season,11.33,16
+window_26,32,Nevada,peak,71.61,36
+window_26,32,Nevada,plateau,12.19,28
+window_26,33,New Hampshire,decline,32.74,24
+window_26,33,New Hampshire,growth,20.87,36
+window_26,33,New Hampshire,off_season,8.51,16
+window_26,33,New Hampshire,peak,83.5,36
+window_26,33,New Hampshire,plateau,11.79,28
+window_26,34,New Jersey,decline,46.29,24
+window_26,34,New Jersey,growth,298.57,36
+window_26,34,New Jersey,off_season,11.24,16
+window_26,34,New Jersey,peak,232.21,36
+window_26,34,New Jersey,plateau,11.44,28
+window_26,35,New Mexico,decline,40.33,24
+window_26,35,New Mexico,growth,40.21,36
+window_26,35,New Mexico,off_season,9.56,16
+window_26,35,New Mexico,peak,80.43,36
+window_26,35,New Mexico,plateau,10.25,28
+window_26,36,New York,decline,30.66,24
+window_26,36,New York,growth,1123.99,36
+window_26,36,New York,off_season,11.3,16
+window_26,36,New York,peak,596.72,36
+window_26,36,New York,plateau,14.93,28
+window_26,37,North Carolina,decline,62.23,24
+window_26,37,North Carolina,growth,432.33,36
+window_26,37,North Carolina,off_season,8.85,16
+window_26,37,North Carolina,peak,317.46,36
+window_26,37,North Carolina,plateau,10.4,28
+window_26,38,North Dakota,decline,24.34,24
+window_26,38,North Dakota,growth,11.58,36
+window_26,38,North Dakota,off_season,8.35,16
+window_26,38,North Dakota,peak,65.47,36
+window_26,38,North Dakota,plateau,9.16,28
+window_26,39,Ohio,decline,78.66,24
+window_26,39,Ohio,growth,244.08,36
+window_26,39,Ohio,off_season,7.56,16
+window_26,39,Ohio,peak,368.86,36
+window_26,39,Ohio,plateau,11.55,28
+window_26,40,Oklahoma,decline,67.34,24
+window_26,40,Oklahoma,growth,20.06,36
+window_26,40,Oklahoma,off_season,8.73,16
+window_26,40,Oklahoma,peak,75.27,36
+window_26,40,Oklahoma,plateau,10.97,28
+window_26,41,Oregon,decline,69.86,24
+window_26,41,Oregon,growth,11.33,36
+window_26,41,Oregon,off_season,9.98,16
+window_26,41,Oregon,peak,79.88,36
+window_26,41,Oregon,plateau,11.14,28
+window_26,42,Pennsylvania,decline,180.67,24
+window_26,42,Pennsylvania,growth,469.12,36
+window_26,42,Pennsylvania,off_season,27.27,16
+window_26,42,Pennsylvania,peak,789.69,36
+window_26,42,Pennsylvania,plateau,34.97,28
+window_26,44,Rhode Island,decline,27.99,24
+window_26,44,Rhode Island,growth,25.87,36
+window_26,44,Rhode Island,off_season,9.1,16
+window_26,44,Rhode Island,peak,97.43,36
+window_26,44,Rhode Island,plateau,10.46,28
+window_26,45,South Carolina,decline,64.77,24
+window_26,45,South Carolina,growth,107.82,36
+window_26,45,South Carolina,off_season,9.56,16
+window_26,45,South Carolina,peak,109.68,36
+window_26,45,South Carolina,plateau,10.74,28
+window_26,46,South Dakota,decline,23.22,24
+window_26,46,South Dakota,growth,6.01,36
+window_26,46,South Dakota,off_season,8.4,16
+window_26,46,South Dakota,peak,41.7,36
+window_26,46,South Dakota,plateau,10.56,28
+window_26,47,Tennessee,decline,42.2,24
+window_26,47,Tennessee,growth,102.68,36
+window_26,47,Tennessee,off_season,9.34,16
+window_26,47,Tennessee,peak,115.4,36
+window_26,47,Tennessee,plateau,10.02,28
+window_26,48,Texas,decline,78.76,24
+window_26,48,Texas,growth,681.56,36
+window_26,48,Texas,off_season,20.73,16
+window_26,48,Texas,peak,817.23,36
+window_26,48,Texas,plateau,26.73,28
+window_26,49,Utah,decline,43.36,24
+window_26,49,Utah,growth,24.29,36
+window_26,49,Utah,off_season,8.01,16
+window_26,49,Utah,peak,79.2,36
+window_26,49,Utah,plateau,11.93,28
+window_26,50,Vermont,decline,20.5,24
+window_26,50,Vermont,growth,4.01,36
+window_26,50,Vermont,off_season,9.5,16
+window_26,50,Vermont,peak,36.12,36
+window_26,50,Vermont,plateau,11.09,28
+window_26,51,Virginia,decline,60.03,24
+window_26,51,Virginia,growth,110.89,36
+window_26,51,Virginia,off_season,7.34,16
+window_26,51,Virginia,peak,150.01,36
+window_26,51,Virginia,plateau,9.78,28
+window_26,53,Washington,decline,53.94,24
+window_26,53,Washington,growth,15.86,36
+window_26,53,Washington,off_season,7.83,16
+window_26,53,Washington,peak,64.74,36
+window_26,53,Washington,plateau,8.21,28
+window_26,54,West Virginia,decline,37.71,24
+window_26,54,West Virginia,growth,20.92,36
+window_26,54,West Virginia,off_season,8.0,16
+window_26,54,West Virginia,peak,61.66,36
+window_26,54,West Virginia,plateau,11.36,28
+window_26,55,Wisconsin,decline,35.72,24
+window_26,55,Wisconsin,growth,93.82,36
+window_26,55,Wisconsin,off_season,9.56,16
+window_26,55,Wisconsin,peak,135.55,36
+window_26,55,Wisconsin,plateau,12.78,28
+window_26,56,Wyoming,decline,21.68,24
+window_26,56,Wyoming,growth,4.56,36
+window_26,56,Wyoming,off_season,9.22,16
+window_26,56,Wyoming,peak,47.05,36
+window_26,56,Wyoming,plateau,9.71,28
+window_26,72,Puerto Rico,decline,39.63,24
+window_26,72,Puerto Rico,growth,79.86,36
+window_26,72,Puerto Rico,off_season,14.93,16
+window_26,72,Puerto Rico,peak,59.99,36
+window_26,72,Puerto Rico,plateau,17.05,28
+window_52,01,Alabama,all,42.05,140
+window_52,02,Alaska,all,13.5,140
+window_52,04,Arizona,all,46.1,140
+window_52,05,Arkansas,all,31.19,140
+window_52,06,California,all,226.21,140
+window_52,08,Colorado,all,53.86,140
+window_52,09,Connecticut,all,67.24,140
+window_52,10,Delaware,all,23.9,140
+window_52,11,District of Columbia,all,17.84,140
+window_52,12,Florida,all,306.32,140
+window_52,13,Georgia,all,92.55,140
+window_52,15,Hawaii,all,18.63,140
+window_52,16,Idaho,all,21.85,140
+window_52,17,Illinois,all,113.59,140
+window_52,18,Indiana,all,63.6,140
+window_52,19,Iowa,all,33.53,140
+window_52,20,Kansas,all,31.73,140
+window_52,21,Kentucky,all,42.82,140
+window_52,22,Louisiana,all,48.12,140
+window_52,23,Maine,all,23.52,140
+window_52,24,Maryland,all,62.86,140
+window_52,25,Massachusetts,all,73.57,140
+window_52,26,Michigan,all,78.11,140
+window_52,27,Minnesota,all,72.96,140
+window_52,28,Mississippi,all,28.55,140
+window_52,29,Missouri,all,72.04,140
+window_52,30,Montana,all,18.65,140
+window_52,31,Nebraska,all,21.36,140
+window_52,32,Nevada,all,26.64,140
+window_52,33,New Hampshire,all,26.64,140
+window_52,34,New Jersey,all,105.61,140
+window_52,35,New Mexico,all,34.74,140
+window_52,36,New York,all,268.19,140
+window_52,37,North Carolina,all,167.48,140
+window_52,38,North Dakota,all,16.86,140
+window_52,39,Ohio,all,137.61,140
+window_52,40,Oklahoma,all,30.17,140
+window_52,41,Oregon,all,30.96,140
+window_52,42,Pennsylvania,all,237.59,140
+window_52,44,Rhode Island,all,29.27,140
+window_52,45,South Carolina,all,72.86,140
+window_52,46,South Dakota,all,12.38,140
+window_52,47,Tennessee,all,57.55,140
+window_52,48,Texas,all,211.49,140
+window_52,49,Utah,all,26.62,140
+window_52,50,Vermont,all,10.49,140
+window_52,51,Virginia,all,73.2,140
+window_52,53,Washington,all,24.88,140
+window_52,54,West Virginia,all,24.07,140
+window_52,55,Wisconsin,all,73.28,140
+window_52,56,Wyoming,all,13.35,140
+window_52,72,Puerto Rico,all,44.14,140
+window_52,01,Alabama,decline,25.95,24
+window_52,01,Alabama,growth,30.42,36
+window_52,01,Alabama,off_season,3.61,16
+window_52,01,Alabama,peak,111.7,36
+window_52,01,Alabama,plateau,3.2,28
+window_52,02,Alaska,decline,4.64,24
+window_52,02,Alaska,growth,6.63,36
+window_52,02,Alaska,off_season,2.0,16
+window_52,02,Alaska,peak,40.16,36
+window_52,02,Alaska,plateau,2.23,28
+window_52,04,Arizona,decline,19.18,24
+window_52,04,Arizona,growth,48.62,36
+window_52,04,Arizona,off_season,5.74,16
+window_52,04,Arizona,peak,104.24,36
+window_52,04,Arizona,plateau,14.24,28
+window_52,05,Arkansas,decline,25.77,24
+window_52,05,Arkansas,growth,21.13,36
+window_52,05,Arkansas,off_season,3.12,16
+window_52,05,Arkansas,peak,78.69,36
+window_52,05,Arkansas,plateau,3.72,28
+window_52,06,California,decline,135.59,24
+window_52,06,California,growth,81.36,36
+window_52,06,California,off_season,16.16,16
+window_52,06,California,peak,669.58,36
+window_52,06,California,plateau,40.08,28
+window_52,08,Colorado,decline,16.74,24
+window_52,08,Colorado,growth,65.88,36
+window_52,08,Colorado,off_season,3.1,16
+window_52,08,Colorado,peak,126.57,36
+window_52,08,Colorado,plateau,5.73,28
+window_52,09,Connecticut,decline,9.42,24
+window_52,09,Connecticut,growth,77.68,36
+window_52,09,Connecticut,off_season,2.33,16
+window_52,09,Connecticut,peak,172.59,36
+window_52,09,Connecticut,plateau,5.03,28
+window_52,10,Delaware,decline,10.17,24
+window_52,10,Delaware,growth,17.01,36
+window_52,10,Delaware,off_season,2.3,16
+window_52,10,Delaware,peak,66.63,36
+window_52,10,Delaware,plateau,1.92,28
+window_52,11,District of Columbia,decline,7.39,24
+window_52,11,District of Columbia,growth,7.16,36
+window_52,11,District of Columbia,off_season,1.56,16
+window_52,11,District of Columbia,peak,55.77,36
+window_52,11,District of Columbia,plateau,1.09,28
+window_52,12,Florida,decline,103.29,24
+window_52,12,Florida,growth,203.07,36
+window_52,12,Florida,off_season,27.3,16
+window_52,12,Florida,peak,882.4,36
+window_52,12,Florida,plateau,31.85,28
+window_52,13,Georgia,decline,25.08,24
+window_52,13,Georgia,growth,125.91,36
+window_52,13,Georgia,off_season,4.17,16
+window_52,13,Georgia,peak,211.37,36
+window_52,13,Georgia,plateau,5.23,28
+window_52,15,Hawaii,decline,8.96,24
+window_52,15,Hawaii,growth,9.95,36
+window_52,15,Hawaii,off_season,2.17,16
+window_52,15,Hawaii,peak,52.03,36
+window_52,15,Hawaii,plateau,4.53,28
+window_52,16,Idaho,decline,12.61,24
+window_52,16,Idaho,growth,11.65,36
+window_52,16,Idaho,off_season,1.88,16
+window_52,16,Idaho,peak,61.02,36
+window_52,16,Idaho,plateau,3.92,28
+window_52,17,Illinois,decline,29.23,24
+window_52,17,Illinois,growth,132.91,36
+window_52,17,Illinois,off_season,6.86,16
+window_52,17,Illinois,peak,276.61,36
+window_52,17,Illinois,plateau,12.44,28
+window_52,18,Indiana,decline,32.77,24
+window_52,18,Indiana,growth,51.0,36
+window_52,18,Indiana,off_season,3.39,16
+window_52,18,Indiana,peak,170.38,36
+window_52,18,Indiana,plateau,3.35,28
+window_52,19,Iowa,decline,19.96,24
+window_52,19,Iowa,growth,22.05,36
+window_52,19,Iowa,off_season,1.83,16
+window_52,19,Iowa,peak,90.93,36
+window_52,19,Iowa,plateau,4.22,28
+window_52,20,Kansas,decline,24.31,24
+window_52,20,Kansas,growth,22.49,36
+window_52,20,Kansas,off_season,1.68,16
+window_52,20,Kansas,peak,81.67,36
+window_52,20,Kansas,plateau,2.93,28
+window_52,21,Kentucky,decline,26.85,24
+window_52,21,Kentucky,growth,41.15,36
+window_52,21,Kentucky,off_season,3.24,16
+window_52,21,Kentucky,peak,103.53,36
+window_52,21,Kentucky,plateau,3.21,28
+window_52,22,Louisiana,decline,27.37,24
+window_52,22,Louisiana,growth,42.31,36
+window_52,22,Louisiana,off_season,6.91,16
+window_52,22,Louisiana,peak,119.42,36
+window_52,22,Louisiana,plateau,5.26,28
+window_52,23,Maine,decline,10.11,24
+window_52,23,Maine,growth,10.94,36
+window_52,23,Maine,off_season,1.8,16
+window_52,23,Maine,peak,71.25,36
+window_52,23,Maine,plateau,2.25,28
+window_52,24,Maryland,decline,15.02,24
+window_52,24,Maryland,growth,57.85,36
+window_52,24,Maryland,off_season,3.08,16
+window_52,24,Maryland,peak,172.59,36
+window_52,24,Maryland,plateau,3.39,28
+window_52,25,Massachusetts,decline,11.88,24
+window_52,25,Massachusetts,growth,67.57,36
+window_52,25,Massachusetts,off_season,4.4,16
+window_52,25,Massachusetts,peak,205.0,36
+window_52,25,Massachusetts,plateau,4.72,28
+window_52,26,Michigan,decline,21.04,24
+window_52,26,Michigan,growth,72.65,36
+window_52,26,Michigan,off_season,3.91,16
+window_52,26,Michigan,peak,211.85,36
+window_52,26,Michigan,plateau,4.47,28
+window_52,27,Minnesota,decline,20.82,24
+window_52,27,Minnesota,growth,105.84,36
+window_52,27,Minnesota,off_season,4.14,16
+window_52,27,Minnesota,peak,158.6,36
+window_52,27,Minnesota,plateau,4.6,28
+window_52,28,Mississippi,decline,26.46,24
+window_52,28,Mississippi,growth,15.75,36
+window_52,28,Mississippi,off_season,3.01,16
+window_52,28,Mississippi,peak,73.42,36
+window_52,28,Mississippi,plateau,3.67,28
+window_52,29,Missouri,decline,25.76,24
+window_52,29,Missouri,growth,67.01,36
+window_52,29,Missouri,off_season,2.82,16
+window_52,29,Missouri,peak,190.95,36
+window_52,29,Missouri,plateau,4.85,28
+window_52,30,Montana,decline,10.83,24
+window_52,30,Montana,growth,9.07,36
+window_52,30,Montana,off_season,1.89,16
+window_52,30,Montana,peak,52.81,36
+window_52,30,Montana,plateau,3.33,28
+window_52,31,Nebraska,decline,17.19,24
+window_52,31,Nebraska,growth,12.93,36
+window_52,31,Nebraska,off_season,2.61,16
+window_52,31,Nebraska,peak,55.08,36
+window_52,31,Nebraska,plateau,3.14,28
+window_52,32,Nevada,decline,10.69,24
+window_52,32,Nevada,growth,18.15,36
+window_52,32,Nevada,off_season,3.84,16
+window_52,32,Nevada,peak,70.22,36
+window_52,32,Nevada,plateau,8.2,28
+window_52,33,New Hampshire,decline,8.82,24
+window_52,33,New Hampshire,growth,13.6,36
+window_52,33,New Hampshire,off_season,1.71,16
+window_52,33,New Hampshire,peak,81.0,36
+window_52,33,New Hampshire,plateau,3.02,28
+window_52,34,New Jersey,decline,19.61,24
+window_52,34,New Jersey,growth,170.36,36
+window_52,34,New Jersey,off_season,4.06,16
+window_52,34,New Jersey,peak,219.8,36
+window_52,34,New Jersey,plateau,7.29,28
+window_52,35,New Mexico,decline,13.55,24
+window_52,35,New Mexico,growth,23.98,36
+window_52,35,New Mexico,off_season,2.58,16
+window_52,35,New Mexico,peak,98.92,36
+window_52,35,New Mexico,plateau,2.59,28
+window_52,36,New York,decline,34.09,24
+window_52,36,New York,growth,674.06,36
+window_52,36,New York,off_season,4.27,16
+window_52,36,New York,peak,333.57,36
+window_52,36,New York,plateau,13.78,28
+window_52,37,North Carolina,decline,27.06,24
+window_52,37,North Carolina,growth,302.71,36
+window_52,37,North Carolina,off_season,3.1,16
+window_52,37,North Carolina,peak,326.29,36
+window_52,37,North Carolina,plateau,3.71,28
+window_52,38,North Dakota,decline,5.88,24
+window_52,38,North Dakota,growth,8.01,36
+window_52,38,North Dakota,off_season,1.85,16
+window_52,38,North Dakota,peak,51.1,36
+window_52,38,North Dakota,plateau,2.23,28
+window_52,39,Ohio,decline,56.7,24
+window_52,39,Ohio,growth,160.32,36
+window_52,39,Ohio,off_season,2.5,16
+window_52,39,Ohio,peak,332.44,36
+window_52,39,Ohio,plateau,4.44,28
+window_52,40,Oklahoma,decline,29.61,24
+window_52,40,Oklahoma,growth,15.75,36
+window_52,40,Oklahoma,off_season,3.72,16
+window_52,40,Oklahoma,peak,77.27,36
+window_52,40,Oklahoma,plateau,3.75,28
+window_52,41,Oregon,decline,34.66,24
+window_52,41,Oregon,growth,12.49,36
+window_52,41,Oregon,off_season,2.49,16
+window_52,41,Oregon,peak,81.11,36
+window_52,41,Oregon,plateau,3.33,28
+window_52,42,Pennsylvania,decline,211.96,24
+window_52,42,Pennsylvania,growth,226.9,36
+window_52,42,Pennsylvania,off_season,27.65,16
+window_52,42,Pennsylvania,peak,506.87,36
+window_52,42,Pennsylvania,plateau,47.04,28
+window_52,44,Rhode Island,decline,7.46,24
+window_52,44,Rhode Island,growth,15.71,36
+window_52,44,Rhode Island,off_season,2.8,16
+window_52,44,Rhode Island,peak,90.13,36
+window_52,44,Rhode Island,plateau,2.3,28
+window_52,45,South Carolina,decline,31.17,24
+window_52,45,South Carolina,growth,82.72,36
+window_52,45,South Carolina,off_season,3.74,16
+window_52,45,South Carolina,peak,175.61,36
+window_52,45,South Carolina,plateau,3.33,28
+window_52,46,South Dakota,decline,7.98,24
+window_52,46,South Dakota,growth,6.04,36
+window_52,46,South Dakota,off_season,1.47,16
+window_52,46,South Dakota,peak,34.31,36
+window_52,46,South Dakota,plateau,2.32,28
+window_52,47,Tennessee,decline,15.51,24
+window_52,47,Tennessee,growth,67.2,36
+window_52,47,Tennessee,off_season,4.23,16
+window_52,47,Tennessee,peak,138.98,36
+window_52,47,Tennessee,plateau,6.97,28
+window_52,48,Texas,decline,57.33,24
+window_52,48,Texas,growth,257.35,36
+window_52,48,Texas,off_season,18.19,16
+window_52,48,Texas,peak,499.83,36
+window_52,48,Texas,plateau,24.41,28
+window_52,49,Utah,decline,16.67,24
+window_52,49,Utah,growth,14.89,36
+window_52,49,Utah,off_season,1.68,16
+window_52,49,Utah,peak,74.48,36
+window_52,49,Utah,plateau,2.93,28
+window_52,50,Vermont,decline,7.68,24
+window_52,50,Vermont,growth,5.41,36
+window_52,50,Vermont,off_season,1.61,16
+window_52,50,Vermont,peak,27.89,36
+window_52,50,Vermont,plateau,2.14,28
+window_52,51,Virginia,decline,27.17,24
+window_52,51,Virginia,growth,67.06,36
+window_52,51,Virginia,off_season,2.85,16
+window_52,51,Virginia,peak,195.64,36
+window_52,51,Virginia,plateau,3.36,28
+window_52,53,Washington,decline,21.0,24
+window_52,53,Washington,growth,10.25,36
+window_52,53,Washington,off_season,2.85,16
+window_52,53,Washington,peak,67.31,36
+window_52,53,Washington,plateau,5.08,28
+window_52,54,West Virginia,decline,21.73,24
+window_52,54,West Virginia,growth,16.11,36
+window_52,54,West Virginia,off_season,1.39,16
+window_52,54,West Virginia,peak,59.35,36
+window_52,54,West Virginia,plateau,3.91,28
+window_52,55,Wisconsin,decline,13.77,24
+window_52,55,Wisconsin,growth,75.06,36
+window_52,55,Wisconsin,off_season,2.34,16
+window_52,55,Wisconsin,peak,194.03,36
+window_52,55,Wisconsin,plateau,7.3,28
+window_52,56,Wyoming,decline,6.89,24
+window_52,56,Wyoming,growth,5.04,36
+window_52,56,Wyoming,off_season,2.12,16
+window_52,56,Wyoming,peak,40.08,36
+window_52,56,Wyoming,plateau,1.64,28
+window_52,72,Puerto Rico,decline,24.32,24
+window_52,72,Puerto Rico,growth,67.03,36
+window_52,72,Puerto Rico,off_season,14.19,16
+window_52,72,Puerto Rico,peak,64.49,36
+window_52,72,Puerto Rico,plateau,22.65,28

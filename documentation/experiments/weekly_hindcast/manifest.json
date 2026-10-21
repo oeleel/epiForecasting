@@ -1,0 +1,103 @@
+{
+  "experiment": "peak_rectification",
+  "round": 2,
+  "created_at": "2026-10-21T18:40:04+00:00",
+  "script": "scripts/experiments/peak_rectification.py",
+  "cutoffs": [
+    "2025-10-04",
+    "2025-10-11",
+    "2025-10-18",
+    "2025-10-25",
+    "2025-11-01",
+    "2025-11-08",
+    "2025-11-15",
+    "2025-11-22",
+    "2025-11-29",
+    "2025-12-06",
+    "2025-12-13",
+    "2025-12-20",
+    "2025-12-27",
+    "2026-01-03",
+    "2026-01-10",
+    "2026-01-17",
+    "2026-01-24",
+    "2026-01-31",
+    "2026-02-07",
+    "2026-02-14",
+    "2026-02-21",
+    "2026-02-28",
+    "2026-03-07",
+    "2026-03-14",
+    "2026-03-21",
+    "2026-03-28",
+    "2026-04-04",
+    "2026-04-11",
+    "2026-04-18",
+    "2026-04-25",
+    "2026-05-02",
+    "2026-05-09",
+    "2026-05-16",
+    "2026-05-23",
+    "2026-05-30"
+  ],
+  "n_cutoffs": 35,
+  "seeds": [
+    42
+  ],
+  "phase_scheme": "adiga_2026_10",
+  "floor": {
+    "enabled": true,
+    "floor_pct": 0.3,
+    "decay_per_horizon": 0.05
+  },
+  "git_sha": "2d9ade65e4baeee0b9e59dc5bf4090bd6a991e18",
+  "git_dirty": false,
+  "data_cache": {
+    "path": "data/raw/flusight_hospital_admissions.csv",
+    "mtime": "2026-10-15T17:36:37+00:00",
+    "sha256": "c91d9d81b8ab47ee5fe5458123167a3ce9c4171bddca682a89eb573d4b5336cb"
+  },
+  "host": "Leos-MacBook-Pro.local",
+  "python_version": "3.12.5",
+  "xgboost_version": "3.4.1",
+  "pandas_version": "2.3.3",
+  "model_family": "xgboost_direct",
+  "target_phase": "peak",
+  "target_metric": "wis",
+  "guard_metric": "overall_wis",
+  "split": {
+    "train_start_date": "2022-02-05",
+    "eval_start_date": "2025-10-01",
+    "eval_end_date": "2026-05-31",
+    "stride_weeks": 1
+  },
+  "exclude_locations": [
+    "US"
+  ],
+  "xgboost_params": {
+    "objective": "reg:squarederror",
+    "max_depth": 3,
+    "learning_rate": 0.05,
+    "n_estimators": 800,
+    "subsample": 0.7,
+    "colsample_bytree": 0.6,
+    "min_child_weight": 30,
+    "reg_alpha": 1.0,
+    "reg_lambda": 5.0,
+    "gamma": 1.0,
+    "random_state": 42,
+    "early_stopping_rounds": 50
+  },
+  "feature_version": "v3",
+  "quantile_levels": [
+    0.05,
+    0.25,
+    0.5,
+    0.75,
+    0.95
+  ],
+  "target_mode": "log",
+  "forecast_horizon": 4,
+  "approaching_peak_weeks": 6,
+  "min_train_window_weeks": 8
+}

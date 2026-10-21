@@ -14,7 +14,7 @@ without hurting overall WIS?
 
 Fixed vs varied
 ---------------
-Fixed (recorded in `manifest.json`): the pinned split and its stride-4 cutoffs,
+Fixed (recorded in `manifest.json`): the pinned split and its cutoffs (stride 4 unless `--stride-weeks`),
 US excluded from scoring, `XGBOOST_PARAMS_V2`, feature version, quantile
 levels, log target, floor constraint, phase scheme, seed list, git SHA,
 data-cache mtime, host and library versions. Everything comes from
@@ -62,7 +62,9 @@ Data vintage
 ------------
 `FluDataLoader` refreshes the CDC cache once it is older than 168 h, and
 CDC backfill moves past weeks. A fresh run refreshes a stale cache once,
-then pins the cache's sha256 in the manifest. For the rest of the run the
+then pins the cache's sha256 in the manifest (`--pin-data-sha256` skips the
+refresh and requires a given snapshot instead, so a new run can share an
+older run's data). For the rest of the run the
 loader's refresh is switched off (`_frozen_data_cache`), the hash is
 re-checked after every config, and a resume or merge against a different
 cache fails loudly, so every row and its baseline share one snapshot.
@@ -491,9 +493,9 @@ def run_config(
 ) -> tuple[pd.DataFrame, float]:
     """Train + forecast `arm` at every cutoff; return (pooled forecasts, seconds).
 
-    Excluded locations are dropped from the pooled frame the same way
-    `FluForecastAdapter.load_data` drops them, so scoring matches the loop.
-    The pooled frame is written to forecasts/<config_id>.csv for re-scoring.
+    The pooled frame keeps every location, excluded ones included, and is
+    written to forecasts/<config_id>.csv for re-scoring and plotting;
+    `score` drops excluded locations, so scoring still matches the loop.
     """
     if not cutoffs:
         raise ValueError("cutoffs must be non-empty")
@@ -509,10 +511,6 @@ def run_config(
             frames.append(frame)
             say(f"    {arm.config_id:<22s} {cutoff}  {len(frame):5d} rows  {time.perf_counter() - t_cut:5.1f}s")
     pooled = pd.concat(frames, ignore_index=True)
-    if adapter.exclude_locations:
-        pooled = pooled[~pooled["location"].astype(str).isin(adapter.exclude_locations)]
-    if pooled.empty:
-        raise ValueError(f"{arm.config_id}: no forecast rows left after excluding {sorted(adapter.exclude_locations)}")
     forecasts_dir.mkdir(parents=True, exist_ok=True)
     pooled.to_csv(forecasts_dir / f"{arm.config_id}.csv", index=False)
     return pooled, time.perf_counter() - t0
@@ -524,7 +522,13 @@ def score(adapter: FluForecastAdapter, forecasts: pd.DataFrame, actuals: pd.Data
     `by_phase_horizon[phase][horizon]` is the adapter's `by_phase` block
     computed on that horizon's rows alone (same fields as `by_phase`), so a
     pooled peak number can be read back per horizon without a second scorer.
+    Excluded locations are dropped first, the same way
+    `FluForecastAdapter.load_data` drops them.
     """
+    if adapter.exclude_locations:
+        forecasts = forecasts[~forecasts["location"].astype(str).isin(adapter.exclude_locations)]
+    if forecasts.empty:
+        raise ValueError(f"no forecast rows left to score after excluding {sorted(adapter.exclude_locations)}")
     metrics = adapter.compute_metrics(forecasts, actuals)
     by_phase_horizon: dict[str, dict[str, Any]] = {}
     for horizon in sorted(int(h) for h in forecasts["horizon"].unique()):
@@ -695,7 +699,11 @@ def _require_project_root_cwd() -> None:
         )
 
 
-def build_manifest(cutoffs: Sequence[str], seeds: Sequence[int] = DEFAULT_SEEDS) -> dict[str, Any]:
+def build_manifest(
+    cutoffs: Sequence[str],
+    seeds: Sequence[int] = DEFAULT_SEEDS,
+    stride_weeks: int = DEFAULT_STRIDE_WEEKS,
+) -> dict[str, Any]:
     cache_mtime = _data_cache_mtime()
     import xgboost  # local: keep module import cheap for --summary-only
 
@@ -722,10 +730,16 @@ def build_manifest(cutoffs: Sequence[str], seeds: Sequence[int] = DEFAULT_SEEDS)
         "xgboost_version": xgboost.__version__,
         "pandas_version": pd.__version__,
         **FIXED,
+        "split": {**FIXED["split"], "stride_weeks": stride_weeks},
     }
 
 
-def _ensure_manifest(out_dir: Path, cutoffs: Sequence[str], seeds: Sequence[int] = DEFAULT_SEEDS) -> dict[str, Any]:
+def _ensure_manifest(
+    out_dir: Path,
+    cutoffs: Sequence[str],
+    seeds: Sequence[int] = DEFAULT_SEEDS,
+    stride_weeks: int = DEFAULT_STRIDE_WEEKS,
+) -> dict[str, Any]:
     """Write the manifest once; on a resumed run, refuse a different split, seed list,
     phase scheme or data snapshot.
 
@@ -749,7 +763,7 @@ def _ensure_manifest(out_dir: Path, cutoffs: Sequence[str], seeds: Sequence[int]
         _check_data_vintage(_manifest_value(manifest, DATA_CACHE_HASH_KEY))
         return manifest
     out_dir.mkdir(parents=True, exist_ok=True)
-    manifest = build_manifest(cutoffs, seeds)
+    manifest = build_manifest(cutoffs, seeds, stride_weeks)
     path.write_text(json.dumps(manifest, indent=2, default=str) + "\n")
     return manifest
 
@@ -1133,7 +1147,17 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--cutoffs", type=int, default=None, metavar="N",
-        help="use only the first N of the pinned stride-4 cutoffs (smoke runs). Default: all.",
+        help="use only the first N cutoffs at --stride-weeks (smoke runs). Default: all.",
+    )
+    parser.add_argument(
+        "--stride-weeks", type=int, default=DEFAULT_STRIDE_WEEKS, metavar="K",
+        help=f"weeks between eval cutoffs on the pinned split. Default: {DEFAULT_STRIDE_WEEKS} "
+             "(9 cutoffs); 1 gives a weekly hindcast (35 cutoffs).",
+    )
+    parser.add_argument(
+        "--pin-data-sha256", default=None, metavar="SHA",
+        help="fresh run only: train on the data cache as it is, without the usual refresh, and fail "
+             "unless its sha256 is SHA (e.g. another run's manifest value, to share its snapshot).",
     )
     parser.add_argument(
         "--arms", nargs="+", default=list(ARM_NAMES), choices=list(ARM_NAMES), metavar="ARM",
@@ -1185,19 +1209,21 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def _resolve_cutoffs(n: int | None) -> tuple[list[str], bool]:
+def _resolve_cutoffs(n: int | None, stride_weeks: int = DEFAULT_STRIDE_WEEKS) -> tuple[list[str], bool]:
     """Return (cutoffs, is_subset). `n` beyond the split is a mistake, not a clamp."""
-    full = cfg.generate_eval_cutoffs(DEFAULT_STRIDE_WEEKS)
+    if stride_weeks < 1:
+        raise ValueError(f"--stride-weeks must be >= 1, got {stride_weeks}")
+    full = cfg.generate_eval_cutoffs(stride_weeks)
     if n is None:
         return full, False
     if n < 1 or n > len(full):
-        raise ValueError(f"--cutoffs must be in [1, {len(full)}] for stride {DEFAULT_STRIDE_WEEKS}, got {n}")
+        raise ValueError(f"--cutoffs must be in [1, {len(full)}] for stride {stride_weeks}, got {n}")
     return full[:n], n < len(full)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parse_args(argv)
-    cutoffs, is_subset = _resolve_cutoffs(args.cutoffs)
+    cutoffs, is_subset = _resolve_cutoffs(args.cutoffs, args.stride_weeks)
     out_dir: Path = args.out or (
         DEFAULT_OUT_DIR.with_name(f"{DEFAULT_OUT_DIR.name}-smoke-{len(cutoffs)}cutoffs") if is_subset else DEFAULT_OUT_DIR
     )
@@ -1235,9 +1261,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     runs = [with_seed(arm, seed) for seed in seeds for arm in arms]
     _require_project_root_cwd()
     if not (out_dir / MANIFEST_NAME).exists():
-        # A fresh run starts from the newest data; a resume must not refresh.
-        FluDataLoader().fetch_data()
-    manifest = _ensure_manifest(out_dir, cutoffs, seeds)
+        if args.pin_data_sha256:
+            _check_data_vintage(args.pin_data_sha256)  # share another run's snapshot: no refresh
+        else:
+            # A fresh run starts from the newest data; a resume must not refresh.
+            FluDataLoader().fetch_data()
+    manifest = _ensure_manifest(out_dir, cutoffs, seeds, args.stride_weeks)
     pinned_sha256 = _manifest_value(manifest, DATA_CACHE_HASH_KEY)
     _check_data_vintage(pinned_sha256)  # also rejects a fresh manifest with no cache to hash
     logged = {row["config_id"]: row for row in read_log(log_path)}

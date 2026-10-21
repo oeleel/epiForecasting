@@ -77,8 +77,19 @@ python scripts/demo_knowledge_bank.py [--live] [--json PATH]           # lab dem
 
 # Merge per-seed directories run in parallel (same cutoffs, scheme, data sha256, git SHA)
 .venv/bin/python scripts/experiments/peak_rectification.py --merge <dir42> <dir43> <dir44> --out <merged>
+
+# Weekly hindcast (2026-10-21): every arm from all 35 weekly cutoffs, seed 42, round 2's data snapshot (~2.5 h)
+.venv/bin/python scripts/experiments/peak_rectification.py --stride-weeks 1 --seeds 42 \
+    --pin-data-sha256 c91d9d81b8ab47ee5fe5458123167a3ce9c4171bddca682a89eb573d4b5336cb --out outputs/experiments/peak_rectification_weekly
+
+# Export a run as tracked, human-readable tables (per-row forecasts + WIS, by location, by week); checks against log.jsonl
+.venv/bin/python scripts/experiments/export_hindcast_tables.py [--run-dir <dir>] [--out documentation/experiments/weekly_hindcast]
+
+# Visual inspection: one location, one forecast date, one panel per config (reads the tracked export by default)
+.venv/bin/python scripts/plot_forecasts.py --location Virginia --date 2026-01-10 [--configs all] [--lookback-weeks 6] [--out f.png]
+.venv/bin/python scripts/plot_forecasts.py --list-dates
 ```
-Other flags: `--arms {baseline,lambda,lambda_calendar,window,oversample}`, `--lambdas`, `--calendar-lambdas`, `--windows`, `--oversample-factors`, `--seeds`, `--out`. Resumable (logged `config_id`s are skipped; config ids end in `__seed<N>`); the manifest pins cutoffs, seeds, phase scheme and the data-cache sha256, and a mismatched resume fails. Round 1 output (calendar_v1, seed 42) is `outputs/experiments/peak_rectification/`; round 2 defaults to `outputs/experiments/peak_rectification_round2/` (`manifest.json`, `log.jsonl`, `forecasts/`, `summary.md` with peak and overall WIS by horizon). `config["data"]["oversample"]` (xgboost_direct only) copies training rows whose target date falls in a phase. Script docstring has the design.
+Other flags: `--arms {baseline,lambda,lambda_calendar,window,oversample}`, `--lambdas`, `--calendar-lambdas`, `--windows`, `--oversample-factors`, `--seeds`, `--out`, `--stride-weeks K` (cutoff spacing, default 4), `--pin-data-sha256 SHA` (fresh run: no cache refresh, fail unless the cache hashes to SHA). Saved `forecasts/<config>.csv` keep every location, US included; `score()` drops US. Resumable (logged `config_id`s are skipped; config ids end in `__seed<N>`); the manifest pins cutoffs, seeds, phase scheme and the data-cache sha256, and a mismatched resume fails. Round 1 output (calendar_v1, seed 42) is `outputs/experiments/peak_rectification/`; round 2 defaults to `outputs/experiments/peak_rectification_round2/` (`manifest.json`, `log.jsonl`, `forecasts/`, `summary.md` with peak and overall WIS by horizon). `config["data"]["oversample"]` (xgboost_direct only) copies training rows whose target date falls in a phase. Script docstring has the design.
 
 ### Forecasting Pipeline (underlying model)
 ```bash
@@ -100,10 +111,10 @@ python -m src.data_loader update
 
 ### Testing
 ```bash
-.venv/bin/python -m pytest tests/agent/ -q -W error::DeprecationWarning   # 477 tests
+.venv/bin/python -m pytest tests/agent/ -q -W error::DeprecationWarning   # 492 tests
 PYTHONPATH=. .venv/bin/python tests/agent/run_all.py                        # no-pytest fallback
 ```
-Covers: adapter actions (legacy + bank families), config, data quality, feature toggle, orchestrator, prompts, run tracker, sample weights, WIS scoring, model bank (contract/registry/bridge/baselines/runner), model selection, run report, phase segmentation, knowledge bank (schema/intake/store/render/seeds), phase schemes, peak-rectification harness (arms/deltas/reward/summary/rescore/seeds/merge), phase oversampling.
+Covers: adapter actions (legacy + bank families), config, data quality, feature toggle, orchestrator, prompts, run tracker, sample weights, WIS scoring, model bank (contract/registry/bridge/baselines/runner), model selection, run report, phase segmentation, knowledge bank (schema/intake/store/render/seeds), phase schemes, peak-rectification harness (arms/deltas/reward/summary/rescore/seeds/merge/stride/pinned data), phase oversampling, forecast panels + hindcast export.
 
 ### Key Config Details
 - Active XGBoost params: `XGBOOST_PARAMS_V2` (regularized) in `src/config.py`
@@ -253,6 +264,8 @@ CDC GitHub CSV -> FluDataLoader -> FeatureEngineer (59+ features) -> DirectForec
 - **`src/model_bank/`** - model contract + registry + runner; `src/pipeline.run_pipeline` dispatches here for every family except `xgboost_direct`
 - **`src/location_clustering.py`** - `LocationClusterer`: groups similar states for cluster-specific models
 - **`src/visualization.py`** - Plotting utilities (Plotly, Matplotlib)
+- **`src/forecast_panels.py`** - `plot_forecast_panels`: lab-style inspection figure (observed in black, median + 50%/90% bands for h1-4, hollow markers for what happened next), one panel per config. 90% not 95%: only 5 quantiles exist
+- US forecasts are invalid for this model (trained on state rows, max ~4.7k; US ~21k at peak): h1 collapses to the 30% floor with all quantiles equal. US stays excluded from scoring
 
 Key details:
 - `TARGET_MODE = "log"` - targets are `log1p()` transformed; `expm1()` at inference
