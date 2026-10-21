@@ -784,7 +784,26 @@
   }
 
   // ---- mount ------------------------------------------------------------------------
-  const WIDGETS = { bankExplorer, runStepper, sweepCharts, sweepTable, bankLifecycle, schemaReference, architectureDiagram, horizonExplorer, phaseTimeline };
+  // Another repo page (e.g. the forecast viewer) in a frame. Only relative paths: a report
+  // never frames an outside site. Framed pages need HTTP, so a file:// copy shows the link.
+  function embedPage(el, _data, options) {
+    const opts = options || {};
+    const src = String(opts.src || "");
+    if (!src || /^[a-z]+:/i.test(src) || src.startsWith("//")) {
+      throw new Error("embedPage needs a relative src, got " + JSON.stringify(src));
+    }
+    const viaFile = window.location.protocol === "file:";
+    el.appendChild(h("div", { class: "text-sm muted mb-2" },
+      viaFile ? "Opened from disk: the embedded page needs HTTP (GitHub Pages). " : "",
+      h("a", { href: src, target: "_blank", rel: "noopener", text: opts.linkText || "Open full page" })));
+    if (viaFile) return;
+    el.appendChild(h("iframe", {
+      src, title: opts.title || "Embedded page", loading: "lazy",
+      style: "width:100%;height:" + (Number(opts.height) || 1000) + "px;border:1px solid var(--border);border-radius:var(--radius);",
+    }));
+  }
+
+  const WIDGETS = { bankExplorer, runStepper, sweepCharts, sweepTable, bankLifecycle, schemaReference, architectureDiagram, horizonExplorer, phaseTimeline, embedPage };
   function init(data) {
     document.querySelectorAll("[data-widget]").forEach(el => {
       const name = el.dataset.widget; const fn = WIDGETS[name];

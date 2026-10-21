@@ -1,0 +1,345 @@
+# Weekly meeting report, 2026-10-29. Rendered by scripts/reports/build_report.py.
+# Section kinds and the markdown subset are documented in ../README.md.
+title: "Weekly report - 2026-10-29"
+date: "2026-10-29"
+summary: >-
+  Every peak-rectification configuration now has a forecast from every week of the 2025-26
+  season, with a plot function and an interactive viewer for any location and date. Visual
+  inspection shows where the horizon trade-off comes from: peak emphasis helps while a state is
+  still rising and draws a rebound at 3-4 weeks after its peak. Using emphasis for 1-2 weeks only
+  turns it into a small gain (in-sample).
+
+sections:
+  - id: summary
+    heading: Summary
+    kind: stack
+    blocks:
+      - kind: callout
+        title: This week in one paragraph
+        body: >-
+          A. Adiga asked for visual inspection, a per-location breakdown, a temporal summary, and a
+          viewer for any location and date. All four are done. Every configuration was re-run from
+          all 35 weeks of the test season, so any date can be plotted, and the forecasts are in the
+          repository as readable tables. [[*The plots show what the pooled score hid: peak emphasis
+          helps during the surge and draws a V after the turn]], with the 3- and 4-week median
+          climbing again while the data falls. Baseline does this too, emphasis about twice as
+          often. Because each horizon has its own model, emphasis can be confined to 1-2 weeks; that
+          [[+turns the best emphasis arm from a loss into a gain in 40 of 52 locations]], but it was
+          chosen on this season. Inspection also found a problem no configuration fixes:
+          [[-after their peak, the largest states are forecast to collapse when they did not]].
+      - kind: stats
+        stats:
+          - value: "35 x 13"
+            label: weekly forecast dates x configurations, all locations
+          - value: "2x"
+            label: how often peak emphasis draws a V after the turn, vs baseline (26-35% vs 14%)
+            tone: destructive
+          - value: "-3.1"
+            label: peak WIS, oversample 5x on 1-2 weeks only (in-sample)
+            tone: success
+          - value: "0.65 vs 0.83"
+            label: 1-week median vs observed, as a share of the last value, states above 1,500
+            tone: destructive
+
+  - id: asked
+    heading: What was asked
+    kind: cards
+    columns: 3
+    tone: info
+    cards:
+      - title: A plot function for visual inspection
+        badge: 2026-10-21 sync
+        body: >-
+          Given a location and a date, plot about six weeks of observed data and the 1-4 week
+          forecast with the median, the 50% and the 95% intervals, the way the lab inspects
+          forecasts before submitting.
+      - title: Inspect the forecasts, not only the WIS
+        badge: 2026-10-21 sync
+        body: >-
+          Check that the forecast points the right way when the curve rises or falls, and that the
+          intervals are sensible. Why does peak emphasis help at 1-2 weeks and hurt at 3-4?
+      - title: Break results out by location
+        badge: 2026-10-21 sync
+        body: >-
+          Show which states gain from a configuration and which do not.
+      - title: A temporal summary
+        badge: 2026-10-21 sync
+        body: >-
+          A short account of when the model did well across the season, week by week.
+      - title: A viewer with a drop-down
+        badge: 2026-10-21 sync
+        body: >-
+          Pick a location and a date on the test season and see the forecast plot.
+      - title: Forecasts in the repository
+        badge: 2026-10-21 sync
+        body: >-
+          Commit the forecast files so they can be plotted with the lab's own scripts.
+
+  - id: delivered
+    heading: What was delivered
+    kind: stack
+    blocks:
+      - kind: table
+        columns:
+          - Ask
+          - Delivered
+          - label: Status
+            format: badge
+            tones: { done: success, partial: warning, blocked: warning }
+          - Where
+        rows:
+          - - Plot function
+            - "`plot_forecast_panels(location, date, forecasts, observed, lookback_weeks=6)`: one panel per configuration, observed series in black, median, 50% and 90% intervals, and what happened afterwards as hollow markers. A command-line wrapper takes a state name or code. The outer band is [[!90%, not 95%]]: the model emits 5 quantiles."
+            - partial
+            - "`src/forecast_panels.py`, `scripts/plot_forecasts.py`"
+          - - Weekly forecasts
+            - "All 13 configurations re-run from each of the 35 weeks (Oct 4 - May 30) on round 2's data snapshot, seed 42, US included. Exported as one row per location, date and horizon with the quantiles, the observed value, the phase and the WIS; the export fails unless it reproduces the logged WIS."
+            - done
+            - "`documentation/experiments/weekly_hindcast/`"
+          - - Visual inspection
+            - "7 states (the 5 largest, plus North Carolina and Ohio, where no configuration helps), 11 forecast dates around the peak, written up by state with figures; every figure claim checked against the forecast files."
+            - done
+            - "`inspection.md`"
+          - - By location, by week
+            - "Peak WIS per location and WIS per forecast date, each against baseline."
+            - done
+            - "`wis_by_location.md`, `wis_by_week.md`"
+          - - Direction agreement
+            - "New metric: how often the median points the same way (up, flat, down) as what happened, by horizon and phase, plus how often it said up when the curve fell."
+            - done
+            - "`direction_by_phase.md`"
+          - - Viewer
+            - "Location, date and configuration selectors, previous and next week, hover values, a table view, shareable links. Embedded below."
+            - done
+            - "`viewer.html`"
+          - - Short-horizon emphasis
+            - "Built from the saved forecasts without retraining, since each horizon's model trains on its own (checked in the code). Results are in-sample."
+            - partial
+            - "`gated_emphasis.md`"
+        note: "Status: [[+done]] landed; [[!partial]] works, with the caveat in the row."
+
+  - id: proof
+    heading: Proof of concept
+    kind: tabs
+    intro: >-
+      The viewer runs on the exported weekly forecasts. The two tables are the per-week and
+      per-location breakdowns.
+    tabs:
+      - id: viewer
+        label: Forecast viewer
+        blocks:
+          - kind: markdown
+            body: >-
+              Try Pennsylvania on 2026-01-10 for the V after the turn, Texas on 2025-12-20 versus
+              2026-01-10 for the same arm being wrong and then right, and Florida on 2026-01-24 for the
+              post-peak collapse. The US is not a valid forecast for this model (see open questions).
+          - kind: widget
+            name: embedPage
+            options:
+              src: "../../experiments/weekly_hindcast/viewer.html#loc=42&date=2026-01-10"
+              title: Weekly hindcast viewer
+              linkText: Open the viewer in a new tab
+              height: 1300
+      - id: weeks
+        label: WIS by forecast date
+        blocks:
+          - kind: table
+            intro: >-
+              Mean WIS over locations and horizons 1-4 for forecasts made on each date, as a change
+              from baseline (negative is better). Surge dates first, then the turn.
+            columns:
+              - Forecast date
+              - { label: Baseline WIS, format: num }
+              - { label: peak oversample 5x, format: delta }
+              - { label: peak weight 3x, format: delta }
+              - { label: peak oversample 2x, format: delta }
+            rows:
+              - ["2025-11-29", "124.9", "-10.6", "-6.8", "-5.8"]
+              - ["2025-12-06", "192.5", "-34.6", "-28.9", "-17.8"]
+              - ["2025-12-13", "189.7", "-25.8", "-25.7", "-14.9"]
+              - ["2025-12-20", "128.7", "-9.2", "-3.8", "-1.3"]
+              - ["2025-12-27", "135.9", "9.0", "7.1", "-1.6"]
+              - ["2026-01-03", "175.7", "38.8", "27.4", "6.6"]
+              - ["2026-01-10", "141.2", "56.9", "48.5", "23.6"]
+              - ["2026-01-17", "83.5", "8.4", "5.0", "3.4"]
+              - ["2026-01-24", "100.4", "-12.8", "-9.0", "-3.7"]
+              - ["2026-01-31", "100.2", "-10.4", "-6.4", "-4.2"]
+            note: "All 35 dates: `documentation/experiments/weekly_hindcast/wis_by_week.md`."
+      - id: locations
+        label: WIS by location
+        blocks:
+          - kind: table
+            intro: >-
+              Peak-phase WIS per location as a change from baseline. The gains sit in the largest
+              states; most others lose. Peak weight 3x beats baseline in 21 of 52 locations, peak
+              oversample 2x in 22, peak oversample 5x in 17.
+            columns:
+              - Location
+              - { label: Baseline peak WIS, format: num }
+              - { label: peak oversample 5x, format: delta }
+              - { label: peak weight 3x, format: delta }
+              - { label: peak oversample 2x, format: delta }
+            rows:
+              - ["California", "337.7", "-59.0", "-51.5", "-22.9"]
+              - ["Florida", "654.5", "-31.8", "-34.1", "-28.6"]
+              - ["Texas", "409.0", "-30.6", "-16.5", "-32.2"]
+              - ["Pennsylvania", "420.1", "-11.6", "-9.3", "-30.3"]
+              - ["New York", "260.8", "-6.8", "-14.2", "-28.1"]
+              - ["Virginia", "140.2", "22.8", "18.2", "6.9"]
+              - ["Ohio", "278.8", "20.5", "25.4", "11.1"]
+              - ["North Carolina", "268.6", "38.0", "26.9", "12.5"]
+            note: "Every location: `documentation/experiments/weekly_hindcast/wis_by_location.md`."
+
+  - id: results
+    heading: Results in brief
+    kind: stack
+    blocks:
+      - kind: markdown
+        body: |-
+          XGBoost, 2025-26 season, 35 weekly forecast dates, seed 42, US excluded from scoring.
+
+          - **Surge.** Every configuration forecasts too low: for forecasts made Nov 29 - Dec 20 the
+            observation is [[-above baseline's 90% band in 26% of rows]] and below it in none. Peak
+            emphasis [[+gets closer]] (WIS -10 to -35 on those dates).
+          - **The turn.** The 1-week forecast usually turns down, often too far. The failure is a V at
+            3-4 weeks: the median climbs again while the data keeps falling. Baseline does it in 14%
+            of forecasts made right after a falling week, [[-peak emphasis in 26-35%]]. This is the
+            source of the 1-2 week gain and 3-4 week loss reported last time.
+          - **Each state's own turn, not the calendar.** Texas peaked on Dec 27, so its bad dates are
+            Dec 20 - Jan 3, and on Jan 10 peak emphasis is better there; the northeast and Ohio turned
+            later.
+          - **After the peak, large states.** In California, Florida, Texas and Pennsylvania every
+            configuration forecast a steep fall while the curve held or rose again (Florida, Jan 24:
+            median 684 against 1,606 observed, then a second peak of 2,515). [[-No tested
+            configuration fixes this.]]
+          - **Not all large-state gains are skill.** California's gain comes largely from its real
+            second rise in mid-January; in Texas and Florida part of it comes from late January, when
+            every configuration was too low and a higher forecast was less wrong.
+          - **Intervals.** 90% coverage over Nov 29 - Feb 7 is 0.43-0.82 per state, and the misses
+            are one-sided: above the band in the surge, below it after the turn.
+          - **Direction.** Baseline's median points the right way in 72.5% of rows (always saying
+            "flat" would get 39.3%) but [[-only 53.8% in the peak phase]]. It says "up" when the
+            curve fell in 17% of peak rows; peak emphasis 19-23%, the 52-week window 33%.
+          - **The 52-week window** flat-lines during the surge and crashes after the turn; not usable at the
+            peak.
+
+          [[*Confining peak emphasis to the 1- and 2-week models keeps most of the surge gain without
+          the V.]]
+      - kind: table
+        intro: >-
+          Combining baseline and peak emphasis without retraining: change in WIS against baseline
+          (negative is better) and locations that improve overall. "Horizon" uses emphasis for 1-2
+          weeks; "calendar" uses it for forecasts made in the growth phase; "curve" uses it while the
+          state's curve is still rising.
+        columns:
+          - Rule
+          - { label: Overall WIS, format: delta }
+          - { label: Peak WIS, format: delta }
+          - { label: Locations better, format: num }
+        rows:
+          - ["peak oversample 5x, all horizons", "0.99", "4.97", "14"]
+          - ["peak oversample 5x, horizon", "-1.18", "-3.13", "40"]
+          - ["peak oversample 5x, calendar", "-2.01", "-3.43", "41"]
+          - ["peak oversample 5x, curve", "-0.55", "0.77", "24"]
+          - ["peak oversample 5x, horizon + curve", "-1.13", "-2.78", "47"]
+          - ["peak weight 3x, horizon", "-0.92", "-2.24", "40"]
+          - ["peak weight 3x, horizon + curve", "-0.97", "-2.46", "47"]
+        note: "Full results and the sensitivity check: `documentation/experiments/weekly_hindcast/gated_emphasis.md`."
+      - kind: callout
+        tone: warning
+        title: Caveats
+        body: >-
+          [[!Every rule above was designed after looking at this season]], so the gains are in-sample
+          and small (about 2-3% of peak WIS) on one seed. The calendar rule wins only because Dec 31
+          fell at this season's turn; the curve rule alone changes sign across reasonable thresholds.
+          The horizon rule, alone or with the curve rule, stays a gain in every setting tried. A
+          held-out season is needed before adopting any of them.
+
+  - id: open-questions
+    heading: Open questions
+    kind: accordion
+    items:
+      - title: Switch to FluSight's 23 quantiles?
+        body: >-
+          The model emits 5 quantiles, so the plots show a 90% band rather than 95%, and WIS is not on
+          the FluSight scale (differences between configurations are still valid). Switching means
+          retraining round 2 and the weekly run, about 9 hours of compute, and changes every WIS
+          number, so it is best decided before the paper's results are written.
+      - title: Test the horizon rule on a held-out season?
+        body: >-
+          Proposal: fix the horizon rule as the primary hypothesis and horizon + curve as secondary,
+          then score them on 2024-25 with 3 seeds (about 2.5 hours). This is the test that would make
+          the result reportable.
+      - title: Why do the largest states collapse after their peak?
+        body: >-
+          A hypothesis, not tested: a milder form of the scale ceiling that breaks the US forecast
+          (the largest training value is 4,729, Texas). Counting training targets above 1,500 and
+          looking at feature attributions for those forecasts would test it.
+      - title: Is the US forecast worth fixing?
+        body: >-
+          The model trains on state rows and cannot reach national counts (about 21,000 at the peak);
+          its 1-week US forecast collapses to the 30% floor with all quantiles equal. Options: model
+          the US separately, or aggregate state forecasts.
+      - title: How should "flat" be defined for direction?
+        body: >-
+          Currently a change under 10% of the last value or 10 admissions, whichever is larger. If the
+          lab uses FluSight's rate-trend categories, the metric should follow them.
+      - title: Still open from earlier
+        body: >-
+          October as off-season or growth; which in-house model to onboard first and who can grant
+          code access.
+
+  - id: next
+    heading: Next steps
+    kind: cards
+    columns: 3
+    tone: info
+    cards:
+      - title: Held-out test
+        badge: experiment
+        body: >-
+          Score the pre-registered horizon rule on 2024-25 with 3 seeds, pending agreement.
+      - title: Quantile set
+        badge: decision
+        body: >-
+          If 23 quantiles are adopted, retrain round 2 and the weekly run before any paper numbers
+          are fixed.
+      - title: Large-state collapse
+        badge: investigation
+        body: >-
+          Test the scale-ceiling hypothesis on the training data and the 1-week model.
+      - title: Paper outline
+        badge: paper
+        body: >-
+          Turn the outline into prose once A. Adiga's comments and the Bayesian-framework draft are in.
+      - title: In-house model
+        badge: framework
+        body: >-
+          Plug in, compare against the bank and run one improvement loop as soon as a model is named.
+      - title: Calendar
+        badge: planning
+        body: >-
+          Early November is partly available, early December is exams, winter break is for writing
+          and experiments; the paper deadline is the first or second week of January.
+
+  - id: reproduce
+    heading: Reproduce
+    kind: code
+    intro: All commands run from the repo root with the project `.venv` active.
+    code: |-
+      # macOS: xgboost + torch each bundle libomp; avoid the duplicate-runtime segfault
+      export KMP_DUPLICATE_LIB_OK=TRUE OMP_NUM_THREADS=1
+
+      # weekly hindcast on round 2's data snapshot (about 2.5 h)
+      python scripts/experiments/peak_rectification.py --stride-weeks 1 --seeds 42 \
+        --pin-data-sha256 c91d9d81b8ab47ee5fe5458123167a3ce9c4171bddca682a89eb573d4b5336cb \
+        --out outputs/experiments/peak_rectification_weekly
+
+      # tracked tables (checked against the run log), the plot, the rules
+      python scripts/experiments/export_hindcast_tables.py
+      python scripts/plot_forecasts.py --location Pennsylvania --date 2026-01-10
+      python scripts/experiments/gated_emphasis.py
+
+      # this page
+      python scripts/reports/build_report.py documentation/reports/2026-10-29
+      python scripts/reports/build_report.py --index

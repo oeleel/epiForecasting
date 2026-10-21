@@ -596,7 +596,7 @@ pre.code-block .comment { color: hsl(var(--muted-foreground)); }
   <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
     <div class="flex min-w-0 items-center gap-3">
       <a href="index.html" class="truncate text-sm font-semibold tracking-tight">epiForecasting reports</a>
-      <span class="badge badge-outline hidden sm:inline-flex">2 reports</span>
+      <span class="badge badge-outline hidden sm:inline-flex">3 reports</span>
     </div>
     <div class="flex items-center gap-2">
       
@@ -609,7 +609,7 @@ pre.code-block .comment { color: hsl(var(--muted-foreground)); }
 
 <div class="mx-auto max-w-7xl px-4 py-8 lg:py-10">
   <div class="mb-8 lg:mb-10">
-    <div class="mb-2 sm:hidden"><span class="badge badge-outline">2 reports</span></div>
+    <div class="mb-2 sm:hidden"><span class="badge badge-outline">3 reports</span></div>
     <h1 class="text-3xl font-semibold tracking-tight lg:text-4xl">Weekly reports</h1>
     <p class="mt-2 max-w-3xl text-base text-muted-foreground">Standing meeting reports for the agentic flu-forecasting project, newest first. Every week uses the same layout; only the content changes.</p>
   </div>
@@ -626,7 +626,7 @@ pre.code-block .comment { color: hsl(var(--muted-foreground)); }
     </aside>
 
     <main class="min-w-0 space-y-12">
-<section id="reports" class="scroll-mt-24"><div class="section-head"><div class="eyebrow">Index</div><h2 class="section-title">All weeks</h2></div><div class="grid gap-4"><a class="card block transition-colors hover:bg-accent/40" href="2026-10-15/index.html"><div class="card-header !p-5 !pb-3"><div class="flex flex-wrap items-center gap-3"><span class="badge badge-outline">2026-10-15</span><h3 class="card-title-sm">Weekly report - 2026-10-15</h3></div></div><div class="card-content !p-5 !pt-0 text-sm text-muted-foreground">Round 2 of the peak experiment ran on A. Adiga&#x27;s phase windows with an oversampling arm and 3 seeds. Pooled, nothing beats the baseline beyond seed noise. By horizon, emphasising the peak improves 1- and 2-week forecasts and worsens 4-week forecasts in every seed. A draft paper outline is ready for sign-off.</div></a><a class="card block transition-colors hover:bg-accent/40" href="2026-10-01/index.html"><div class="card-header !p-5 !pb-3"><div class="flex flex-wrap items-center gap-3"><span class="badge badge-outline">2026-10-01</span><h3 class="card-title-sm">Weekly report - 2026-10-01</h3></div></div><div class="card-content !p-5 !pt-0 text-sm text-muted-foreground">Knowledge bank v1 is in the loop: 27 entries (18 lab-authored, 9 learned from a controlled peak-rectification experiment), cited on every proposal. The loss-weight rectification fixes the peak bias but not the peak score; shorter windows are worse everywhere.</div></a></div></section>
+<section id="reports" class="scroll-mt-24"><div class="section-head"><div class="eyebrow">Index</div><h2 class="section-title">All weeks</h2></div><div class="grid gap-4"><a class="card block transition-colors hover:bg-accent/40" href="2026-10-29/index.html"><div class="card-header !p-5 !pb-3"><div class="flex flex-wrap items-center gap-3"><span class="badge badge-outline">2026-10-29</span><h3 class="card-title-sm">Weekly report - 2026-10-29</h3></div></div><div class="card-content !p-5 !pt-0 text-sm text-muted-foreground">Every peak-rectification configuration now has a forecast from every week of the 2025-26 season, with a plot function and an interactive viewer for any location and date. Visual inspection shows where the horizon trade-off comes from: peak emphasis helps while a state is still rising and draws a rebound at 3-4 weeks after its peak. Using emphasis for 1-2 weeks only turns it into a small gain (in-sample).</div></a><a class="card block transition-colors hover:bg-accent/40" href="2026-10-15/index.html"><div class="card-header !p-5 !pb-3"><div class="flex flex-wrap items-center gap-3"><span class="badge badge-outline">2026-10-15</span><h3 class="card-title-sm">Weekly report - 2026-10-15</h3></div></div><div class="card-content !p-5 !pt-0 text-sm text-muted-foreground">Round 2 of the peak experiment ran on A. Adiga&#x27;s phase windows with an oversampling arm and 3 seeds. Pooled, nothing beats the baseline beyond seed noise. By horizon, emphasising the peak improves 1- and 2-week forecasts and worsens 4-week forecasts in every seed. A draft paper outline is ready for sign-off.</div></a><a class="card block transition-colors hover:bg-accent/40" href="2026-10-01/index.html"><div class="card-header !p-5 !pb-3"><div class="flex flex-wrap items-center gap-3"><span class="badge badge-outline">2026-10-01</span><h3 class="card-title-sm">Weekly report - 2026-10-01</h3></div></div><div class="card-content !p-5 !pt-0 text-sm text-muted-foreground">Knowledge bank v1 is in the loop: 27 entries (18 lab-authored, 9 learned from a controlled peak-rectification experiment), cited on every proposal. The loss-weight rectification fixes the peak bias but not the peak score; shorter windows are worse everywhere.</div></a></div></section>
     </main>
   </div>
 
@@ -1426,7 +1426,26 @@ window.REPORT_DATA = {};
   }
 
   // ---- mount ------------------------------------------------------------------------
-  const WIDGETS = { bankExplorer, runStepper, sweepCharts, sweepTable, bankLifecycle, schemaReference, architectureDiagram, horizonExplorer, phaseTimeline };
+  // Another repo page (e.g. the forecast viewer) in a frame. Only relative paths: a report
+  // never frames an outside site. Framed pages need HTTP, so a file:// copy shows the link.
+  function embedPage(el, _data, options) {
+    const opts = options || {};
+    const src = String(opts.src || "");
+    if (!src || /^[a-z]+:/i.test(src) || src.startsWith("//")) {
+      throw new Error("embedPage needs a relative src, got " + JSON.stringify(src));
+    }
+    const viaFile = window.location.protocol === "file:";
+    el.appendChild(h("div", { class: "text-sm muted mb-2" },
+      viaFile ? "Opened from disk: the embedded page needs HTTP (GitHub Pages). " : "",
+      h("a", { href: src, target: "_blank", rel: "noopener", text: opts.linkText || "Open full page" })));
+    if (viaFile) return;
+    el.appendChild(h("iframe", {
+      src, title: opts.title || "Embedded page", loading: "lazy",
+      style: "width:100%;height:" + (Number(opts.height) || 1000) + "px;border:1px solid var(--border);border-radius:var(--radius);",
+    }));
+  }
+
+  const WIDGETS = { bankExplorer, runStepper, sweepCharts, sweepTable, bankLifecycle, schemaReference, architectureDiagram, horizonExplorer, phaseTimeline, embedPage };
   function init(data) {
     document.querySelectorAll("[data-widget]").forEach(el => {
       const name = el.dataset.widget; const fn = WIDGETS[name];
