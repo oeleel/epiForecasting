@@ -127,6 +127,7 @@ h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; margin: 24px 0 
 .chip-action { color: hsl(var(--muted-foreground)); border-style: dashed; }
 .chips { gap: 6px 14px; max-width: none; }
 .chip-group { display: inline-flex; align-items: center; gap: 4px; }
+.group-name, .panel-title { cursor: help; }
 .group-name { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; margin-right: 2px; }
 .group-name .sw { width: 10px; height: 10px; border-radius: 3px; background: var(--c); }
 .chip-param { padding: 0 9px; min-width: 32px; justify-content: center; }
@@ -263,6 +264,15 @@ const FAMILY_COLORS = {
   baseline: "#2a78d6", lambda: "#eb6834", lambda_calendar: "#1baf7a", oversample: "#e87ba4", window: "#6250d6",
 };
 const UNKNOWN_FAMILY_COLOR = "#5f5e5a";
+// Hover text per family; "N" is the config's number. Mirrors the harness arms
+// (scripts/experiments/peak_rectification.py) and src/direct_forecast.py.
+const FAMILY_DESCRIPTIONS = {
+  baseline: "the stock model; every training row counts once.",
+  lambda: "Approaching-peak weight: training rows whose forecast date falls in the 6 weeks before a past season's observed peak count N times in the loss. The peak is found from each season's data, not the calendar; the current season is never labelled.",
+  lambda_calendar: "Peak weight: training rows whose target week is in the peak phase (Jan 1 - end of Feb) count N times in the loss.",
+  oversample: "Peak oversampling: training rows whose target week is in the peak phase (Jan 1 - end of Feb) are copied N times. For XGBoost this behaves almost like weight N.",
+  window: "Training window: the model is fit only on the most recent N weeks of rows (lag features still use the full history).",
+};
 const OUTER_BAND_OPACITY = 0.18;
 const INNER_BAND_OPACITY = 0.38;
 const QUANTILES = ["q05", "q25", "q50", "q75", "q95"];
@@ -390,6 +400,14 @@ function writeHash() {
 }
 
 // ---- controls --------------------------------------------------------------------------
+function describe(config) {
+  // A family name keeps the "N" placeholder; a config fills in its number.
+  const { family, param } = familyOf(config);
+  const text = FAMILY_DESCRIPTIONS[family];
+  if (!text) return config;
+  return config + ": " + (param === null ? text : text.replace(/\bN\b/g, param));
+}
+
 function familyOf(config) {
   const cut = config.lastIndexOf("_");
   const head = config.slice(0, cut), tail = config.slice(cut + 1);
@@ -418,14 +436,14 @@ function buildConfigChips() {
     const single = configs.length === 1 && familyOf(configs[0]).param === null;
     if (single) {
       const on = state.configs.includes(configs[0]);
-      const chip = el("button", { type: "button", class: "chip chip-param", "aria-pressed": String(on), title: configs[0], text: family });
+      const chip = el("button", { type: "button", class: "chip chip-param", "aria-pressed": String(on), title: describe(configs[0]), text: family });
       chip.addEventListener("click", () => toggle(configs[0]));
       group.append(chip);
     } else {
-      group.append(el("span", { class: "group-name" }, [el("span", { class: "sw", "aria-hidden": "true" }), family]));
+      group.append(el("span", { class: "group-name", title: describe(family) }, [el("span", { class: "sw", "aria-hidden": "true" }), family]));
       for (const config of configs) {
         const on = state.configs.includes(config);
-        const chip = el("button", { type: "button", class: "chip chip-param", "aria-pressed": String(on), title: config, "aria-label": config, text: familyOf(config).param });
+        const chip = el("button", { type: "button", class: "chip chip-param", "aria-pressed": String(on), title: describe(config), "aria-label": config, text: familyOf(config).param });
         chip.addEventListener("click", () => toggle(config));
         group.append(chip);
       }
@@ -609,7 +627,7 @@ function render(loaded) {
     const panel = el("div", { class: "panel" });
     const wisParts = p.rows.filter((r) => truthAt.has(r.t)).map((r) => `h${r.horizon} ${Math.round(wis(truthAt.get(r.t), r))}`);
     panel.append(
-      el("div", { class: "panel-title" }, [el("span", { class: "sw", style: `background:${p.color}`, "aria-hidden": "true" }), p.config]),
+      el("div", { class: "panel-title", title: describe(p.config) }, [el("span", { class: "sw", style: `background:${p.color}`, "aria-hidden": "true" }), p.config]),
       el("div", { class: "panel-wis tnum", text: wisParts.length ? "WIS " + wisParts.join("  ") : "" }),
     );
     panel.querySelector(".panel-wis").style.whiteSpace = "pre";
