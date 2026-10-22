@@ -10,6 +10,27 @@ summary: >-
   turns it into a small gain (in-sample).
 
 sections:
+  - id: glance
+    heading: At a glance
+    label: rundown
+    kind: table
+    columns:
+      - Topic
+      - Result
+      - label: " "
+        format: badge
+        tones: { done: success, gain: success, problem: destructive, caveat: warning, decide: info }
+    rows:
+      - ["Asks (10-21)", "plot function, viewer, by-location, by-week, inspection, forecasts in repo", "done"]
+      - ["Data", "35 weekly dates x 13 configs x 52 locations", "done"]
+      - ["Surge (Nov 29 - Dec 20)", "all configs too low; peak emphasis WIS [[+-10 to -35]]", "gain"]
+      - ["Turn (Jan 3 - 10)", "3-4 wk median rebounds (\"V\"): baseline 14%, emphasis [[-26-35%]]", "problem"]
+      - ["Large states, post-peak", "forecast collapse, actual flat or up: 0.65 vs 0.83 of last value", "problem"]
+      - ["Direction, peak phase", "median right [[-53.8%]] (all phases 72.5%)", "problem"]
+      - ["Emphasis on 1-2 wk only", "peak WIS [[+-3.1]], 40 / 52 locations better", "gain"]
+      - ["Caveat", "in-sample, 1 seed, 90% band (5 quantiles)", "caveat"]
+      - ["Decide", "23 quantiles? held-out 2024-25 test? \"flat\" threshold?", "decide"]
+
   - id: summary
     heading: Summary
     kind: stack
