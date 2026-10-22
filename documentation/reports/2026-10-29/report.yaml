@@ -211,6 +211,162 @@ sections:
               - ["North Carolina", "268.6", "38.0", "26.9", "12.5"]
             note: "Every location: `documentation/experiments/weekly_hindcast/wis_by_location.md`."
 
+  - id: inspection
+    heading: Visual inspection
+    label: inspection
+    kind: stack
+    blocks:
+      - kind: markdown
+        body: >-
+          Seven states (California, Florida, Texas, New York, Pennsylvania, plus North Carolina and
+          Ohio, where no configuration helps), forecast dates Nov 29 - Feb 7, five configurations each.
+          Every claim below was checked against the forecast files. Each "see" link opens the viewer
+          at that state and date. [[!Mechanisms marked inferred are hypotheses, not tested.]]
+      - kind: table
+        intro: "The season splits into three phases, set by each state's own curve rather than the calendar."
+        columns:
+          - Phase
+          - What the plots show
+          - Best configuration
+        rows:
+          - - "**Surge** (still rising; Nov 29 - Dec 20 in most states)"
+            - "Every configuration [[-forecasts too low]]: the observation is above baseline's 90% band in 26% of rows and below it in none. Peak emphasis steepens 3-4 weeks and [[+lands closer]]."
+            - "peak oversample 5x, peak weight 3x"
+          - - "**Turn** (the 1-3 forecast dates around the state's maximum)"
+            - "The 1-week forecast usually turns down, often too far. The failure is at 3-4 weeks: the median dips, then [[-climbs again while the data falls]] (a V). Peak emphasis makes it larger and more frequent."
+            - "baseline, peak oversample 2x"
+          - - "**After the turn** (Jan 17 - Feb 7)"
+            - "Small and mid-size states are fine. In the largest states every configuration [[-forecasts a further steep fall]] while the curve held or rose again."
+            - "none"
+      - kind: cards
+        columns: 2
+        cards:
+          - title: "1. After the turn: a V at 3-4 weeks"
+            badge: problem
+            tone: destructive
+            body: >-
+              The 1-week median usually falls with the curve. The 3- and 4-week medians climb again.
+              Baseline does this in 14% of forecasts made right after a falling week, peak emphasis in
+              26-35%. This is the 1-2 week gain and 3-4 week loss from round 2. [[!Inferred:]] the 3-4 week
+              models lean on the season ("January means high") more than on recent momentum.
+              See [Pennsylvania, Jan 10](../../experiments/weekly_hindcast/viewer.html#loc=42&date=2026-01-10), [Ohio, Jan 3](../../experiments/weekly_hindcast/viewer.html#loc=39&date=2026-01-03).
+          - title: "2. Bad dates follow each state's own turn"
+            badge: finding
+            tone: info
+            body: >-
+              Pooled, peak emphasis is worst on Jan 3 and Jan 10, when the northeast and Ohio turned.
+              Texas turned on Dec 27, so its bad dates are Dec 20 - Jan 3, and on Jan 10 peak emphasis
+              is better there (WIS 129-138 vs 212). See [Texas, Dec 20](../../experiments/weekly_hindcast/viewer.html#loc=48&date=2025-12-20),
+              [Texas, Jan 10](../../experiments/weekly_hindcast/viewer.html#loc=48&date=2026-01-10).
+          - title: "3. Large states collapse after the peak"
+            badge: problem
+            tone: destructive
+            body: >-
+              Above 1,500 admissions, the 1-week median is 0.65 of the last value while the observed
+              value is 0.83 (31 forecasts, Dec 27 - Feb 21); below 1,000 the two agree. 15 of the 18
+              forecasts that halve the last value are in the five largest states. No tested
+              configuration fixes it. [[!Inferred:]] a milder form of the scale ceiling that breaks the US
+              forecast. See [Florida, Jan 24](../../experiments/weekly_hindcast/viewer.html#loc=12&date=2026-01-24) (684 vs 1,606, then a second peak
+              of 2,515), [Texas, Jan 17](../../experiments/weekly_hindcast/viewer.html#loc=48&date=2026-01-17) (517 vs 1,388).
+          - title: "4. Some large-state gain is not skill"
+            badge: caveat
+            tone: warning
+            body: >-
+              California's gain from peak emphasis comes largely from Jan 10-24, when its rebound
+              happened to match a real second rise. In Texas and Florida part of the gain comes from Jan
+              24-31, when every configuration was too low and a higher forecast was less wrong. See
+              [California, Jan 17](../../experiments/weekly_hindcast/viewer.html#loc=06&date=2026-01-17).
+          - title: "5. Intervals misplaced, not too wide"
+            badge: problem
+            tone: destructive
+            body: >-
+              90% coverage over these weeks is 0.43-0.82 per state, against the 0.90 target. The misses
+              are one-sided: the truth exits the top of the band in the surge and the bottom after the
+              turn. The 50% band covers only 0.23-0.48. See [Florida, Dec 13](../../experiments/weekly_hindcast/viewer.html#loc=12&date=2025-12-13).
+          - title: "6. 52-week window fails at the peak"
+            badge: problem
+            tone: destructive
+            body: >-
+              It flat-lines during every surge and crashes after the turn (California, Jan 17: about 300
+              against 1,650-2,150 observed). It wins only on Jan 10 in New York, North Carolina and Ohio,
+              where forecasting low happened to be right. See [New York, Dec 6](../../experiments/weekly_hindcast/viewer.html#loc=36&date=2025-12-06).
+      - kind: callout
+        tone: info
+        title: Which configuration to trust when
+        body: |-
+          - **While a state is still rising:** peak oversample 5x or peak weight 3x for 2-4 weeks; all configurations still under-predict, so read the upper band.
+          - **From the first falling week:** baseline or peak oversample 2x for 1-2 weeks; discount every configuration's 3-4 week forecast (the V).
+          - **After the peak in a large state:** none; all of them forecast a collapse.
+          - [[*Peak oversample 2x is the safest single choice]]: most of the surge gain in the large states, the smallest penalty at the turn.
+      - kind: table
+        intro: "90% interval coverage per state, forecast dates Nov 29 - Feb 7, all horizons (target 0.90)."
+        columns:
+          - State
+          - { label: baseline, format: num }
+          - { label: peak weight 3x, format: num }
+          - { label: peak oversample 2x, format: num }
+          - { label: peak oversample 5x, format: num }
+          - { label: 52-week window, format: num }
+        rows:
+          - ["California", "0.68", "0.77", "0.66", "0.77", "0.57"]
+          - ["Florida", "0.59", "0.48", "0.50", "0.52", "0.43"]
+          - ["New York", "0.75", "0.77", "0.80", "0.82", "0.75"]
+          - ["North Carolina", "0.77", "0.70", "0.77", "0.64", "0.68"]
+          - ["Ohio", "0.59", "0.61", "0.59", "0.61", "0.61"]
+          - ["Pennsylvania", "0.50", "0.55", "0.52", "0.55", "0.52"]
+          - ["Texas", "0.50", "0.57", "0.55", "0.59", "0.50"]
+      - kind: accordion
+        intro: "Week by week, per state."
+        items:
+          - title: "California: peak Jan 3, dip, second peak Feb 14"
+            body: |-
+              - **Dec 6-13, surge:** baseline too slow (Dec 13: 3-week median 1,154 vs 1,568); peak weight 3x and oversample 5x track the rise (1,614, 1,566).
+              - **Jan 3:** close for every configuration (WIS 158-180).
+              - **Jan 10-17:** the peak-emphasis rebound happens to be right, because California rose again (Jan 17: oversample 5x WIS 345 vs baseline 544).
+              - **Jan 24-31:** every configuration forecasts a halving; Jan 31 1-week median 743-822 vs 2,074, all four targets outside every 90% band.
+              - **Feb 7:** peak emphasis stays high while the curve falls.
+          - title: "Florida: peak Jan 3, plateau, second peak Feb 14"
+            body: |-
+              - **Dec 13, surge:** every configuration low at 1 week (about 1,050 vs 1,557); peak weight 3x closer at 3 weeks (1,954 vs baseline 1,336, observed 2,657). Florida's largest gain.
+              - **Dec 27 - Jan 3, turn:** every configuration draws a V; peak emphasis rebounds harder (Jan 3, oversample 5x 4-week 2,809 vs 1,606).
+              - **Jan 17 - Feb 7:** every configuration forecasts 300-900 while Florida held near 1,600 and rose to 2,515; the worst Florida dates, configurations within 10% of each other.
+              - Lowest coverage of the seven (0.43-0.59); the post-peak collapse drives its baseline peak WIS (654.5, the highest of any state).
+          - title: "Texas: peak Dec 27, plateau about 1,350"
+            body: |-
+              - **Nov 29 - Dec 13, surge:** baseline too low (Dec 13 2-week 1,370 vs 2,847); peak weight 3x and oversample 5x reach 1,700-1,940.
+              - **Dec 20, last rising week:** baseline and oversample 2x turn in time; peak weight 3x keeps rising to 2,567 at 4 weeks vs 1,214.
+              - **Jan 10:** oversample 5x sits on the plateau; baseline too low at about 1,000.
+              - **Jan 17-31:** one more falling week and every configuration forecasts 300-500; the plateau is outside every 90% band.
+          - title: "New York: peak Dec 27 - Jan 3, fast fall"
+            body: |-
+              - **Nov 29 - Dec 6:** fastest rise and worst under-prediction of the seven; on Dec 6 the baseline 1-week median dips below the last value while the curve rose to 1,935.
+              - **Dec 13-20:** peak emphasis better (Dec 13: oversample 5x WIS 515 vs 817).
+              - **Dec 27:** baseline turns a week early; peak emphasis better.
+              - **Jan 3-10:** every configuration rebounds at 4 weeks on Jan 3; on Jan 10 baseline flat-lines near 1,000 while the curve falls to 300.
+          - title: "Pennsylvania: peak Jan 3, plateau about 800"
+            body: |-
+              - **Dec 6-20, surge:** every configuration low (Dec 13: baseline 3-week 1,159 vs 3,316).
+              - **Jan 10:** the clearest V of the seven: baseline 1-week 1,070 vs 1,870, then back up to 1,443 vs 841; peak weight 3x and oversample 5x climb to about 2,200.
+              - **Jan 24 - Feb 7:** every configuration forecasts a continued fall into the plateau.
+          - title: "North Carolina (no configuration helps): up 15x in four weeks, down 75% in three"
+            body: |-
+              - **Nov 29 - Dec 13:** every configuration far too low; peak emphasis barely helps. The rise was too fast for any of them.
+              - **Dec 27 - Jan 10:** every configuration turns at 1-3 weeks, then rebounds at 4 weeks; on Jan 10 peak emphasis climbs to about 1,850 vs 369.
+              - Little surge gain, full post-turn cost: why it sits at the bottom of the location table.
+          - title: "Ohio (no configuration helps): peak Jan 3"
+            body: |-
+              - **Dec 6-13:** every configuration low; peak emphasis adds little.
+              - **Jan 3:** every configuration draws a V; baseline 1-week fine (1,609 vs 1,377) but 4-week climbs to 1,661 vs 610; oversample 5x to 2,503.
+              - **Jan 10-17:** peak emphasis rebounds again; baseline best on Jan 17.
+      - kind: callout
+        tone: warning
+        title: Limits
+        body: >-
+          One seed. 22 of the 77 figures were studied closely, the rest through the forecast files.
+          Phase boundaries were read from each curve by eye. The inferred mechanisms could be tested
+          with feature attributions for the 4-week model on Jan 3-10 and a count of training targets
+          above 1,500.
+
   - id: results
     heading: Results in brief
     kind: stack
@@ -219,30 +375,11 @@ sections:
         body: |-
           XGBoost, 2025-26 season, 35 weekly forecast dates, seed 42, US excluded from scoring.
 
-          - **Surge.** Every configuration forecasts too low: for forecasts made Nov 29 - Dec 20 the
-            observation is [[-above baseline's 90% band in 26% of rows]] and below it in none. Peak
-            emphasis [[+gets closer]] (WIS -10 to -35 on those dates).
-          - **The turn.** The 1-week forecast usually turns down, often too far. The failure is a V at
-            3-4 weeks: the median climbs again while the data keeps falling. Baseline does it in 14%
-            of forecasts made right after a falling week, [[-peak emphasis in 26-35%]]. This is the
-            source of the 1-2 week gain and 3-4 week loss reported last time.
-          - **Each state's own turn, not the calendar.** Texas peaked on Dec 27, so its bad dates are
-            Dec 20 - Jan 3, and on Jan 10 peak emphasis is better there; the northeast and Ohio turned
-            later.
-          - **After the peak, large states.** In California, Florida, Texas and Pennsylvania every
-            configuration forecast a steep fall while the curve held or rose again (Florida, Jan 24:
-            median 684 against 1,606 observed, then a second peak of 2,515). [[-No tested
-            configuration fixes this.]]
-          - **Not all large-state gains are skill.** California's gain comes largely from its real
-            second rise in mid-January; in Texas and Florida part of it comes from late January, when
-            every configuration was too low and a higher forecast was less wrong.
-          - **Intervals.** 90% coverage over Nov 29 - Feb 7 is 0.43-0.82 per state, and the misses
-            are one-sided: above the band in the surge, below it after the turn.
-          - **Direction.** Baseline's median points the right way in 72.5% of rows (always saying
-            "flat" would get 39.3%) but [[-only 53.8% in the peak phase]]. It says "up" when the
+          - **Direction.** Baseline's median points the right way (up, flat or down) in 72.5% of rows;
+            always saying "flat" would get 39.3%. [[-Only 53.8% in the peak phase.]] It says "up" when the
             curve fell in 17% of peak rows; peak emphasis 19-23%, the 52-week window 33%.
-          - **The 52-week window** flat-lines during the surge and crashes after the turn; not usable at the
-            peak.
+          - **Combining configurations.** Each horizon has its own model, so peak emphasis can be used
+            for 1-2 weeks only, without retraining.
 
           [[*Confining peak emphasis to the 1- and 2-week models keeps most of the surge gain without
           the V.]]
