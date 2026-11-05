@@ -358,10 +358,26 @@ No result below is final. Numbers shown are preliminary and labeled with their s
 | in-house model 2..N | lab | TBD | no | count is open question 2 |
 
 - Placeholder: table of WIS overall, by phase, by horizon per family on the pinned split, multi-seed.
-- Preliminary (2026-09-02, `outputs/model_selection/demo_2026-09-02.json`, calendar_v1, one seed, no tuning;
-  six of the nine families compared, `nn_quantile`, `sf_autoarima`, `sf_autotheta` not run): `xgboost_direct`
-  best overall (WIS 50.6); peak is the worst phase for each of the six; `nf_nhits` best in decline.
-  Needs re-scoring under Adiga windows and by horizon.
+- Preliminary: the 2026-09-02 selection run (`outputs/model_selection/demo_2026-09-02/`, one seed, no
+  tuning, 9 stride-4 cutoffs, US excluded; six of the nine families, `nn_quantile`, `sf_autoarima` and
+  `sf_autotheta` not run). Its saved forecasts were re-scored on 2026-11-05 under `adiga_2026_10` against
+  round 2's pinned data snapshot (sha256 `c91d9d81b8ab...`), no retraining. WIS, 1,872 rows per family:
+
+| family | overall | growth | peak | decline | plateau | h1 | h4 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `xgboost_direct` | 50.6 | 63.7 | 108.4 | 32.7 | 7.5 | 29.4 | 81.0 |
+| `nf_nhits` | 65.5 | 73.6 | 155.2 | 33.2 | 10.1 | 27.1 | 115.2 |
+| `sf_autoets` | 82.2 | 102.5 | 167.8 | 56.4 | 18.1 | 27.9 | 144.5 |
+| `persistence` | 90.7 | 131.7 | 155.0 | 79.0 | 22.2 | 33.6 | 159.4 |
+| `mlf_lightgbm` | 138.7 | 102.0 | 378.3 | 67.7 | 31.3 | 49.8 | 225.2 |
+| `seasonal_naive` | 153.0 | 111.1 | 423.2 | 90.3 | 13.7 | 160.9 | 164.2 |
+
+  - `xgboost_direct` is best overall and in every phase. The calendar_v1 claim "`nf_nhits` best in decline"
+    does not hold under the Adiga windows (33.2 vs 32.7).
+  - Peak is the worst phase for every family.
+  - `nf_nhits` and `sf_autoets` beat `xgboost_direct` at h1 (27.1 and 27.9 vs 29.4) and lose badly at h4.
+    This is the same short-horizon pattern as peak emphasis, and it is a candidate for a horizon ensemble.
+  - One seed and no significance test: these are point estimates.
 
 ### 8.2 Vanilla vs refined
 
