@@ -286,7 +286,7 @@
           h("div", { class: "text-xs muted", text: "cited_entries (what it says it relied on; curated in primary, experiential in amber)" }), idChips(a.cited_entries, { byId }),
           h("div", { class: "text-xs muted mt-2", text: "supported_by (shown entries recommending this action)" }), idChips(a.supported_by, { byId, tone: "success" }),
           h("div", { class: "text-xs muted mt-2", text: "supported_by_params_mismatch" }), idChips(a.supported_by_params_mismatch, { byId, tone: "warning" })]),
-        stageCard("5. Outcome", "WIS " + fmtNum(it.wis, 2) + " (unchanged: fake pipeline)", [explain(a)], (a.supported_by || []).length ? "success" : "destructive")));
+        stageCard("5. Outcome", "WIS " + fmtNum(it.wis, 2) + (opts.outcomeNote === undefined ? " (unchanged: fake pipeline)" : opts.outcomeNote), [explain(a)], (a.supported_by || []).length ? "success" : "destructive")));
       host.appendChild(h("details", { class: "text-sm" }, h("summary", { class: "cursor-pointer muted", text: "retrieved_entry_ids for this iteration" }), idChips(a.retrieved_entry_ids, { byId })));
     }
     render();
@@ -484,18 +484,26 @@
     // diagonal: leave horizontally, arrive on the top/bottom or side depending on direction
     return { x1: dx > 0 ? a.x + NODE_W : a.x, y1: A.cy, x2: dx > 0 ? b.x : b.x + NODE_W, y2: B.cy };
   }
-  function architectureDiagram(el) {
-    const W = 800, H = 352;
-    const byId = Object.fromEntries(ARCH_NODES.map(n => [n.id, n]));
-    const svg = svgEl("svg", { viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": "How the knowledge bank sits between the data, the pipeline and the improve loop" });
+  // `spec` (optional data file): {width, height, label, initial, nodes: [...], edges: [...]} in the
+  // shape of ARCH_NODES / ARCH_EDGES. Without it the widget draws the knowledge-bank diagram.
+  const ARCH_DEFAULT = { width: 800, height: 352, initial: "db", nodes: ARCH_NODES, edges: ARCH_EDGES,
+    label: "How the knowledge bank sits between the data, the pipeline and the improve loop" };
+  let archCount = 0;
+  function architectureDiagram(el, spec) {
+    const d = spec || ARCH_DEFAULT;
+    const W = d.width, H = d.height;
+    // One marker id per diagram: two diagrams on one page must not share an id.
+    const arrowId = "arch-arrow-" + (archCount++);
+    const byId = Object.fromEntries(d.nodes.map(n => [n.id, n]));
+    const svg = svgEl("svg", { viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": d.label });
     const defs = svgEl("defs");
-    const marker = svgEl("marker", { id: "arch-arrow", viewBox: "0 0 10 10", refX: "9", refY: "5", markerWidth: "7", markerHeight: "7", orient: "auto-start-reverse" });
+    const marker = svgEl("marker", { id: arrowId, viewBox: "0 0 10 10", refX: "9", refY: "5", markerWidth: "7", markerHeight: "7", orient: "auto-start-reverse" });
     marker.appendChild(svgEl("path", { d: "M 0 0 L 10 5 L 0 10 z", class: "arrow" }));
     defs.appendChild(marker); svg.appendChild(defs);
-    for (const e of ARCH_EDGES) {
+    for (const e of d.edges) {
       const p = edgePath(byId[e.from], byId[e.to]);
-      const attrs = { x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2, class: "edge", "marker-end": "url(#arch-arrow)" };
-      if (e.both) attrs["marker-start"] = "url(#arch-arrow)";
+      const attrs = { x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2, class: "edge", "marker-end": "url(#" + arrowId + ")" };
+      if (e.both) attrs["marker-start"] = "url(#" + arrowId + ")";
       svg.appendChild(svgEl("line", attrs));
       if (e.label) {
         const mx = (p.x1 + p.x2) / 2, my = (p.y1 + p.y2) / 2;
@@ -512,7 +520,7 @@
       detail.appendChild(h("div", { class: "card-header !p-4 !pb-2" }, h("h4", { class: "card-title-sm", text: n.label }), h("p", { class: "card-description" }, code(n.path))));
       detail.appendChild(h("div", { class: "card-content !p-4 !pt-0" }, h("p", { class: "text-sm", text: n.text })));
     }
-    for (const n of ARCH_NODES) {
+    for (const n of d.nodes) {
       const g = svgEl("g", { class: "node", role: "button", tabindex: "0", "aria-label": n.label });
       g.appendChild(svgEl("rect", { x: n.x, y: n.y, width: NODE_W, height: NODE_H, rx: 8 }));
       g.appendChild(svgEl("text", { x: n.x + 14, y: n.y + 24 }, n.label));
@@ -525,7 +533,7 @@
       h("p", { class: "text-sm muted", text: "Click a box for what it is and where it lives." }),
       h("div", { class: "overflow-x-auto" }, h("div", { style: "min-width: 560px" }, svg)),
       detail));
-    show("db");
+    show(d.initial);
   }
 
   // ---- bank lifecycle -----------------------------------------------------------

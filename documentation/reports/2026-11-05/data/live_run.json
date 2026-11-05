@@ -1,0 +1,249 @@
+{
+ "run_id": "20261105-191315-3fde",
+ "cutoff": "2025-12-06",
+ "iterations": [
+  {
+   "iteration": 0,
+   "wis": 192.51,
+   "action": null,
+   "diagnosis": null
+  },
+  {
+   "iteration": 1,
+   "wis": 170.13,
+   "action": {
+    "name": "reweight_training_samples",
+    "params": {
+     "dimension": "approaching_peak",
+     "value": "8",
+     "weight": 3.0
+    },
+    "rationale": "Upweight samples in the 8 weeks before each peak to address under-prediction of peaks, as previous experiments showed mixed results with similar parameters.",
+    "expected_effect": "Lower wis by improving peak prediction accuracy through focused training on critical phases.",
+    "cited_entries": [
+     "exp-lambda-calendar-2-2025",
+     "exp-lambda-calendar-3-2025"
+    ],
+    "retrieved_entry_ids": [
+     "bias-sign-convention",
+     "error-grows-with-horizon",
+     "peak-is-hardest-to-forecast",
+     "phase-peak-adiga-2026-10",
+     "rectify-peak-add-examples-other-seasons",
+     "rectify-peak-loss-weight-approaching-peak",
+     "rectify-peak-oversample-windows",
+     "rectify-peak-shorter-window-on-divergence",
+     "seasonality-needs-two-plus-years",
+     "window-length-is-a-search-dimension",
+     "growth-starts-october-rate-varies",
+     "onset-definition-v1",
+     "rectify-peak-smote",
+     "exp-lambda-1-5-2025-adiga-2026-10",
+     "exp-lambda-2-2025-adiga-2026-10",
+     "exp-lambda-3-2025-adiga-2026-10",
+     "exp-lambda-5-2025-adiga-2026-10",
+     "exp-lambda-calendar-2-2025-adiga-2026-10",
+     "exp-lambda-calendar-3-2025-adiga-2026-10",
+     "exp-oversample-2-2025-adiga-2026-10",
+     "exp-oversample-3-2025-adiga-2026-10",
+     "exp-oversample-5-2025-adiga-2026-10",
+     "exp-window-52-2025-adiga-2026-10",
+     "exp-lambda-1-5-2025",
+     "exp-lambda-2-2025",
+     "exp-lambda-3-2025",
+     "exp-lambda-5-2025",
+     "exp-lambda-calendar-2-2025",
+     "exp-lambda-calendar-3-2025",
+     "exp-window-12-2025"
+    ],
+    "supported_by": [
+     "rectify-peak-loss-weight-approaching-peak"
+    ],
+    "supported_by_params_mismatch": [
+     "rectify-peak-loss-weight-approaching-peak"
+    ]
+   },
+   "diagnosis": {
+    "summary": "The model exhibits significant underprediction during the peak phase and severe overestimation in specific regions like Puerto Rico. While overall MAPE is 45.9%, performance degrades sharply at Week 3 (58.5% MAPE) and in the peak phase (55.9% MAPE), with extreme outliers showing errors exceeding 60%.",
+    "headline_metrics": {
+     "mape": 45.9,
+     "mae": 284.2,
+     "bias": -267.4,
+     "n_forecasts": 208
+    },
+    "weak_segments": [
+     {
+      "dimension": "phase",
+      "value": "peak",
+      "metric": "mape",
+      "delta_vs_overall": 10.0,
+      "severity": "high"
+     },
+     {
+      "dimension": "horizon",
+      "value": "3",
+      "metric": "mape",
+      "delta_vs_overall": 12.6,
+      "severity": "high"
+     },
+     {
+      "dimension": "location",
+      "value": "72",
+      "metric": "mape",
+      "delta_vs_overall": 54.9,
+      "severity": "high"
+     },
+     {
+      "dimension": "horizon",
+      "value": "4",
+      "metric": "mape",
+      "delta_vs_overall": 10.0,
+      "severity": "medium"
+     },
+     {
+      "dimension": "location",
+      "value": "10",
+      "metric": "mape",
+      "delta_vs_overall": 39.8,
+      "severity": "medium"
+     }
+    ],
+    "hypotheses": [
+     {
+      "id": "h1",
+      "text": "Peak phase underprediction stems from insufficient training data capturing high-variance hospitalization spikes",
+      "confidence": 0.85
+     },
+     {
+      "id": "h2",
+      "text": "Puerto Rico's extreme MAPE may reflect data sparsity and outlier events not represented in training",
+      "confidence": 0.78
+     },
+     {
+      "id": "h3",
+      "text": "Week 3 drift could result from delayed signal propagation in the hospitalization time series",
+      "confidence": 0.65
+     }
+    ],
+    "suggested_focus": "peak_underprediction"
+   }
+  },
+  {
+   "iteration": 2,
+   "wis": 163.59,
+   "action": {
+    "name": "reweight_training_samples",
+    "params": {
+     "dimension": "approaching_peak",
+     "value": "8",
+     "weight": 5.0
+    },
+    "rationale": "The model under-predicts peaks, and increasing the weight for approaching_peak samples (weeks_before=8) could improve peak prediction accuracy.",
+    "expected_effect": "Lower WIS by emphasizing critical approaching_peak samples, potentially reducing peak prediction errors.",
+    "cited_entries": [],
+    "retrieved_entry_ids": [
+     "bias-sign-convention",
+     "error-grows-with-horizon",
+     "peak-is-hardest-to-forecast",
+     "phase-peak-adiga-2026-10",
+     "rectify-peak-add-examples-other-seasons",
+     "rectify-peak-loss-weight-approaching-peak",
+     "rectify-peak-oversample-windows",
+     "rectify-peak-shorter-window-on-divergence",
+     "seasonality-needs-two-plus-years",
+     "window-length-is-a-search-dimension",
+     "growth-starts-october-rate-varies",
+     "onset-definition-v1",
+     "rectify-peak-smote",
+     "exp-lambda-1-5-2025-adiga-2026-10",
+     "exp-lambda-2-2025-adiga-2026-10",
+     "exp-lambda-3-2025-adiga-2026-10",
+     "exp-lambda-5-2025-adiga-2026-10",
+     "exp-lambda-calendar-2-2025-adiga-2026-10",
+     "exp-lambda-calendar-3-2025-adiga-2026-10",
+     "exp-oversample-2-2025-adiga-2026-10",
+     "exp-oversample-3-2025-adiga-2026-10",
+     "exp-oversample-5-2025-adiga-2026-10",
+     "exp-window-52-2025-adiga-2026-10",
+     "exp-lambda-1-5-2025",
+     "exp-lambda-2-2025",
+     "exp-lambda-3-2025",
+     "exp-lambda-5-2025",
+     "exp-lambda-calendar-2-2025",
+     "exp-lambda-calendar-3-2025",
+     "exp-window-12-2025"
+    ],
+    "supported_by": [
+     "rectify-peak-loss-weight-approaching-peak"
+    ],
+    "supported_by_params_mismatch": [
+     "rectify-peak-loss-weight-approaching-peak"
+    ]
+   },
+   "diagnosis": {
+    "summary": "The model exhibits significant underprediction during peak phases and severe overestimation in specific regions like Puerto Rico. While overall MAPE is 40.9%, performance degrades sharply at Week 3 (53.6% MAPE) and in the peak phase (49.6% MAPE), with extreme errors in high-impact forecasts.",
+    "headline_metrics": {
+     "mape": 40.9,
+     "mae": 244.2,
+     "bias": -228.1,
+     "n_forecasts": 208
+    },
+    "weak_segments": [
+     {
+      "dimension": "location",
+      "value": "72",
+      "metric": "mape",
+      "delta_vs_overall": 47.1,
+      "severity": "high"
+     },
+     {
+      "dimension": "location",
+      "value": "40",
+      "metric": "mape",
+      "delta_vs_overall": 20.9,
+      "severity": "high"
+     },
+     {
+      "dimension": "phase",
+      "value": "peak",
+      "metric": "mape",
+      "delta_vs_overall": 8.6,
+      "severity": "high"
+     },
+     {
+      "dimension": "horizon",
+      "value": "3",
+      "metric": "mape",
+      "delta_vs_overall": 12.6,
+      "severity": "high"
+     },
+     {
+      "dimension": "location",
+      "value": "46",
+      "metric": "mape",
+      "delta_vs_overall": 19.9,
+      "severity": "medium"
+     }
+    ],
+    "hypotheses": [
+     {
+      "id": "h1",
+      "text": "Peak phase underprediction stems from insufficient training data during surge events, leading to biased parameter estimation.",
+      "confidence": 0.85
+     },
+     {
+      "id": "h2",
+      "text": "Puerto Rico's extreme MAPE may result from sparse historical data and outlier events distorting the target distribution.",
+      "confidence": 0.75
+     },
+     {
+      "id": "h3",
+      "text": "Week 3 drift could be caused by over-regularization suppressing temporal patterns in high-variance regions.",
+      "confidence": 0.65
+     }
+    ],
+    "suggested_focus": "peak_underprediction"
+   }
+  }
+ ]
+}

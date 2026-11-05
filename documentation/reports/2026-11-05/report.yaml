@@ -61,6 +61,111 @@ sections:
             label: the same gate in-sample on 2025-26, where it was designed
             tone: warning
 
+  - id: how-it-works
+    heading: How the repo works
+    label: walkthrough
+    kind: tabs
+    intro: >-
+      The framework in one page: what connects to what, the commands for every step, and a real run
+      made on 2026-11-05. The full reference is
+      [PROJECT_OVERVIEW.md](https://github.com/oeleel/epiForecasting/blob/main/documentation/PROJECT_OVERVIEW.md).
+    tabs:
+      - id: map
+        label: Map
+        blocks:
+          - kind: markdown
+            body: >-
+              Four steps, numbered in the boxes. **1** picks a model family, **2** is the agent loop that
+              refines it, **3** runs controlled experiments outside the agent, and **4** tests whether an
+              experiment's gain is real. The knowledge bank links them: experiments write facts into it,
+              and the agent reads those facts before every proposal.
+          - kind: widget
+            name: architectureDiagram
+            data: data/repo_map.json
+      - id: steps
+        label: Steps
+        blocks:
+          - kind: table
+            columns:
+              - Step
+              - What it does
+              - Command
+              - Time
+            rows:
+              - - "**0. Set up**"
+                - "Python environment, the local LLM (Qwen 3 8B on Ollama), and a check that all tests pass."
+                - "`uv venv --python 3.12 .venv` then `ollama pull qwen3:8b` then `python -m pytest tests/agent/ -q`"
+                - "once"
+              - - "**Check the data**"
+                - "Missing weeks, nulls, spikes and zero reporting in the CDC data before training."
+                - "`python -m agent check-data --cutoff-date 2025-12-06 --dry-run`"
+                - "seconds"
+              - - "**1. Pick a model**"
+                - "Fits every family from rolling cutoffs on 2025-26 and ranks them by WIS (overall or one phase)."
+                - "`python -m agent select-model --stride-weeks 4 --exclude-locations US --metric wis --phase peak`"
+                - "minutes"
+              - - "**2. Refine it**"
+                - "The agent loop: diagnose, propose one action, retrain, keep or revert. Asks before each action unless `--auto-apply`."
+                - "`python -m agent improve --cutoff-date 2025-12-06 --max-iterations 2 --auto-apply`"
+                - "about 7 min"
+              - - "**Inspect a run**"
+                - "Every iteration with its action and metrics; the end-of-run report."
+                - "`python -m agent history` then `python -m agent status <run_id>` then `python -m agent report <run_id>`"
+                - "seconds"
+              - - "**3. Run an experiment**"
+                - "Baseline against a fixed change, over many cutoffs and seeds, on the held-out season."
+                - "`python scripts/experiments/peak_rectification.py --eval-window holdout_2024_25 --stride-weeks 1 --arms baseline oversample --oversample-factors 5 --seeds 42 --out outputs/experiments/holdout-seed42`"
+                - "about 23 min per seed"
+              - - "**4. Test it**"
+                - "Paired per-date test of the change against the baseline. No training."
+                - "`python scripts/experiments/significance_test.py --run-dir outputs/experiments/peak_rectification_holdout_2024_25 --candidate oversample_5 --gate horizon`"
+                - "seconds"
+              - - "**Record it**"
+                - "Writes the experiment into the knowledge bank, so later agent runs see it."
+                - "`python -m agent knowledge import-experiment --log <run dir>/log.jsonl`"
+                - "seconds"
+            note: >-
+              On macOS, set `export KMP_DUPLICATE_LIB_OK=TRUE OMP_NUM_THREADS=1` first. Every command runs
+              from the repo root with the project `.venv` active.
+      - id: example
+        label: Example run
+        blocks:
+          - kind: markdown
+            body: >-
+              A real `improve` run on 2026-11-05 (run `20261105-191315-3fde`, Qwen 3 8B, 6 min 41 s, 2
+              iterations). Step through it: what Agent 1 diagnosed, what was retrieved from the bank, what
+              Agent 2 proposed and cited, and the WIS after retraining.
+          - kind: stats
+            stats:
+              - value: "192.5"
+                label: baseline WIS at cutoff 2025-12-06 (4 target weeks, 208 rows)
+              - value: "170.1"
+                label: "iteration 1: approaching-peak weight 3.0, kept"
+                tone: success
+              - value: "163.6"
+                label: "iteration 2: approaching-peak weight 5.0, kept"
+                tone: success
+              - value: "+3.99"
+                label: the same kind of change in round 2 (9 cutoffs, 3 seeds); worse in every seed
+                tone: destructive
+          - kind: widget
+            name: runStepper
+            data: data/live_run.json
+            options:
+              outcomeNote: ""
+          - kind: callout
+            tone: warning
+            title: How to read this run
+            body: >-
+              [[+The mechanics and guardrails work]]: each action was validated before it was applied, and
+              an invented citation ("iter 1") was dropped. [[-The 15% gain is not evidence]]: `improve`
+              scores one cutoff and one seed, and 2025-12-06 is in the surge, where peak emphasis is known
+              to help. Across 9 cutoffs and 3 seeds, round 2 found this kind of change worse on peak WIS.
+              [[!The agent saw that result and still proposed it]]: all four round 2 entries for this action
+              were in its retrieved facts. In iteration 1 it cited two older entries about calendar-phase weights, a
+              different action from the one it chose. This is the case for gating the loop's accept rule with the
+              significance test.
+
   - id: asked
     heading: What was asked
     kind: cards
