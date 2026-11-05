@@ -47,6 +47,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Union
 
+from agent.phase_evaluator import COVERAGE_TARGET
+
 
 DEFAULT_DB_PATH = Path("outputs/agent_runs/runs.db")
 
@@ -288,22 +290,22 @@ class RunTracker:
         """Return the iteration with the lowest value of `metric`.
 
         Lower is better for wis/mape/bias-magnitude. For coverage_95 we
-        want closest to 0.95, not lowest.
+        want closest to COVERAGE_TARGET, not lowest.
         """
         if metric not in {"wis", "mape", "coverage_95", "bias"}:
             raise ValueError(f"Unsupported metric: {metric}")
 
         with self._connect() as conn:
             if metric == "coverage_95":
-                # closest to 0.95
+                # closest to COVERAGE_TARGET
                 row = conn.execute(
                     """
                     SELECT * FROM iterations
                     WHERE run_id = ? AND coverage_95 IS NOT NULL
-                    ORDER BY ABS(coverage_95 - 0.95) ASC
+                    ORDER BY ABS(coverage_95 - ?) ASC
                     LIMIT 1
                     """,
-                    (run_id,),
+                    (run_id, COVERAGE_TARGET),
                 ).fetchone()
             elif metric == "bias":
                 # smallest absolute bias

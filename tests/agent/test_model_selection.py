@@ -129,8 +129,9 @@ def test_select_incumbent_lower_wis_wins_and_failed_are_skipped():
     assert result.to_json()["incumbent"] == "b"
 
 
-def test_select_incumbent_coverage_is_distance_to_95():
-    cands = [_cand("a", _metrics(1.0, coverage=0.80)), _cand("b", _metrics(1.0, coverage=0.99))]
+def test_select_incumbent_coverage_is_distance_to_90():
+    # coverage_95 measures the [q05, q95] interval, so 0.90 is on target and 0.95 is too wide
+    cands = [_cand("a", _metrics(1.0, coverage=0.95)), _cand("b", _metrics(1.0, coverage=0.90))]
     result = select_incumbent(cands, SelectionGoal(metric="coverage_95"))
     assert result.incumbent == "b"
 

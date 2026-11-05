@@ -44,6 +44,7 @@ from typing import Any
 import pandas as pd
 
 from agent.phase_evaluator import (
+    COVERAGE_TARGET,
     DEFAULT_PHASE_SCHEME,
     PhaseEvaluator,
     describe_phase_scheme,
@@ -67,11 +68,11 @@ __all__ = [
 
 _log = logging.getLogger(__name__)
 
-# Metrics where a smaller number wins. coverage_95 is scored by distance to 0.95
+# Metrics where a smaller number wins. coverage_95 is scored by distance to
+# COVERAGE_TARGET (0.90: it measures the [q05, q95] interval)
 # and bias by absolute value (same rules as agent.orchestrator._is_better).
 LOWER_IS_BETTER_METRICS = frozenset({"wis", "mape", "mae", "rmse"})
 VALID_METRICS = tuple(sorted(LOWER_IS_BETTER_METRICS | {"coverage_95", "bias"}))
-COVERAGE_TARGET = 0.95
 ALL_PHASES = "all"
 # Goal phases are the default scheme's, the scheme `_score` evaluates under.
 VALID_PHASES = (ALL_PHASES, *phase_order(DEFAULT_PHASE_SCHEME))

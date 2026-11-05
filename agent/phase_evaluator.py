@@ -171,6 +171,10 @@ def assign_phases(dates: Any, scheme: Optional[str] = None) -> np.ndarray:
 # FluSight standard quantile levels (also matches src.config.QUANTILES default)
 QUANTILE_LEVELS = [0.05, 0.25, 0.50, 0.75, 0.95]
 QUANTILE_COLS = [f"predicted_q{int(q * 100):02d}" for q in QUANTILE_LEVELS]
+# Nominal level of `coverage_95`. The metric counts actuals inside [q05, q95],
+# which is the 90% central interval; the name predates this fix and is kept so
+# stored metrics and CLI flags stay valid. Aiming at 0.95 rewarded too-wide intervals.
+COVERAGE_TARGET = 0.90
 
 
 def _has_quantiles(df: pd.DataFrame) -> bool:

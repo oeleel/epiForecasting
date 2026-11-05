@@ -172,10 +172,10 @@ def test_deltas_are_direction_aware_for_wis():
 
 
 def test_deltas_are_direction_aware_for_coverage():
-    report = build_report(_result([0.80, 0.94, 0.99], target_metric="coverage_95"))
+    report = build_report(_result([0.95, 0.90, 0.99], target_metric="coverage_95"))
 
-    assert report.lines[1].delta_vs_prev > 0, "0.94 is closer to 0.95 than 0.80"
-    assert report.lines[2].delta_vs_prev < 0, "0.99 is further from 0.95 than 0.94"
+    assert report.lines[1].delta_vs_prev > 0, "0.90 is on the [q05, q95] target, 0.95 is too wide"
+    assert report.lines[2].delta_vs_prev < 0, "0.99 is further from 0.90 than 0.90"
     assert report.best_iteration == 1
 
 

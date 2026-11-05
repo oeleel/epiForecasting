@@ -57,19 +57,19 @@ def test_best_iteration_lowest_wis():
         assert best["wis"] == 130.0
 
 
-def test_best_iteration_coverage_closest_to_095():
+def test_best_iteration_coverage_closest_to_090():
     with tempfile.TemporaryDirectory() as tmp:
         t = RunTracker(db_path=Path(tmp) / "t.db")
         rid = t.start_run(initial_forecast="x.csv")
-        # 0.82 is 0.13 away; 0.92 is 0.03 away (best); 0.99 is 0.04 away
-        coverages = [0.82, 0.92, 0.99]
+        # target 0.90 ([q05, q95]): 0.95 is 0.05 away; 0.91 is 0.01 away (best); 0.99 is 0.09
+        coverages = [0.95, 0.91, 0.99]
         for i, cov in enumerate(coverages):
             m = _baseline_metrics()
             m["overall"]["coverage_95"] = cov
             t.log_iteration(rid, i, m)
         best = t.get_best_iteration(rid, metric="coverage_95")
         assert best["iteration"] == 1
-        assert best["coverage_95"] == 0.92
+        assert best["coverage_95"] == 0.91
 
 
 def test_best_iteration_bias_smallest_absolute():
@@ -126,7 +126,7 @@ def test_invalid_finish_status_raises():
 ALL = [
     test_start_log_finish_round_trip,
     test_best_iteration_lowest_wis,
-    test_best_iteration_coverage_closest_to_095,
+    test_best_iteration_coverage_closest_to_090,
     test_best_iteration_bias_smallest_absolute,
     test_list_runs_aggregates_n_iterations_and_best,
     test_compare_runs_same_run_zero_delta,

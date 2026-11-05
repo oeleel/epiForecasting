@@ -526,7 +526,8 @@ the current value — that would be a no-op.
 ## Target Metric
 
 You are optimizing **{target_metric}** (lower is better, except
-coverage_95 which should be close to 0.95).
+coverage_95 which should be close to 0.90: it counts actuals inside
+the [q05, q95] interval, which is the 90% interval).
 
 ## Your Task
 

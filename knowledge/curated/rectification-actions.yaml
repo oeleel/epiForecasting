@@ -53,7 +53,10 @@
       note: >
         For XGBoost, integer sample weights are equivalent to row duplication except under
         `subsample`; either fold into the loss-weight action or duplicate rows literally to
-        keep the two arms distinct. Planned experiment arm, not run yet.
+        keep the two arms distinct. Run in round 2 as the harness `oversample` arm
+        (xgboost_direct only, not an agent action): pooled peak WIS stayed inside seed noise;
+        by horizon it helped at 1-2 weeks and hurt at 4 weeks in all 3 seeds. See
+        documentation/experiments/2026-10-peak-rectification-round2-results.md.
     rank: 2
   evidence:
     source: "A. Adiga, Teams follow-up, ~2026-09-27"
