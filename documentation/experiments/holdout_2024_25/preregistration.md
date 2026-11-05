@@ -35,9 +35,10 @@ baseline.
 
 - Rows: target date in the `adiga_2026_10` peak phase (2025-01-01 to 2025-02-28), all horizons, `US`
   excluded.
-- Unit of analysis: the forecast date. For each date t, `d_t` = mean over that date's peak rows of
-  (WIS gated - WIS baseline), then averaged over the 3 seeds. Rows from one fit are not independent, so rows
-  are never the unit.
+- Unit of analysis: the forecast date. For each date t, `d_t` = sum over that date's peak rows of
+  (WIS gated - WIS baseline), divided by the mean number of peak rows per date, then averaged over the 3
+  seeds. The mean of `d_t` therefore equals the pooled peak WIS delta. Rows from one fit are not
+  independent, so rows are never the unit. (Amended, see below.)
 - Test: two-sided Diebold-Mariano test on `d_t`, with the Harvey-Leybourne-Newbold small-sample correction
   and a t distribution with n - 1 degrees of freedom. Variance: autocovariances up to lag 3, because
   forecasts from dates up to 3 weeks apart share target weeks. If that estimate is not positive, the
@@ -64,3 +65,12 @@ baseline.
   2025-26. Only paired deltas within one season are compared.
 - The floor constraint couples horizons at forecast time; on 2025-26 this moved the composed WIS by at most
   2e-6 (`gated_emphasis.md`).
+
+## Amendment 1 (2026-11-05, before any 2024-25 result was read)
+
+The first version defined `d_t` as the unweighted mean over a date's peak rows. Dates hold different numbers
+of peak rows (the first peak date has only h4 rows in the peak, the last only h1 rows), so the mean of
+unweighted `d_t` is a different estimand from pooled peak WIS. On the 2025-26 in-sample data it gave -2.39
+for ungated `oversample_5`, while its pooled peak WIS delta is +4.97. The hypothesis is about pooled peak
+WIS, so `d_t` is now scaled to make its mean equal the pooled delta. The amendment was found on 2025-26 data
+only; the held-out runs were still training and no 2024-25 forecast had been scored.

@@ -41,6 +41,8 @@ MODULES = [
     "tests.agent.test_phase_scheme",
     "tests.agent.test_demo_knowledge_bank",
     "tests.agent.test_report_builder",
+    "tests.agent.test_significance",
+    "tests.agent.test_significance_test",
 ]
 
 
