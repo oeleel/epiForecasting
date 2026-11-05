@@ -93,6 +93,7 @@ from agent.knowledge import (
     RetrievalContext,
 )
 from agent.llm_client import LLMClient
+from agent.phase_evaluator import COVERAGE_TARGET
 from agent.prompt_templates import (
     CITED_ENTRIES_KEY,
     extract_json_from_response,
@@ -274,7 +275,7 @@ def _extract_target(metrics: Dict[str, Any], target_metric: str) -> Optional[flo
 def _is_better(target_metric: str, current: Optional[float], best: Optional[float]) -> bool:
     """Direction-aware comparison for improvement.
 
-    Lower is better for wis/mape/mae/rmse. Closer-to-0.95 is better for
+    Lower is better for wis/mape/mae/rmse. Closer to COVERAGE_TARGET is better for
     coverage_95. Smaller absolute is better for bias.
     """
     if current is None:
@@ -282,7 +283,7 @@ def _is_better(target_metric: str, current: Optional[float], best: Optional[floa
     if best is None:
         return True
     if target_metric == "coverage_95":
-        return abs(current - 0.95) < abs(best - 0.95)
+        return abs(current - COVERAGE_TARGET) < abs(best - COVERAGE_TARGET)
     if target_metric == "bias":
         return abs(current) < abs(best)
     return current < best
@@ -296,7 +297,10 @@ def _improvement_pct(target_metric: str, current: float, baseline: float) -> flo
     if baseline == 0:
         return 0.0
     if target_metric == "coverage_95":
-        return (abs(baseline - 0.95) - abs(current - 0.95)) / abs(baseline - 0.95 or 1)
+        return (
+            (abs(baseline - COVERAGE_TARGET) - abs(current - COVERAGE_TARGET))
+            / abs(baseline - COVERAGE_TARGET or 1)
+        )
     if target_metric == "bias":
         return (abs(baseline) - abs(current)) / abs(baseline)
     return (baseline - current) / baseline

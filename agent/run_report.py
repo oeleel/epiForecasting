@@ -17,7 +17,7 @@ Design notes
 - **Direction is not the renderer's opinion.** `_is_better` / `_improvement_pct`
   are imported from `agent.orchestrator` rather than reimplemented. For `wis` a
   *negative* absolute delta is an improvement; for `coverage_95` "better" means
-  closer to 0.95; for `bias` it means closer to zero. Every delta in the report
+  closer to COVERAGE_TARGET (0.90); for `bias` it means closer to zero. Every delta in the report
   is a direction-aware **fraction** where positive always means better, so a
   reader never has to know which way a metric points. Duplicating that logic
   here is the real risk — reaching through an underscore is not.
