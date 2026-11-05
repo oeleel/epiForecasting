@@ -63,6 +63,16 @@ Invariants
   keep their original ids; any other scheme appends its slug to the id, so a
   later sweep under the new windows adds entries instead of overwriting the
   round-1 ones.
+- Multi-seed logs (round 2 on) are merged before import. Rows that carry a
+  `seed` key are grouped by `base_config_id`; the seed path is removed from
+  `config_delta`, and the reward and the reward phase's bias and coverage are
+  the means over the seeds. Every group must hold exactly the baseline's seeds,
+  or the import raises. The entry records `n_observations` = number of seeds,
+  the seeds, and the per-seed deltas, so a reader sees the spread, not only the
+  mean. A merged row is "better" only when every seed improves; seeds of both
+  signs give the verdict "mixed across seeds". Confidence stays `low`: seeds on one split are not a held-out test, and
+  no significance test is run here. A log that mixes seeded and unseeded rows
+  raises.
 """
 
 from __future__ import annotations
@@ -83,9 +93,11 @@ __all__ = [
     "ENTRY_ID_PREFIX",
     "EXPERIMENT_CATEGORY",
     "LEGACY_PHASE_SCHEME",
+    "SEED_CONFIG_PATH",
     "SINGLE_OBSERVATION_CONFIDENCE",
     "ImportResult",
     "import_experiment_log",
+    "merge_seed_rows",
     "read_experiment_log",
     "rows_to_entries",
 ]
@@ -120,6 +132,18 @@ _METRIC_FORMAT = "{:.2f}"
 _DELTA_FORMAT = "{:+.2f}"
 _BIAS_FORMAT = "{:.1f}"
 _COVERAGE_FORMAT = "{:.3f}"
+
+# The harness writes each seed as this config path (peak_rectification.SEED_CONFIG_PATH).
+# Literal, not imported: the knowledge package does not import the scripts.
+SEED_CONFIG_PATH = "xgboost.random_state"
+# Seed means print with the harness's rounding.
+_SEED_MEAN_DIGITS = 2
+_SEED_MEAN_BIAS_DIGITS = 1
+_SEED_MEAN_COVERAGE_DIGITS = 3
+# A merged row is "better" only if every seed's delta is negative, valid only where lower is
+# better. A mean gain with seeds of both signs is inside seed noise, so it is not "better".
+_LOWER_IS_BETTER_METRICS = ("wis", "mae", "rmse", "mape")
+VERDICT_MIXED = "mixed across seeds"
 
 _REQUIRED_ROW_KEYS = ("run_at", "config_id", "config_delta", "state", "metrics", "reward")
 _REQUIRED_STATE_KEYS = ("model", "target_phase", "metric", "split")
@@ -325,7 +349,11 @@ def _describe_delta(config_delta: Mapping[str, Any]) -> tuple[str, dict[str, Any
     }
 
 
-def _verdict(reward: Mapping[str, Any]) -> str:
+def _verdict(reward: Mapping[str, Any], per_seed_delta: Sequence[float] | None = None) -> str:
+    if per_seed_delta and not (
+        all(d < 0 for d in per_seed_delta) or all(d > 0 for d in per_seed_delta)
+    ):
+        return VERDICT_MIXED
     if reward["better"]:
         return "better"
     if reward["delta"] == 0:
@@ -358,6 +386,13 @@ def _row_to_entry(
     before = _phase_metrics(baseline, phase, where=f"baseline for {where}")
     after = _phase_metrics(row, phase, where=where)
     action_text, action = _describe_delta(row["config_delta"])
+    seeds = row.get("seeds")
+    seed_note = (
+        f"; mean of seeds {', '.join(str(x) for x in seeds)}, per-seed delta "
+        f"{'/'.join(_DELTA_FORMAT.format(d) for d in row['per_seed_delta'])}"
+        if seeds
+        else ""
+    )
 
     # Scheme first, not as a trailing note: the reader must know which dates
     # "peak" means before reading any number, and a truncated line keeps it.
@@ -366,11 +401,12 @@ def _row_to_entry(
         f"{action_text}: {phase} {metric.upper()} "
         f"{_METRIC_FORMAT.format(reward['value'])} vs "
         f"{_METRIC_FORMAT.format(reward['baseline_value'])} baseline "
-        f"({_DELTA_FORMAT.format(reward['delta'])}, {_verdict(reward)}); "
+        f"({_DELTA_FORMAT.format(reward['delta'])}, {_verdict(reward, row.get('per_seed_delta'))}); "
         f"{phase} bias {_BIAS_FORMAT.format(before['bias'])} -> "
         f"{_BIAS_FORMAT.format(after['bias'])}; "
         f"{phase} coverage_95 {_COVERAGE_FORMAT.format(before['coverage_95'])} -> "
         f"{_COVERAGE_FORMAT.format(after['coverage_95'])}"
+        f"{seed_note}"
     )
 
     payload: dict[str, Any] = {
@@ -392,6 +428,9 @@ def _row_to_entry(
     }
     if reward.get("guard") is not None:
         payload["guard"] = json.loads(json.dumps(reward["guard"]))
+    if seeds:
+        payload["seeds"] = list(seeds)
+        payload["per_seed_delta"] = list(row["per_seed_delta"])
 
     return KnowledgeEntry(
         id=_entry_id(row["config_id"], _eval_start_year(row, where), scheme),
@@ -403,7 +442,7 @@ def _row_to_entry(
         payload=payload,
         evidence={
             "source": f"{source_label}#{row['config_id']} run_at {row['run_at']}",
-            "n_observations": SINGLE_OBSERVATION_COUNT,
+            "n_observations": len(seeds) if seeds else SINGLE_OBSERVATION_COUNT,
             "reward_delta": reward["delta"],
         },
         confidence=SINGLE_OBSERVATION_CONFIDENCE,
@@ -424,6 +463,9 @@ def rows_to_entries(
     a file). Raises ValueError when a non-baseline row has no matching
     baseline row, or when any row is malformed.
     """
+    rows = list(rows)
+    if any("seed" in row for row in rows):
+        rows = merge_seed_rows(rows)
     validated = [_validate_row(row, i) for i, row in enumerate(rows)]
     baselines = [r for r in validated if _is_baseline(r)]
     if not baselines:
@@ -444,6 +486,102 @@ def rows_to_entries(
             )
         )
     return entries
+
+
+# ---- seed merge -------------------------------------------------------------
+
+
+def merge_seed_rows(rows: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    """One row per `base_config_id`, averaged over seeds; see the module docstring."""
+    unseeded = [_row_label(r, i) for i, r in enumerate(rows) if "seed" not in r]
+    if unseeded:
+        raise ValueError(f"log mixes seeded and unseeded rows; unseeded: {unseeded}")
+    groups: dict[str, list[Mapping[str, Any]]] = {}
+    for index, row in enumerate(rows):
+        _validate_row(row, index)
+        if "base_config_id" not in row:
+            raise ValueError(f"{_row_label(row, index)}: seeded row has no base_config_id")
+        groups.setdefault(row["base_config_id"], []).append(row)
+
+    baseline_groups = [g for g in groups.values() if all(_is_baseline_seeded(r) for r in g)]
+    if len(baseline_groups) != 1:
+        raise ValueError(
+            f"expected one baseline group (config_delta only {SEED_CONFIG_PATH}), "
+            f"found {len(baseline_groups)}"
+        )
+    baseline_seeds = sorted(r["seed"] for r in baseline_groups[0])
+    return [_merge_group(base_id, group, baseline_seeds) for base_id, group in groups.items()]
+
+
+def _is_baseline_seeded(row: Mapping[str, Any]) -> bool:
+    return set(row["config_delta"]) == {SEED_CONFIG_PATH}
+
+
+def _mean(values: Sequence[float], digits: int) -> float:
+    return round(sum(values) / len(values), digits)
+
+
+def _merge_group(
+    base_id: str, group: Sequence[Mapping[str, Any]], baseline_seeds: Sequence[int]
+) -> dict[str, Any]:
+    group = sorted(group, key=lambda r: r["seed"])
+    seeds = [r["seed"] for r in group]
+    if seeds != list(baseline_seeds):
+        raise ValueError(f"{base_id}: seeds {seeds} differ from the baseline's {list(baseline_seeds)}")
+    first = group[0]
+    deltas = [{k: v for k, v in r["config_delta"].items() if k != SEED_CONFIG_PATH} for r in group]
+    for name, values in (
+        ("config_delta (seed removed)", deltas),
+        ("state", [r["state"] for r in group]),
+        ("phase_scheme", [_phase_scheme(r, base_id) for r in group]),
+        ("reward metric/phase", [(r["reward"]["metric"], r["reward"]["phase"]) for r in group]),
+    ):
+        if any(v != values[0] for v in values):
+            raise ValueError(f"{base_id}: seeds disagree on {name}: {values}")
+    metric, phase = first["reward"]["metric"], first["reward"]["phase"]
+    if metric not in _LOWER_IS_BETTER_METRICS:
+        raise ValueError(
+            f"{base_id}: cannot merge seeds for metric {metric!r}; "
+            f"supported: {_LOWER_IS_BETTER_METRICS}"
+        )
+
+    rewards = [r["reward"] for r in group]
+    per_seed_delta = [rw["delta"] for rw in rewards]
+    mean_delta = _mean(per_seed_delta, _SEED_MEAN_DIGITS)
+    reward: dict[str, Any] = {
+        "metric": metric,
+        "phase": phase,
+        "baseline_value": _mean([rw["baseline_value"] for rw in rewards], _SEED_MEAN_DIGITS),
+        "value": _mean([rw["value"] for rw in rewards], _SEED_MEAN_DIGITS),
+        "delta": mean_delta,
+        "better": all(d < 0 for d in per_seed_delta),
+    }
+    guards = [rw.get("guard") for rw in rewards]
+    if all(g is not None for g in guards):
+        reward["guard"] = {
+            "metric": guards[0]["metric"],
+            "baseline_value": _mean([g["baseline_value"] for g in guards], _SEED_MEAN_DIGITS),
+            "value": _mean([g["value"] for g in guards], _SEED_MEAN_DIGITS),
+        }
+    blocks = [_phase_metrics(r, phase, base_id) for r in group]
+    return {
+        "run_at": max(r["run_at"] for r in group),
+        "config_id": base_id,
+        "config_delta": deltas[0],
+        "state": json.loads(json.dumps(first["state"])),
+        "metrics": {
+            "phase_scheme": _phase_scheme(first, base_id),
+            "by_phase": {
+                phase: {
+                    "bias": _mean([b["bias"] for b in blocks], _SEED_MEAN_BIAS_DIGITS),
+                    "coverage_95": _mean([b["coverage_95"] for b in blocks], _SEED_MEAN_COVERAGE_DIGITS),
+                }
+            },
+        },
+        "reward": reward,
+        "seeds": seeds,
+        "per_seed_delta": per_seed_delta,
+    }
 
 
 # ---- file I/O ---------------------------------------------------------------

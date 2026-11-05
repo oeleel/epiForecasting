@@ -36,7 +36,10 @@ from agent.knowledge.experiment_import import (
     ACTION_REWEIGHT,
     ACTION_SET_CONFIG,
     ACTION_TRAINING_WINDOW,
+    SEED_CONFIG_PATH,
     SINGLE_OBSERVATION_CONFIDENCE,
+    VERDICT_MIXED,
+    merge_seed_rows,
     read_experiment_log,
 )
 
@@ -661,6 +664,77 @@ def test_imported_entries_render_as_single_run_experiential_lines():
             "(weeks_before 6): peak WIS 123.71 vs 121.01 baseline (+2.70, worse); "
             "peak bias -58.8 -> -6.4; peak coverage_95 0.855 -> 0.808"
         )
+
+
+# ---- multi-seed logs ----------------------------------------------------------
+
+_LAMBDA_DELTA = {"sample_weights.approaching_peak": {"weeks_before": 6, "weight": 3.0}}
+
+
+def _seeded(row: dict[str, Any], seed: int) -> dict[str, Any]:
+    """A round-2 shaped row: seed in config_delta, `seed` and `base_config_id` keys."""
+    out = json.loads(json.dumps(row))
+    out["base_config_id"] = row["config_id"]
+    out["config_id"] = f"{row['config_id']}__seed{seed}"
+    out["seed"] = seed
+    out["config_delta"] = {**row["config_delta"], SEED_CONFIG_PATH: seed}
+    return out
+
+
+def _seeded_pair(seed: int, baseline_wis: float, lambda_wis: float) -> list[dict[str, Any]]:
+    base = _row(run_at="2026-10-15T10:00:00+00:00", config_id="baseline", config_delta={},
+                peak_wis=baseline_wis, peak_bias=-40.0, peak_cov=0.87, baseline_wis=baseline_wis)
+    lam = _row(run_at="2026-10-15T10:05:00+00:00", config_id="lambda_3", config_delta=_LAMBDA_DELTA,
+               peak_wis=lambda_wis, peak_bias=10.0, peak_cov=0.82, baseline_wis=baseline_wis)
+    return [_seeded(base, seed), _seeded(lam, seed)]
+
+
+def test_merge_seed_rows_averages_reward_and_drops_seed_path():
+    rows = _seeded_pair(42, 100.0, 98.0) + _seeded_pair(43, 102.0, 101.0)
+
+    merged = {r["config_id"]: r for r in merge_seed_rows(rows)}
+
+    lam = merged["lambda_3"]
+    assert lam["config_delta"] == _LAMBDA_DELTA
+    assert lam["reward"]["baseline_value"] == 101.0
+    assert lam["reward"]["value"] == 99.5
+    assert lam["reward"]["delta"] == -1.5
+    assert lam["seeds"] == [42, 43]
+    assert lam["per_seed_delta"] == [-2.0, -1.0]
+    assert merged["baseline"]["config_delta"] == {}
+
+
+def test_rows_to_entries_seeded_log_gives_one_entry_with_n_observations_per_seed():
+    rows = _seeded_pair(42, 100.0, 98.0) + _seeded_pair(43, 102.0, 101.0)
+
+    entries = rows_to_entries(rows, created_at=CREATED_AT)
+
+    assert [e.id for e in entries] == ["exp-lambda-3-2025"]
+    assert entries[0].evidence["n_observations"] == 2
+    assert entries[0].confidence == SINGLE_OBSERVATION_CONFIDENCE
+    assert entries[0].statement.endswith("mean of seeds 42, 43, per-seed delta -2.00/-1.00")
+    assert entries[0].payload["reward"]["better"] is True
+
+
+def test_rows_to_entries_seeds_of_both_signs_are_mixed_not_better():
+    rows = _seeded_pair(42, 100.0, 97.0) + _seeded_pair(43, 102.0, 103.0)
+
+    entry = rows_to_entries(rows, created_at=CREATED_AT)[0]
+
+    assert f"(-1.00, {VERDICT_MIXED})" in entry.statement
+    assert entry.payload["reward"]["better"] is False
+
+
+def test_merge_seed_rows_missing_seed_for_a_config_raises():
+    rows = _seeded_pair(42, 100.0, 98.0) + _seeded_pair(43, 102.0, 101.0)[:1]
+
+    _expect_value_error(lambda: merge_seed_rows(rows), "lambda_3", "seeds [42]", "[42, 43]")
+
+
+def test_merge_seed_rows_mixed_seeded_and_unseeded_rows_raise():
+    rows = _seeded_pair(42, 100.0, 98.0) + [_window_row()]
+
+    _expect_value_error(lambda: merge_seed_rows(rows), "mixes seeded and unseeded")
 
 
 ALL = [fn for name, fn in sorted(globals().items()) if name.startswith("test_") and callable(fn)]
