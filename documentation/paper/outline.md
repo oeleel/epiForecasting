@@ -68,7 +68,8 @@ Only what the code supports or what is planned and marked so.
   an in-house lab model and vanilla vs refined comparison (PLANNED, blocked on Adiga naming a model and code
   access).
 
-- **C6. Hypothesis-driven refinement with a significance test (PLANNED, scope set 2026-11-05).** The
+- **C6. Hypothesis-driven refinement with a significance test (test and held-out split EXIST; agent run
+  mode PLANNED; scope set 2026-11-05).** The
   researcher (or the agent) states a hypothesis as one action fixed before the run; the framework runs it and
   reports whether the gain over baseline, and over previously accepted changes, is statistically significant.
   A. Adiga's Bayesian treatment frames this as a posterior that the change caused the gain. See section 7.
@@ -319,14 +320,21 @@ Where the researcher decides, and how the framework records it.
   deterministic. Round 2 used 3 seeds (42, 43, 44); the harness reports mean, sample sd and the min..max of
   same-seed paired deltas. "Inside the seed spread = no effect" is a reading rule, not a test; three seeds
   bound the seed noise but do not estimate it well.
-- **Hypothesis-driven protocol (PLANNED, 2026-11-05, A. Adiga).** Each run executes one hypothesis given
-  before the run (one action) and reports whether its gain over baseline is statistically significant on
-  held-out origins. It does not generate further hypotheses until one wins, because a search that stops at the
-  first win inflates the false-positive rate. Nothing inferential exists today (no paired test, bootstrap or
-  Diebold-Mariano anywhere in `agent/`, `src/`, `scripts/`). Design to settle: WIS differences are correlated
-  across horizons and adjacent origins, so a block bootstrap over forecast dates, or a paired test on
-  per-date means, is safer than a row-level test; A. Adiga's Bayesian treatment may replace this with a
-  posterior. Held-out 2024-25 origins do not exist in `src/config.py` yet.
+- **Hypothesis-driven protocol (2026-11-05, A. Adiga).** Each run executes one hypothesis given before the
+  run (one action) and reports whether its gain over baseline is statistically significant on held-out
+  origins. It does not generate further hypotheses until one wins, because a search that stops at the first
+  win inflates the false-positive rate.
+  - Held-out split (EXISTS): `src/config.py` `EVAL_WINDOWS`, `holdout_2024_25` = 35 weekly origins
+    2024-10-05..2025-05-31; harness `--eval-window`. A hypothesis chosen on 2025-26 is confirmed on 2024-25.
+  - Test (EXISTS, `agent/significance.py`, `scripts/experiments/significance_test.py`): the forecast date is
+    the unit (rows from one fit are not independent). Per-date WIS deltas are scaled by rows per date so their
+    mean equals the pooled WIS delta, then averaged over seeds. Primary: two-sided Diebold-Mariano with the
+    Harvey-Leybourne-Newbold correction, autocovariance to lag H-1 = 3, alpha 0.05. Secondary: circular block
+    bootstrap interval (block 4), descriptive only, because it is too narrow with about 12 dates.
+  - Pre-registration: hypothesis, endpoint, test and decision rule committed before the run
+    (`documentation/experiments/holdout_2024_25/preregistration.md`).
+  - PLANNED: the agent run mode that executes a given action under this protocol, and A. Adiga's Bayesian
+    treatment, which may replace the test with a posterior over competing hypotheses.
 - **Comparisons:** every delta against a baseline row in the same output directory, never across runs (the
   09-02 model-bank-path run and the 09-30 pipeline-path run gave different XGBoost baselines, peak WIS 122.37
   vs 121.01; cause not traced, code path or data vintage).
@@ -398,8 +406,18 @@ No result below is final. Numbers shown are preliminary and labeled with their s
 - Gated emphasis (in-sample on 2025-26): the horizon gate turns `oversample_5` from a pooled loss (+0.99
   overall, +4.97 peak) into a gain (-1.18 overall, -3.13 peak; 40 of 52 locations better). The calendar gate
   scores best only because this season's turn fell next to Dec 31; it is the overfit reference.
-- Out-of-sample test of the horizon gate on 2024-25 origins: PLANNED. It is the natural first "given
-  hypothesis" for the C6 protocol.
+- Under the per-date DM test the in-sample horizon-gate gain is not significant either (p = 0.13, seed 42).
+
+### 8.5 Held-out test of the horizon gate (2024-25, 3 seeds) - EXISTS
+
+- Source: `documentation/experiments/holdout_2024_25/results.md`; pre-registered.
+- Primary result: H1 not confirmed. Horizon-gated `oversample_5` changes peak WIS by -0.19 (359.06 ->
+  358.87), DM p = 0.99 over 11 dates. Harm guard (all weeks): -0.84, p = 0.82.
+- Why: the h1 gain replicates (-23 to -29 peak WIS in every seed) but h2 reverses (+24 to +26 in every seed),
+  so the h1-h2 gate cancels. "Emphasis on h1 only" is post hoc and needs a third season (2023-24 is the only
+  one left).
+- No emphasis configuration is significant on either season. 2024-25 is a far larger season (baseline peak
+  WIS about 3 times 2025-26; peak bias about -440), so only paired deltas are compared.
 
 ## 9. Limitations
 
@@ -415,7 +433,8 @@ No result below is final. Numbers shown are preliminary and labeled with their s
 - Knowledge bank v1: experiential entries are single observations; no merging; overrides are log lines, so
   "does memory change behavior" is not yet measurable. One high-confidence curated entry (short windows) is
   contradicted by the framework's own evidence, with no reconciliation mechanism.
-- No significance test on any accept decision (loop, harness or model selection); see section 7.
+- The improve loop and model selection still accept on point estimates; the significance test exists only
+  as a harness tool (section 7). Power is low: a season has about 12 peak-phase forecast dates.
 - Horizons are fitted independently but coupled at prediction time by the floor constraint (horizon h is
   floored at 0.3 x (1 - 0.05 (h - 1)) of horizon h-1); for the gate experiment the coupling moves pooled WIS
   by at most 2e-6, but any horizon-specific claim must state it.
