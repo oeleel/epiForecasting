@@ -14,7 +14,9 @@ without hurting overall WIS?
 
 Fixed vs varied
 ---------------
-Fixed (recorded in `manifest.json`): the pinned split and its cutoffs (stride 4 unless `--stride-weeks`),
+Fixed (recorded in `manifest.json`): the eval window (`--eval-window`, default the pinned 2025-26 split;
+`holdout_2024_25` confirms a hypothesis on a season it was not chosen on) and its cutoffs (stride 4 unless
+`--stride-weeks`),
 US excluded from scoring, `XGBOOST_PARAMS_V2`, feature version, quantile
 levels, log target, floor constraint, phase scheme, seed list, git SHA,
 data-cache mtime, host and library versions. Everything comes from
@@ -703,7 +705,9 @@ def build_manifest(
     cutoffs: Sequence[str],
     seeds: Sequence[int] = DEFAULT_SEEDS,
     stride_weeks: int = DEFAULT_STRIDE_WEEKS,
+    eval_window: str = cfg.EVAL_WINDOW_PRIMARY,
 ) -> dict[str, Any]:
+    eval_start, eval_end = cfg.EVAL_WINDOWS[eval_window]
     cache_mtime = _data_cache_mtime()
     import xgboost  # local: keep module import cheap for --summary-only
 
@@ -730,7 +734,13 @@ def build_manifest(
         "xgboost_version": xgboost.__version__,
         "pandas_version": pd.__version__,
         **FIXED,
-        "split": {**FIXED["split"], "stride_weeks": stride_weeks},
+        "split": {
+            **FIXED["split"],
+            "eval_window": eval_window,
+            "eval_start_date": eval_start,
+            "eval_end_date": eval_end,
+            "stride_weeks": stride_weeks,
+        },
     }
 
 
@@ -739,6 +749,7 @@ def _ensure_manifest(
     cutoffs: Sequence[str],
     seeds: Sequence[int] = DEFAULT_SEEDS,
     stride_weeks: int = DEFAULT_STRIDE_WEEKS,
+    eval_window: str = cfg.EVAL_WINDOW_PRIMARY,
 ) -> dict[str, Any]:
     """Write the manifest once; on a resumed run, refuse a different split, seed list,
     phase scheme or data snapshot.
@@ -763,7 +774,7 @@ def _ensure_manifest(
         _check_data_vintage(_manifest_value(manifest, DATA_CACHE_HASH_KEY))
         return manifest
     out_dir.mkdir(parents=True, exist_ok=True)
-    manifest = build_manifest(cutoffs, seeds, stride_weeks)
+    manifest = build_manifest(cutoffs, seeds, stride_weeks, eval_window)
     path.write_text(json.dumps(manifest, indent=2, default=str) + "\n")
     return manifest
 
@@ -1155,6 +1166,11 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
              "(9 cutoffs); 1 gives a weekly hindcast (35 cutoffs).",
     )
     parser.add_argument(
+        "--eval-window", default=cfg.EVAL_WINDOW_PRIMARY, choices=sorted(cfg.EVAL_WINDOWS),
+        help=f"which season's cutoffs to forecast from. Default: {cfg.EVAL_WINDOW_PRIMARY} (2025-26); "
+             f"{cfg.EVAL_WINDOW_HOLDOUT} needs --out.",
+    )
+    parser.add_argument(
         "--pin-data-sha256", default=None, metavar="SHA",
         help="fresh run only: train on the data cache as it is, without the usual refresh, and fail "
              "unless its sha256 is SHA (e.g. another run's manifest value, to share its snapshot).",
@@ -1209,11 +1225,13 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def _resolve_cutoffs(n: int | None, stride_weeks: int = DEFAULT_STRIDE_WEEKS) -> tuple[list[str], bool]:
+def _resolve_cutoffs(
+    n: int | None, stride_weeks: int = DEFAULT_STRIDE_WEEKS, eval_window: str = cfg.EVAL_WINDOW_PRIMARY
+) -> tuple[list[str], bool]:
     """Return (cutoffs, is_subset). `n` beyond the split is a mistake, not a clamp."""
     if stride_weeks < 1:
         raise ValueError(f"--stride-weeks must be >= 1, got {stride_weeks}")
-    full = cfg.generate_eval_cutoffs(stride_weeks)
+    full = cfg.generate_eval_cutoffs(stride_weeks, window=eval_window)
     if n is None:
         return full, False
     if n < 1 or n > len(full):
@@ -1223,7 +1241,10 @@ def _resolve_cutoffs(n: int | None, stride_weeks: int = DEFAULT_STRIDE_WEEKS) ->
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parse_args(argv)
-    cutoffs, is_subset = _resolve_cutoffs(args.cutoffs, args.stride_weeks)
+    if args.eval_window != cfg.EVAL_WINDOW_PRIMARY and args.out is None:
+        # The default directories hold 2025-26 runs; a held-out run must not resume into them.
+        raise ValueError(f"--eval-window {args.eval_window} needs --out (a directory for that season)")
+    cutoffs, is_subset = _resolve_cutoffs(args.cutoffs, args.stride_weeks, args.eval_window)
     out_dir: Path = args.out or (
         DEFAULT_OUT_DIR.with_name(f"{DEFAULT_OUT_DIR.name}-smoke-{len(cutoffs)}cutoffs") if is_subset else DEFAULT_OUT_DIR
     )
@@ -1266,7 +1287,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         else:
             # A fresh run starts from the newest data; a resume must not refresh.
             FluDataLoader().fetch_data()
-    manifest = _ensure_manifest(out_dir, cutoffs, seeds, args.stride_weeks)
+    manifest = _ensure_manifest(out_dir, cutoffs, seeds, args.stride_weeks, args.eval_window)
     pinned_sha256 = _manifest_value(manifest, DATA_CACHE_HASH_KEY)
     _check_data_vintage(pinned_sha256)  # also rejects a fresh manifest with no cache to hash
     logged = {row["config_id"]: row for row in read_log(log_path)}
