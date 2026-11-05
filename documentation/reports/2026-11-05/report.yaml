@@ -1,0 +1,307 @@
+# Weekly meeting report, 2026-11-05. Rendered by scripts/reports/build_report.py.
+# Section kinds and the markdown subset are documented in ../README.md.
+title: "Weekly report - 2026-11-05"
+date: "2026-11-05"
+summary: >-
+  The hypothesis-driven protocol now exists: a held-out 2024-25 season, a pre-registration, and a
+  paired per-date significance test. Its first use is negative. Horizon-gated peak emphasis, the best
+  in-sample result so far, does not replicate on 2024-25 (peak WIS -0.19, p = 0.99): the 1-week gain
+  holds, the 2-week gain reverses.
+
+sections:
+  - id: glance
+    heading: At a glance
+    label: rundown
+    kind: table
+    columns:
+      - Topic
+      - Result
+      - label: " "
+        format: badge
+        tones: { done: success, gain: success, problem: destructive, caveat: warning, decide: info }
+    rows:
+      - ["Asks (10-29)", "framework walkthrough, TSci summary, related work, where the Bayesian loop fits", "done"]
+      - ["Held-out split", "2024-25 reserved for confirmation, 35 weekly forecast dates", "done"]
+      - ["Significance test", "paired per-date Diebold-Mariano (HLN), block bootstrap as a check", "done"]
+      - ["Gated emphasis, 2024-25", "peak WIS 359.06 to 358.87, [[-p = 0.99]], not confirmed", "problem"]
+      - ["1-week emphasis", "[[+-23 to -29]] peak WIS in all 3 seeds on 2024-25", "gain"]
+      - ["2-week emphasis", "[[-+24 to +26]] in all 3 seeds: reverses the 2025-26 sign", "problem"]
+      - ["In-sample check", "2025-26 gated gain -3.13 is not significant either (p = 0.13)", "caveat"]
+      - ["Coverage target", "`coverage_95` measures the 90% interval; the loop now aims at 0.90", "done"]
+      - ["Decide", "test or posterior as the accept gate? 1-week-only test on 2023-24?", "decide"]
+
+  - id: summary
+    heading: Summary
+    kind: stack
+    blocks:
+      - kind: callout
+        title: This week in one paragraph
+        body: >-
+          A. Adiga asked that the framework run a stated hypothesis and report whether it holds,
+          instead of searching until something improves. That protocol now exists. The 2024-25 season
+          is held out, the hypothesis and the test were committed before any 2024-25 forecast existed,
+          and a paired test treats each forecast date as one observation. [[*The first hypothesis
+          tested is the best in-sample finding so far, and it fails]]: emphasis on peak-phase training
+          rows, used for 1-2 week forecasts only, changes 2024-25 peak WIS by -0.19 (p = 0.99). The
+          reason is consistent across seeds: [[+the 1-week gain replicates]], [[-the 2-week gain
+          reverses]]. Even in-sample the gain is not significant (p = 0.13). The point estimates the
+          project acted on so far are inside the noise of a per-date test.
+      - kind: stats
+        stats:
+          - value: "p = 0.99"
+            label: horizon-gated oversample 5x, peak WIS, held-out 2024-25 (11 dates, 3 seeds)
+            tone: destructive
+          - value: "-25.6"
+            label: peak WIS, 1-week forecasts with emphasis on 2024-25 (mean of 3 seeds)
+            tone: success
+          - value: "+24.8"
+            label: peak WIS, 2-week forecasts with emphasis on 2024-25 (mean of 3 seeds)
+            tone: destructive
+          - value: "p = 0.13"
+            label: the same gate in-sample on 2025-26, where it was designed
+            tone: warning
+
+  - id: asked
+    heading: What was asked
+    kind: cards
+    columns: 2
+    tone: info
+    cards:
+      - title: Run a given hypothesis and report significance
+        badge: 2026-10-29 sync
+        body: >-
+          Test the stated hypothesis on held-out data and report whether it holds. Do not search for a
+          new hypothesis to force a win. Place this in a Bayesian, abductive loop.
+      - title: A first-hand walkthrough of the framework
+        badge: 2026-10-29 sync
+        body: >-
+          How the framework runs today, end to end, with its commands.
+      - title: Summarize TimeSeriesScientist
+        badge: 2026-10-29 sync
+        body: >-
+          What arXiv 2510.01538 does, what it lacks, and what we lack in return.
+      - title: Related work, with hypothesis learning
+        badge: 2026-10-29 sync
+        body: >-
+          Position the project, using arXiv 2112.06649 (Ziatdinov et al.) as the model for the
+          hypothesis loop.
+
+  - id: delivered
+    heading: What was delivered
+    kind: stack
+    blocks:
+      - kind: table
+        columns:
+          - Ask
+          - Delivered
+          - label: Status
+            format: badge
+            tones: { done: success, partial: warning, blocked: warning }
+          - Where
+        rows:
+          - - Held-out season
+            - "Eval window `holdout_2024_25`: 35 weekly cutoffs, 2024-10-05 to 2025-05-31, each trained only on earlier data. The harness takes `--eval-window` and pins the data snapshot by sha256."
+            - done
+            - "`src/config.py`, `scripts/experiments/peak_rectification.py`"
+          - - Pre-registration
+            - "Hypothesis, rows, test, decision rule and secondary analyses, committed before the runs. One amendment (weighting dates by rows) was made before any 2024-25 forecast was scored."
+            - done
+            - "`documentation/experiments/holdout_2024_25/preregistration.md`"
+          - - Significance test
+            - "Two-sided Diebold-Mariano test on per-date WIS differences, Harvey-Leybourne-Newbold correction, autocovariance to lag 3; circular block bootstrap interval as a descriptive check. 21 tests."
+            - done
+            - "`agent/significance.py`, `scripts/experiments/significance_test.py`"
+          - - Bayesian loop
+            - "Mapping from hypothesis learning to the framework and a minimal design (conjugate posterior over competing hypotheses on saved forecasts). [[!Not built]]: waits for the test-vs-posterior decision."
+            - partial
+            - "`documentation/hypothesis-learning-paper-summary.md`"
+          - - TSci summary
+            - "Full read, every page and prompt. One pass, no seeds or tests, point forecasts only; on ILI Prophet has about half its MAE (Fig. 11)."
+            - done
+            - "`documentation/ts-scientist-paper-summary.md`"
+          - - Related work
+            - "47 works, each checked against arXiv or a DOI, with a comparison table. ERA (first in CDC 2025-26) is the closest competitor."
+            - done
+            - "`documentation/related-work-survey.md`"
+          - - Walkthrough
+            - "Every command, what it does, and two worked examples (a hypothesis test and an improve run)."
+            - done
+            - "`documentation/PROJECT_OVERVIEW.md`"
+          - - Fixes
+            - "Coverage target 0.95 to 0.90 (the metric counts [q05, q95]). Round 2 imported into the knowledge bank as one entry per arm over 3 seeds; arms whose seeds disagree in sign read \"mixed across seeds\". Model selection rescored under the Adiga phase windows."
+            - done
+            - "`agent/orchestrator.py`, `agent/knowledge/experiment_import.py`, `documentation/paper/outline.md`"
+        note: "Status: [[+done]] landed; [[!partial]] designed, not built."
+
+  - id: results
+    heading: Held-out result
+    label: results
+    kind: stack
+    blocks:
+      - kind: markdown
+        body: >-
+          **Hypothesis H1.** Peak-phase training rows copied 5 times (`oversample_5`), used for 1-2 week
+          forecasts with baseline forecasts for 3-4 weeks, lower peak-phase WIS on 2024-25. The unit is
+          the forecast date, because rows from one fit are correlated; each date's value is scaled so
+          that the mean over dates equals the pooled peak WIS difference, then averaged over seeds 42,
+          43 and 44. Negative is better.
+      - kind: table
+        columns:
+          - Test
+          - { label: Dates, format: num }
+          - { label: Baseline WIS, format: num }
+          - { label: Candidate WIS, format: num }
+          - { label: Mean difference, format: num }
+          - DM p
+          - Bootstrap 95% CI
+        rows:
+          - ["**Primary:** gated, peak, 2024-25", "11", "359.06", "358.87", "-0.19", "0.99", "[-17.7, +17.5]"]
+          - ["Harm guard: gated, all weeks, 2024-25", "35", "117.69", "116.85", "-0.84", "0.82", "[-6.5, +4.4]"]
+          - ["Ungated, peak, 2024-25", "11", "359.06", "368.79", "9.73", "0.72", "[-19.2, +39.2]"]
+          - ["Ungated, all weeks, 2024-25", "35", "117.69", "121.13", "3.44", "0.51", "[-3.8, +11.9]"]
+          - ["Gated, peak, 2025-26 (in-sample, seed 42)", "12", "119.73", "116.60", "-3.13", "0.13", "[-6.1, -0.6]"]
+        note: >-
+          The bootstrap interval is too narrow with about 12 dates: on 2025-26 it excludes zero while the
+          pre-registered test gives p = 0.13.
+      - kind: table
+        intro: "Why it failed: ungated peak WIS difference by horizon. The gate keeps h1 and h2, so they cancel."
+        columns:
+          - Season
+          - { label: h1, format: delta }
+          - { label: h2, format: delta }
+          - { label: h3, format: delta }
+          - { label: h4, format: delta }
+        rows:
+          - ["2025-26 (in-sample, seed 42)", "-7.66", "-4.85", "5.50", "26.90"]
+          - ["2024-25 seed 42", "-29.0", "23.9", "22.5", "19.2"]
+          - ["2024-25 seed 43", "-23.1", "25.8", "18.0", "19.6"]
+          - ["2024-25 seed 44", "-24.6", "24.7", "20.7", "19.2"]
+      - kind: callout
+        tone: warning
+        title: Caveats
+        body: >-
+          [[!Power is low]]: 11 peak forecast dates, so "not confirmed" is not evidence of no effect.
+          2024-25 is a harder season: baseline peak WIS is about 3 times the 2025-26 value, and the
+          baseline under-predicts the peak by about 440 admissions per row. The base hyperparameters may
+          have been tuned with a cutoff inside 2024-25; both arms share them. WIS uses 5 quantiles, so
+          absolute values are not comparable with FluSight.
+
+  - id: related
+    heading: Related work
+    label: positioning
+    kind: cards
+    columns: 2
+    cards:
+      - title: TimeSeriesScientist (arXiv 2510.01538)
+        badge: no rigor
+        tone: warning
+        body: >-
+          Four LLM agents in one pass pick 3 of 21 models, tune them on validation MAPE and ensemble them.
+          [[-No seeds, variance or tests]], point forecasts only, no knowledge bank. On ILI, Prophet has
+          about half its MAE. Its missing control (a plain search over its own library) is one our paper
+          also needs.
+      - title: Hypothesis learning (arXiv 2112.06649)
+        badge: template
+        tone: info
+        body: >-
+          Competing hypotheses act as mean functions of a structured Gaussian process; a
+          variance-reduction reward picks the next experiment. It ranks hypotheses by reward and
+          computes [[!no posterior and no significance]]: a template for our loop, not a ready method.
+      - title: ERA (arXiv 2605.16238)
+        badge: competitor
+        tone: destructive
+        body: >-
+          LLM tree search over forecasting pipelines, first in the CDC 2025-26 evaluation. Our claim is
+          rigor and interpretability with an in-house model, not leaderboard rank.
+      - title: POPPER (arXiv 2502.09858)
+        badge: design option
+        tone: info
+        body: >-
+          LLM agents falsify hypotheses with sequential e-value tests: a way to control error across many
+          hypotheses inside an agent loop.
+
+  - id: open-questions
+    heading: Decisions requested
+    kind: accordion
+    items:
+      - title: "What gates the agent's accept decision: the paired test or a posterior?"
+        body: >-
+          The Diebold-Mariano test exists and is tested. A conjugate Bayesian posterior over competing
+          hypotheses can run on saved forecasts without retraining. Recommendation: the test first, the
+          posterior next.
+      - title: "Test \"emphasis on 1-week only\" on 2023-24?"
+        body: >-
+          It was formed after seeing 2024-25, so it needs an unused season. 2023-24 is the only one left,
+          and its models would train on less than 2 years of history. Recommendation: run it, labelled
+          post hoc.
+      - title: "Is the forecast date the right unit of analysis?"
+        body: >-
+          Per date and per season (current), or pool dates across seasons for power. Recommendation: keep
+          per-date; pool only hypotheses fixed before either season was seen.
+      - title: "Does October count as off-season?"
+        body: >-
+          The `adiga_2026_10` scheme treats October as off-season by assumption. It changes which rows count
+          as growth.
+
+  - id: next
+    heading: Next steps
+    kind: cards
+    columns: 3
+    tone: info
+    cards:
+      - title: Gate the loop
+        badge: framework
+        body: >-
+          Wire the chosen test or posterior into the `improve` accept rule, so the loop accepts only
+          significant or probable gains on held-out dates.
+      - title: Fixed-hypothesis mode
+        badge: framework
+        body: >-
+          The user states a hypothesis; the agent runs it and reports the result without searching for
+          another.
+      - title: 1-week-only test
+        badge: experiment
+        body: >-
+          If approved, pre-register and run it on 2023-24.
+      - title: Search baseline
+        badge: paper
+        body: >-
+          A plain search over the same action space at equal compute, to show what the LLM adds.
+      - title: In-house model
+        badge: framework
+        body: >-
+          Plug in, compare against the bank and run one improvement loop as soon as a model is named.
+      - title: Paper
+        badge: paper
+        body: >-
+          The outline now carries the held-out result (section 8.5) and the protocol (section 7); prose
+          follows the decisions above.
+
+  - id: reproduce
+    heading: Reproduce
+    kind: code
+    intro: All commands run from the repo root with the project `.venv` active.
+    code: |-
+      # macOS: xgboost + torch each bundle libomp; avoid the duplicate-runtime segfault
+      export KMP_DUPLICATE_LIB_OK=TRUE OMP_NUM_THREADS=1
+
+      # held-out 2024-25 runs, one process per seed (about 23 min each), then merge
+      for s in 42 43 44; do
+        python scripts/experiments/peak_rectification.py --eval-window holdout_2024_25 --stride-weeks 1 \
+          --arms baseline oversample --oversample-factors 5 --seeds $s \
+          --pin-data-sha256 c91d9d81b8ab47ee5fe5458123167a3ce9c4171bddca682a89eb573d4b5336cb \
+          --out outputs/experiments/holdout-seed$s &
+      done; wait
+      python scripts/experiments/peak_rectification.py --merge outputs/experiments/holdout-seed4{2,3,4} \
+        --out outputs/experiments/peak_rectification_holdout_2024_25
+
+      # the pre-registered primary test (no training)
+      python scripts/experiments/significance_test.py \
+        --run-dir outputs/experiments/peak_rectification_holdout_2024_25 --candidate oversample_5 --gate horizon
+
+      # the in-sample check on the 2025-26 weekly hindcast
+      python scripts/experiments/significance_test.py --candidate oversample_5 --gate horizon
+
+      # this page
+      python scripts/reports/build_report.py documentation/reports/2026-11-05
+      python scripts/reports/build_report.py --index
