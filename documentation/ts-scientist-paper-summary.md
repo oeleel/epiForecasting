@@ -465,12 +465,12 @@ the method.
 |---|---|---|
 | **What the LLM may do** | Free choice inside closed menus: preprocessing strategies (p27, p30), any 3 of 21 models (p32), **its own hyperparameter search space** (p32-33), ensemble strategy and **custom weights** (p34). No numeric guardrails on proposed spaces or weights are described. | Constrained, validated action catalog (`FluForecastAdapter.ACTION_CATALOG` in `agent/adapters/flu_forecast.py`): seven actions, schema and range validation, unknown action raises. The LLM edits configs, never code or numbers outside ranges. |
 | **External knowledge** | None. "Incorporating external knowledge" is future work (§5, p10). Knowledge lives only in the backbone and the system prompts. | Curated, provenance-typed knowledge bank (`agent/knowledge/`, `knowledge/curated/*.yaml`); deterministic retrieval by phase, model, metric; entries shown with ids; `cited_entries` recorded and unretrieved citations dropped; `--no-knowledge` ablation switch. |
-| **Evaluation surface** | MAE and MAPE pooled over the horizon and averaged over 25 slices; per-horizon tables only. No bias, no coverage, no regime/phase breakdown. Epidemic phases appear only as a citation of Adiga et al. 2023 (p6). | `PhaseEvaluator` (`agent/phase_evaluator.py`): WIS, 95% coverage, MAE, MAPE and **signed bias** by phase, horizon and location; named phase schemes recorded in every metrics dict; cross-scheme comparisons refused. |
+| **Evaluation surface** | MAE and MAPE pooled over the horizon and averaged over 25 slices; per-horizon tables only. No bias, no coverage, no regime/phase breakdown. Epidemic phases appear only as a citation of Adiga et al. 2023 (p6). | `PhaseEvaluator` (`agent/phase_evaluator.py`): WIS, 90% interval coverage (metric key `coverage_95`, legacy name), MAE, MAPE and **signed bias** by phase, horizon and location; named phase schemes recorded in every metrics dict; cross-scheme comparisons refused. |
 | **Object of the work** | Picks and ensembles off-the-shelf library models per series. No mechanism to add a user model. | Refines an existing in-house model (`xgboost_direct`, the lab's pipeline in `src/`) and any family plugged into `src/model_bank/` by dotted path. Stage 1 selection exists, but the main loop is refinement of one incumbent. |
 | **Series structure** | Univariate, each slice independent (§3.1, p4). | Multi-location: one model trained jointly across the state-level series with location clustering (`src/location_clustering.py`), 1-4 week horizons; national `US` excluded from scoring. |
 | **Probabilistic output** | Point forecast; intervals shown but not described or scored. | Quantile forecasts (0.05-0.95), scored by WIS and coverage. |
 | **Loop** | Single forward pass; no accept/revert, no iteration on results. | Iterative two-agent loop with accept-or-revert against best-so-far and stop rules (`agent/orchestrator.py`), every iteration in `runs.db`. |
-| **Statistical significance** | None anywhere. | Also **no formal test**. Round 2 uses 3 seeds and the outline's rule is "treat differences inside the seed spread as no effect" (`documentation/paper/outline.md` §7). Better than TSci, but not a significance test. No Diebold-Mariano, bootstrap, or permutation test exists in `agent/`, `src/` or `scripts/` (grep, 2026-11-04). |
+| **Statistical significance** | None anywhere. | Since 2026-11-05: a paired per-date Diebold-Mariano test (HLN correction) and a block bootstrap (`agent/significance.py`, `scripts/experiments/significance_test.py`), a held-out 2024-25 season, and a pre-registered first test (`documentation/experiments/holdout_2024_25/`). The `improve` loop does not use the test yet; it still accepts on point estimates. (As of 2026-11-04 no test existed.) |
 | **Human in the loop** | None described; fully automatic. | Shadow mode by default with y / n / stop per action; `--auto-apply` to skip (`agent/cli.py`). |
 | **Backbone** | GPT-4o only. | Qwen 3 8B locally (Ollama), Qwen 2.5 72B planned on Rivanna. |
 
@@ -511,10 +511,9 @@ the method.
   useful contrast because it shows what is lost without those: on the one health dataset in
   its own benchmark, a single Prophet baseline beats it (Fig 11, read from figure).
 - **Evaluation hygiene to claim.** We already refuse cross-window and cross-scheme
-  comparisons, record the data hash, and run seeds. TSci shows none of this. We should not
-  overclaim either: we also have no significance test. Adding a paired test across cutoffs and
-  locations (for example a sign test or Diebold-Mariano on per-row WIS) before the January
-  write-up would make this a real differentiator **(recommendation)**.
+  comparisons, record the data hash, and run seeds. TSci shows none of this. The paired
+  per-date test now exists (2026-11-05); its first held-out use rejected a gain that looked real
+  in-sample. Wiring it into the loop's accept rule is what makes it a full differentiator.
 - **Baseline lesson.** TSci's missing "brute-force over the library" control is the same
   control our paper needs: the refinement loop must beat an Optuna or grid search over the same
   action space at equal compute, or the LLM's contribution is not shown **(recommendation)**.
