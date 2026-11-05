@@ -971,7 +971,7 @@ def _knowledge_import_experiment(log_path: str | Path) -> None:
     print("-" * KNOWLEDGE_LIST_ID_WIDTH)
     print(
         f"{result.n_rows} log rows -> {result.n_entries} experiential entries upserted "
-        f"({result.n_rows - result.n_entries} baseline row(s) skipped); "
+        f"({result.n_rows - result.n_entries} row(s) were baselines or merged extra seeds); "
         f"bank now holds {bank.count('experiential')} experiential entries"
     )
 

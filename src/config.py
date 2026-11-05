@@ -25,19 +25,36 @@ EVAL_END_DATE = "2026-05-31"
 # FluSight reference dates fall on Saturdays; cutoffs follow that convention.
 EVAL_CUTOFF_WEEKDAY = "W-SAT"
 
+# Held-out season (2026-11-05, hypothesis-driven protocol): a hypothesis chosen by
+# looking at the primary 2025-26 window is confirmed on 2024-25, a season no
+# experiment had looked at. Each cutoff still trains only on data before it, so
+# the window changes which origins are scored, not what a forecast may see.
+HOLDOUT_EVAL_START_DATE = "2024-10-01"
+HOLDOUT_EVAL_END_DATE = "2025-05-31"
+EVAL_WINDOW_PRIMARY = "primary"
+EVAL_WINDOW_HOLDOUT = "holdout_2024_25"
+EVAL_WINDOWS = {
+    EVAL_WINDOW_PRIMARY: (EVAL_START_DATE, EVAL_END_DATE),
+    EVAL_WINDOW_HOLDOUT: (HOLDOUT_EVAL_START_DATE, HOLDOUT_EVAL_END_DATE),
+}
 
-def generate_eval_cutoffs(stride_weeks: int = 1) -> list:
-    """Return the Saturday cutoff dates (YYYY-MM-DD) inside the pinned eval window.
+
+def generate_eval_cutoffs(stride_weeks: int = 1, window: str = EVAL_WINDOW_PRIMARY) -> list:
+    """Return the Saturday cutoff dates (YYYY-MM-DD) inside an eval window.
 
     stride_weeks=1 is the full weekly walk-forward; larger strides give a
     cheaper subsample for warm-up runs and demos. Raises on stride < 1 so a
     bad CLI flag fails loudly instead of silently returning every week.
+    `window` names an entry of EVAL_WINDOWS (default: the pinned 2025-26 split).
     """
     import pandas as pd  # local import: keep config importable without pandas cost at startup
 
     if stride_weeks < 1:
         raise ValueError(f"stride_weeks must be >= 1, got {stride_weeks}")
-    dates = pd.date_range(start=EVAL_START_DATE, end=EVAL_END_DATE, freq=EVAL_CUTOFF_WEEKDAY)
+    if window not in EVAL_WINDOWS:
+        raise ValueError(f"window must be one of {sorted(EVAL_WINDOWS)}, got {window!r}")
+    start, end = EVAL_WINDOWS[window]
+    dates = pd.date_range(start=start, end=end, freq=EVAL_CUTOFF_WEEKDAY)
     return [d.strftime("%Y-%m-%d") for d in dates[::stride_weeks]]
 
 # Feature engineering configuration

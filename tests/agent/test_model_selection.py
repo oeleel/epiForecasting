@@ -21,7 +21,14 @@ from agent.model_selection import (
     render_markdown,
     select_incumbent,
 )
-from src.config import EVAL_END_DATE, EVAL_START_DATE, generate_eval_cutoffs
+from src.config import (
+    EVAL_END_DATE,
+    EVAL_START_DATE,
+    EVAL_WINDOW_HOLDOUT,
+    HOLDOUT_EVAL_END_DATE,
+    HOLDOUT_EVAL_START_DATE,
+    generate_eval_cutoffs,
+)
 
 SERIES = ["06", "US"]
 GOOD = "tests.agent.test_model_selection:GoodModel"
@@ -99,6 +106,21 @@ def test_generate_eval_cutoffs_are_saturdays_inside_pinned_window():
     assert len(generate_eval_cutoffs(stride_weeks=4)) < len(cutoffs)
     with pytest.raises(ValueError):
         generate_eval_cutoffs(stride_weeks=0)
+
+
+def test_generate_eval_cutoffs_holdout_window_is_2024_25_saturdays():
+    cutoffs = generate_eval_cutoffs(window=EVAL_WINDOW_HOLDOUT)
+    dates = pd.to_datetime(cutoffs)
+    assert (dates.dayofweek == 5).all()
+    assert dates.min() >= pd.Timestamp(HOLDOUT_EVAL_START_DATE)
+    assert dates.max() <= pd.Timestamp(HOLDOUT_EVAL_END_DATE)
+    assert dates.max() < pd.Timestamp(EVAL_START_DATE)
+    assert len(cutoffs) == 35
+
+
+def test_generate_eval_cutoffs_unknown_window_raises():
+    with pytest.raises(ValueError, match="window must be one of"):
+        generate_eval_cutoffs(window="2023-24")
 
 
 # ---- goal -------------------------------------------------------------------

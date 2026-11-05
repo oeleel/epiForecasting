@@ -70,6 +70,7 @@ from scripts.experiments.peak_rectification import (  # noqa: E402
     arm_oversample,
     arm_window,
     build_arms,
+    build_manifest,
     log_row,
     main as harness_main,
     merge,
@@ -738,6 +739,24 @@ def test_resolve_cutoffs_stride_one_gives_weekly_split():
 
 def test_resolve_cutoffs_rejects_stride_below_one():
     _expect_value_error(lambda: _resolve_cutoffs(None, stride_weeks=0), "--stride-weeks", "0")
+
+
+def test_resolve_cutoffs_holdout_window_gives_2024_25_season():
+    cutoffs, is_subset = _resolve_cutoffs(None, stride_weeks=1, eval_window="holdout_2024_25")
+
+    assert (len(cutoffs), cutoffs[0], cutoffs[-1]) == (35, "2024-10-05", "2025-05-31")
+    assert is_subset is False
+
+
+def test_main_holdout_window_without_out_fails():
+    _expect_value_error(lambda: harness_main(["--eval-window", "holdout_2024_25"]), "--out", "holdout_2024_25")
+
+
+def test_build_manifest_records_the_eval_window():
+    manifest = build_manifest(["2024-10-05"], [42], stride_weeks=1, eval_window="holdout_2024_25")
+
+    assert manifest["split"]["eval_window"] == "holdout_2024_25"
+    assert (manifest["split"]["eval_start_date"], manifest["split"]["eval_end_date"]) == ("2024-10-01", "2025-05-31")
 
 
 def test_main_pin_data_sha256_mismatch_fails_without_refresh():
