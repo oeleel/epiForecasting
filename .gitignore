@@ -22,3 +22,6 @@ outputs/experiments/sweep-logs/
 
 # private meeting notes stay local
 documentation/meeting-notes/
+
+# arXiv PDFs: links in documentation/papers/README.md
+documentation/papers/*.pdf
