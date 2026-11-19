@@ -31,6 +31,8 @@ import pandas as pd
 __all__ = ["KEY_COLUMNS", "common_rows", "load_our_run", "load_tsci_runs", "main", "summarize"]
 
 KEY_COLUMNS = ["location", "cutoff_date", "horizon"]
+# US forecasts are invalid for the state-trained model (see CLAUDE.md); never score them.
+EXCLUDED_LOCATIONS = frozenset({"US"})
 FRAMEWORK_STAGES = [("tsci", "baseline"), ("tsci", "final"), ("ours", "baseline"), ("ours", "final")]
 
 
@@ -65,6 +67,7 @@ def load_our_run(run_dir: Path, truth: pd.DataFrame) -> pd.DataFrame:
     frames = []
     for stage, file_name in (("baseline", "iter_0.csv"), ("final", "best_forecast.csv")):
         forecast = pd.read_csv(run_dir / file_name, dtype={"location": str})
+        forecast = forecast[~forecast["location"].isin(EXCLUDED_LOCATIONS)]
         frame = pd.DataFrame(
             {
                 "location": forecast["location"],

@@ -107,3 +107,15 @@ def test_load_our_run_joins_truth_on_the_target_date(tmp_path):
     assert frame.loc["baseline", "predicted"] == 900.0
     assert frame.loc["final", "predicted"] == 1000.0
     assert frame.loc["final", "actual"] == 1141.0
+
+
+def test_load_our_run_never_scores_the_national_series(tmp_path):
+    forecast = pd.DataFrame({"location": ["51", "US"], "cutoff_date": ["2025-12-27"] * 2, "horizon": [1, 1],
+                             "target_end_date": ["2026-01-03"] * 2, "predicted": [900.0, 20000.0]})
+    forecast.to_csv(tmp_path / "iter_0.csv", index=False)
+    forecast.to_csv(tmp_path / "best_forecast.csv", index=False)
+    truth = pd.DataFrame({"location": ["51", "US"], "date": ["2026-01-03"] * 2, "actual": [1141.0, 30000.0]})
+
+    frame = load_our_run(tmp_path, truth)
+
+    assert set(frame["location"]) == {"51"}
