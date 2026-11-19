@@ -1,0 +1,25 @@
+diff --git a/time_series_agent/graph/agent_graph.py b/time_series_agent/graph/agent_graph.py
+index 7ca1f23..b7cead7 100644
+--- a/time_series_agent/graph/agent_graph.py
++++ b/time_series_agent/graph/agent_graph.py
+@@ -49,7 +49,7 @@ class TimeSeriesAgentGraph:
+         }
+ 
+     def _preprocess_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
+-        result = self.preprocess_agent.run(state["validation_data"])
++        result = self.preprocess_agent.run(state["validation_data"], self.config.get("output_dir", "results"))
+         state["preprocessed_data"] = result if isinstance(result, pd.DataFrame) else result.get("cleaned_data", state["validation_data"])
+         state["preprocess_result"] = result
+         return state
+@@ -88,7 +88,10 @@ class TimeSeriesAgentGraph:
+         result = self.forecast_agent.run(
+             state["selected_models"], 
+             state["best_hyperparameters"], 
+-            state["test_data"]
++            state["preprocessed_data"],
++            state["test_data"],
++            self.config.get("output_dir", "results"),
++            {m["model"]: m.get("validation_metrics", {}) for m in state["validation_result"]},
+         )
+         
+         # print(f"Forecast node: Result keys: {list(result.keys()) if result else 'None'}")
