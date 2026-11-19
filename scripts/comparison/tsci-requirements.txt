@@ -1,0 +1,29 @@
+# TimeSeriesScientist requirements that resolve (2026-11-19). Changes from its own
+# requirements.txt: theta and croston dropped (theta>=1.0.0 does not exist; the code
+# imports neither), dev tools and bokeh dropped, LangChain and LangGraph held below 1.0
+# because the code imports langchain.schema.
+pandas>=1.5.0
+numpy>=1.21.0
+scikit-learn>=1.1.0
+matplotlib>=3.5.0
+seaborn>=0.11.0
+statsmodels>=0.13.0
+prophet>=1.1.0
+tbats>=1.1.0
+tensorflow>=2.10.0
+torch>=1.12.0
+keras>=2.10.0
+xgboost>=1.6.0
+lightgbm>=3.3.0
+openai>=1.0.0
+pyyaml>=6.0
+python-dateutil>=2.8.0
+plotly>=5.10.0
+tqdm>=4.64.0
+joblib>=1.2.0
+psutil>=5.9.0
+pytest>=7.0.0
+langchain<1
+langchain-core<1
+langchain-openai<1
+langgraph<1

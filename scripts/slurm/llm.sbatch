@@ -60,7 +60,8 @@ until curl -sf "http://$OLLAMA_HOST/api/version" > /dev/null; do
     waited=$((waited + 2))
 done
 # No-op when the model is already in $OLLAMA_MODELS.
-"$OLLAMA_HOME/bin/ollama" pull "$LLM_MODEL" > /dev/null
+# The progress bar goes to stderr and would flood the job log; keep the last line only.
+"$OLLAMA_HOME/bin/ollama" pull "$LLM_MODEL" 2>&1 | tail -n 1
 
 export LLM_BASE_URL="http://$OLLAMA_HOST/v1"
 export LLM_MODEL
