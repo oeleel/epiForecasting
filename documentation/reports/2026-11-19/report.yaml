@@ -12,16 +12,29 @@ sections:
   - id: quick
     heading: Quick summary
     label: 60 seconds
-    kind: markdown
-    body: |-
-      - **Rivanna works.** The allocation runs jobs, and the LLM is served on a GPU node. Long runs no longer need the laptop. [Rivanna setup](#rivanna)
-      - **First comparison with TimeSeriesScientist is done.** XGBoost, 5 states, 3 cutoffs, same LLM and data for both. [One run, step by step](#walkthrough)
-      - **On the weeks it tunes for:** [[+our loop improves its model by 12.6%]], [[-TSci makes its model 6.0% worse]]. [Tuning-window tables](#panel-tuning-window)
-      - **On the next cutoff:** [[-our gain does not carry over (6.9% worse)]]. A fix chosen at the peak hurts in decline. [Held-out tables](#panel-held-out)
-      - [[*The result that holds: our framework says where and why the model fails; TSci gives one pooled error and calls the peak an outlier.]] [Diagnosis side by side](#panel-diagnosis)
-      - **Their model list runs in our framework.** Four families added; the loop ran on all seven. [Per-family results](#model-list)
-      - **Written:** related-work table, TSci differentiation, RepairAgent summary, restructure design note. [Related work](#related-work)
-      - **Needs a decision:** per-phase configs with a held-out accept step, and the scaled comparison (52 locations, 9 cutoffs, 3 seeds). [Decisions requested](#decisions)
+    kind: stack
+    blocks:
+      - kind: callout
+        tone: success
+        title: "Takeaway: our advantage over TimeSeriesScientist"
+        body: |-
+          [[*TSci decides once, before it has seen a forecast error. Ours forecasts, measures where the error is, and then acts, pass after pass.]] Three things follow from that, and TSci has none of them:
+
+          - **It can notice a bad forecast and undo the change.** TSci tuned Virginia into a flat line of 103 while admissions rose to 843, and nothing in it could see that.
+          - **It knows the disease.** Errors are read by epidemic phase, horizon and location, and each change cites the knowledge bank. TSci reads a flu peak as an "outlier" and a "structural break".
+          - **It leaves an audit trail.** One named action per pass, with its reason and its measured effect, from a fixed catalog that a small local model can use safely.
+
+          [[!Not shown yet: better accuracy on weeks the loop did not tune on.]] That is the open result.
+      - kind: markdown
+        body: |-
+          - **Rivanna works.** The allocation runs jobs, and the LLM is served on a GPU node. Long runs no longer need the laptop. [Rivanna setup](#rivanna)
+          - **First comparison with TimeSeriesScientist is done.** XGBoost, 5 states, 3 cutoffs, same LLM and data for both. [One run, step by step](#walkthrough)
+          - **On the weeks it tunes for:** [[+our loop improves its model by 12.6%]], [[-TSci makes its model 6.0% worse]]. [Tuning-window tables](#panel-tuning-window)
+          - **On the next cutoff:** [[-our gain does not carry over (6.9% worse)]]. A fix chosen at the peak hurts in decline. [Held-out tables](#panel-held-out)
+          - [[*The result that holds: our framework says where and why the model fails; TSci gives one pooled error and calls the peak an outlier.]] [Diagnosis side by side](#panel-diagnosis)
+          - **Their model list runs in our framework.** Four families added; the loop ran on all seven. [Per-family results](#model-list)
+          - **Written:** related-work table, TSci differentiation, RepairAgent summary, restructure design note. [Related work](#related-work)
+          - **Needs a decision:** per-phase configs with a held-out accept step, and the scaled comparison (52 locations, 9 cutoffs, 3 seeds). [Decisions requested](#decisions)
 
   - id: walkthrough
     heading: One run, step by step
@@ -58,106 +71,148 @@ sections:
               why ours can say "week 4, growth phase, under-prediction" and TSci can only describe
               the shape of the input series.
       - id: our-loop
-        label: Our loop, iteration by iteration
+        label: Ours in detail
         blocks:
           - kind: table
-            intro: WIS over 52 locations, 208 forecasts. Bias is in weekly admissions; negative means under-prediction.
+            intro: >-
+              Every pass through the five steps. Score: WIS over 52 locations (lower is better).
             columns:
-              - Iter
-              - Diagnosis focus (Agent 1)
-              - Action (Agent 2)
+              - Pass
+              - What it said was wrong
+              - Change made
               - Knowledge cited
-              - { label: WIS, format: num }
-              - { label: Bias, format: num }
-              - { label: " ", format: badge, tones: { kept: success, reverted: destructive, baseline: info } }
+              - { label: Score before, format: num }
+              - { label: Score after, format: num }
+              - { label: " ", format: badge, tones: { kept: success, reverted: destructive, "not checked": warning } }
             rows:
-              - ["0", "baseline", "default config", "", 124.41, -157.5, "baseline"]
-              - ["1", "`peak_underprediction`", "weight 2 on the 8 weeks before past peaks", "`peak-is-hardest-to-forecast`", 120.96, -150.4, "kept"]
-              - ["2", "`horizon4_drift`", "growth-phase weight 3.0", "`phase-growth-adiga-2026-10`", 106.54, -128.1, "kept"]
-              - ["3", "`growth_underprediction`", "growth-phase weight 4.0", "`phase-growth-adiga-2026-10`", 101.88, -117.1, "kept"]
-              - ["4", "`growth_underprediction`", "growth-phase weight 5.0", "`train-short-window-on-takeoff`", 100.55, -108.9, "kept"]
-              - ["5", "`week4_drift`", "training window 12 weeks", "`train-short-window-on-takeoff`", 224.11, -274.3, "reverted"]
+              - ["1", "`peak_underprediction`", "weight 2 on the 8 weeks before past peaks", "`peak-is-hardest-to-forecast`", 124.41, 120.96, "kept"]
+              - ["2", "`horizon4_drift`", "growth-phase weight 3.0", "`phase-growth-adiga-2026-10`", 120.96, 106.54, "kept"]
+              - ["3", "`growth_underprediction`", "growth-phase weight 4.0", "`phase-growth-adiga-2026-10`", 106.54, 101.88, "kept"]
+              - ["4", "`growth_underprediction`", "growth-phase weight 5.0", "`train-short-window-on-takeoff`", 101.88, 100.55, "kept"]
+              - ["5", "`week4_drift`", "training window 12 weeks", "`train-short-window-on-takeoff`", 100.55, 224.11, "reverted"]
           - kind: accordion
             items:
-              - title: "Iteration 1: what the two agents wrote"
+              - title: "1. Look at the data"
                 body: |-
-                  **Agent 1 (diagnosis):** "The model performs well overall (MAPE 38.7%) but shows significant degradation in longer horizons and peak phase predictions. Negative bias indicates systematic under-prediction, with extreme errors in growth phase forecasts during December 2025."
+                  **Who:** code (the phase-aware evaluator). No LLM.
 
-                  **Agent 2 (action):** `reweight_training_samples(dimension=approaching_peak, value=8, weight=2)`
+                  **Input:** the baseline forecast for 52 locations (208 rows) and the observed admissions.
 
-                  **Rationale:** "The model under-predicts peak phases due to insufficient training on rapid growth dynamics, which is addressed by upweighting the weeks leading into past peaks."
+                  **Output:** WIS 124.41, bias -157.5, 90% coverage 0.81. By horizon: WIS 17.4 / 44.8 / 132.1 / 303.4 and bias -19.9 / -50.2 / -171.5 / -388.3 for weeks 1 to 4. Phase: growth.
 
-                  **Expected effect:** "WIS should decrease as the model prioritizes learning critical peak-transition patterns, reducing systematic under-prediction."
-
-                  **Result:** WIS 124.41 to 120.96. Kept.
-              - title: "Iteration 2: the largest single gain"
+                  **Result:** a table of errors by phase, horizon and location, handed to step 2.
+              - title: "2. Say what is wrong"
                 body: |-
-                  **Agent 1:** "The model shows significant degradation in accuracy with longer forecast horizons, particularly week 4, and severe under-prediction bias across all segments. [...] the model struggles with rapid changes during growth phases."
+                  **Who:** Agent 1 (LLM).
 
-                  **Agent 2:** `reweight_training_samples(dimension=phase, value=growth, weight=3.0)`
+                  **Input:** the error table from step 1.
 
-                  **Rationale:** "Address growth phase underprediction by increasing loss function emphasis on rapid acceleration signals during the growth phase, aligning with hypothesis h2 and known fact [phase-growth-adiga-2026-10]"
+                  **Output:** "The model performs well overall (MAPE 38.7%) but shows significant degradation in longer horizons and peak phase predictions. Negative bias indicates systematic under-prediction, with extreme errors in growth phase forecasts during December 2025." Focus: `peak_underprediction`.
 
-                  **Result:** WIS 120.96 to 106.54. 4-week WIS 301.9 to 265.3. Kept.
-              - title: "Iteration 5: a change that fails, and what the loop does"
+                  **Result:** checked against a fixed schema, then handed to step 3.
+              - title: "3. Decide a change"
                 body: |-
-                  **Agent 2:** `set_training_window(weeks=12)`
+                  **Who:** Agent 2 (LLM).
 
-                  **Rationale:** "The growth phase (Nov-Dec) requires a short training window to capture rapid increases, aligning with the hypothesis that over-smoothing seasonal patterns causes week 4 drift."
+                  **Input:** the diagnosis, a catalog of 7 allowed actions, and the knowledge-bank entries retrieved for the weak phase.
 
-                  **Result:** WIS 100.55 to 224.11, coverage 0.83 to 0.55. [[-The change is rejected]] and the report recommends iteration 4's config. The knowledge bank supported this action (`train-short-window-on-takeoff`), and it was wrong here; that outcome is the kind of evidence the experiential bank is meant to store.
-              - title: What the run report hands back
+                  **Output:** `reweight_training_samples(dimension=approaching_peak, value=8, weight=2)`. Rationale: "The model under-predicts peak phases due to insufficient training on rapid growth dynamics, which is addressed by upweighting the weeks leading into past peaks." Cites `peak-is-hardest-to-forecast`, `train-short-window-on-takeoff`, `window-length-is-a-search-dimension`.
+
+                  **Result:** validated against the catalog and the parameter bounds, then applied to the config.
+              - title: "4. Try it"
                 body: |-
-                  - Recommendation: "adopt iteration 4's config (`sample_weights.by_phase[growth] = 5.0`), wis improved 19.2%"
-                  - Where the benefit came from: 1-week WIS 17.4 to 14.5, 2-week 44.8 to 40.0, 3-week 132.1 to 97.0, 4-week 303.4 to 250.7
-                  - Worst locations of the best config, with signed bias: Rhode Island (-77.7), Oregon (+43.3), Arkansas (+69.4), Arizona (+71.9), Nevada (-77.9)
-                  - Full report: `documentation/experiments/tsci_comparison/our-run-20261119-174325-2b0e.md`
+                  **Who:** code (the training pipeline and the evaluator). No LLM.
+
+                  **Input:** the changed config.
+
+                  **Output:** the model is retrained and forecasts the same 4 weeks. WIS 120.96 (was 124.41), bias -150.4.
+
+                  **Result:** [[+kept as the new best]].
+              - title: "5. React to the result"
+                body: |-
+                  **Who:** the loop.
+
+                  **Input:** the score from step 4.
+
+                  **Output:** [[+back to step 1 with the new forecast.]] Four more passes follow (table above).
+
+                  **Result:** pass 5 raised WIS from 100.55 to 224.11 and was [[-reverted]]. The run ends after 5 passes with the config of pass 4.
+              - title: What it hands back
+                body: |-
+                  - **Recommendation:** "adopt iteration 4's config (`sample_weights.by_phase[growth] = 5.0`), wis improved 19.2%"
+                  - **Where the error is:** by horizon, WIS 14.5 / 40.0 / 97.0 / 250.7; worst locations with signed bias: Rhode Island (-77.7), Oregon (+43.3), Arkansas (+69.4), Arizona (+71.9), Nevada (-77.9)
+                  - **Uncertainty:** five quantiles per forecast; the 90% interval covers 83% of outcomes
+                  - **Full output:** `documentation/experiments/tsci_comparison/our-run-20261119-174325-2b0e.md`
       - id: tsci-pipeline
-        label: TSci, agent by agent
+        label: TSci in detail
         blocks:
+          - kind: table
+            intro: >-
+              Every pass through the five steps. Score: MAE on the 4 forecast weeks for Virginia (lower
+              is better); "before" is its XGBoost at library defaults.
+            columns:
+              - Pass
+              - What it said was wrong
+              - Change made
+              - Knowledge cited
+              - { label: Score before, format: num }
+              - { label: Score after, format: num }
+              - { label: " ", format: badge, tones: { kept: success, reverted: destructive, "not checked": warning } }
+            rows:
+              - ["1", "nothing: no forecast exists when it decides", "`learning_rate=0.01`, `max_depth=3`, `n_estimators=100`", "none", 164.3, 290.3, "not checked"]
           - kind: accordion
             items:
-              - title: "1. Curator (preprocess): LLM call on the raw numbers"
+              - title: "1. Look at the data"
                 body: |-
-                  **LLM decision:** missing values `drop`, outlier detection `iqr`, outlier handling `clip`.
+                  **Who:** Curator and Planner (LLM), three calls.
 
-                  **What happened:** "Detected 0 outliers using iqr method", so nothing was clipped. The same recommendation to clip appeared in all 15 runs.
+                  **Input:** Virginia's 200 weekly values, pasted into the prompt as a list of numbers.
 
-                  **Its data summary:** seasonality "no clear seasonality", stationarity "non-stationary", patterns "spikes, dips, irregular fluctuations", data quality score 0.95.
+                  **Output:** "no clear seasonality", "non-stationary", "spikes, dips, irregular fluctuations". "The trend is non-linear with a pronounced structural break around the peak value (1315.0)." Challenges: "Structural breaks (e.g., the sharp decline after the peak at 1315.0)", "Outliers (e.g., the sudden drop to 10.0 after 1315.0)". Preprocessing decision: clip outliers.
 
-                  **Plot step:** failed. "Visualization generation failed: Invalid control character" (the LLM's plot plan was not valid JSON). The run continues.
-              - title: "2. Planner (analysis): LLM call"
+                  **Result:** the outlier detector found none, so nothing was clipped. The plot step failed (the LLM's plot plan was not valid JSON) and the run continued. [[!The series is four flu seasons and 1315 is the 2022-23 peak]]; nothing tells the LLM that.
+              - title: "2. Say what is wrong"
                 body: |-
-                  **Trend:** "Initially upward, then downward [...] The trend is non-linear with a pronounced structural break around the peak value (1315.0)."
+                  **Who:** no one.
 
-                  **Seasonality:** "present: false. No discernible seasonal patterns are present. The data exhibits irregular fluctuations without consistent periodicity."
+                  **Input:** none. No forecast has been made yet, so there is no error to look at.
 
-                  **Challenges listed:** "Structural breaks (e.g., the sharp decline after the peak at 1315.0)", "Outliers (e.g., the sudden drop to 10.0 after 1315.0)", "Complex regime shifts between increasing, decreasing, and stable phases".
+                  **Output:** none.
 
-                  [[!The series is four flu seasons. The 1315 is the 2022-23 peak.]] Nothing tells the LLM that, so it reads an annual epidemic as noise with a break in it.
-              - title: "3. Planner (model selection): LLM proposes the search space"
+                  **Result:** [[-this step does not exist in TSci.]]
+              - title: "3. Decide a change"
                 body: |-
-                  **Model:** XGBoost (the only one offered in this run).
+                  **Who:** Planner (LLM).
 
-                  **Grid:** `learning_rate` [0.01, 0.1, 0.2], `max_depth` [3, 5, 7], `n_estimators` [100, 200, 300].
+                  **Input:** its own analysis text from step 1 and the list of available models (XGBoost only in this run).
 
-                  **Reason:** "XGBoost is well-suited for non-stationary data with structural breaks and heteroscedasticity. The learning_rate controls convergence speed for fluctuating values, max_depth balances complexity for non-linear trends [...]"
-              - title: "4. Forecaster (validation): code, no LLM"
+                  **Output:** a search grid: `learning_rate` [0.01, 0.1, 0.2], `max_depth` [3, 5, 7], `n_estimators` [100, 200, 300]. Reason: "XGBoost is well-suited for non-stationary data with structural breaks and heteroscedasticity. The learning_rate controls convergence speed for fluctuating values, max_depth balances complexity for non-linear trends [...]". Cites nothing.
+
+                  **Result:** parsed as JSON; 20 settings from the grid go to step 4. No bounds or catalog are checked.
+              - title: "4. Try it"
                 body: |-
-                  20 settings from the grid. Each is fitted on the first 80% of the window and forecasts the last 20% (40 weeks) recursively.
+                  **Who:** code (the Forecaster's validation). No LLM.
 
-                  **Chosen:** `learning_rate=0.01, max_depth=3, n_estimators=100`, validation MAE 599.1, MAPE 3786%.
+                  **Input:** the 20 settings.
 
-                  [[-A validation MAPE of 3786% is the best score available.]] The setting wins because it barely moves, and a 40-week recursive forecast punishes anything that does.
-              - title: "5. Forecaster (forecast) and Reporter"
+                  **Output:** each setting is fitted on the first 80% of the series and forecasts the last 20% (40 weeks) recursively. Best: `learning_rate=0.01, max_depth=3, n_estimators=100`, with validation MAE 599.1 and MAPE 3786%.
+
+                  **Result:** that setting forecasts the 4 target weeks: 91, 103, 103, 103 (truth: 167, 195, 357, 843). MAE 290.3, against 164.3 for the default settings. [[-Not compared with the default; used as is.]]
+              - title: "5. React to the result"
                 body: |-
-                  **Forecast for the next 4 weeks:** 91.0, 103.3, 103.3, 103.3. The truth was 167, 195, 357, 843.
+                  **Who:** no one.
 
-                  **"Confidence intervals":** 80%, 90% and 95% lower and upper bounds all equal the point forecast, because the intervals are the spread across selected models and there is one model.
+                  **Input:** the test error is computed and written to the report.
 
-                  **Report, executive summary:** "Non-linear trend with a sharp peak (1315.0) followed by a decline, no seasonality, and high variability. [...] Recommendations: Prioritize differencing, segmentation around structural breaks, and hybrid models to improve reliability."
+                  **Output:** [[-none. There is no path back to an earlier step.]]
 
-                  The run ends here. Test MAE 290.3 is reported, and nothing acts on it.
+                  **Result:** the run ends after 1 pass.
+              - title: What it hands back
+                body: |-
+                  - **Recommendation:** "Prioritize differencing, segmentation around structural breaks, and hybrid models to improve reliability."
+                  - **Where the error is:** one set of pooled numbers for the series: MSE 156,415.7, MAE 290.26, MAPE 62.83%
+                  - **Uncertainty:** 80%, 90% and 95% bounds all equal the point forecast (the intervals are the spread across selected models, and there is one model)
+                  - **Full output:** `results.json` and `run.log` under `tsci_comparison/runs/51_2025-11-29/` on Rivanna scratch
       - id: virginia
         label: Virginia, the 4 forecasts
         blocks:
