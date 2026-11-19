@@ -383,3 +383,60 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# ---- Nixtla example families (optional dependencies) ---------------------------
+
+def _fit_predict_family(family: str, params: dict) -> pd.DataFrame:
+    long = to_long(_cdc_frame())
+    model = resolve_family(family)(params=params)
+    model.fit(long)
+    return validate_forecast_frame(model.predict(long), LEVELS, 4, SERIES)[0]
+
+
+def test_registry_lists_tsci_comparison_families():
+    pytest.importorskip("mlforecast")
+    pytest.importorskip("neuralforecast")
+    available = {f.family for f in list_families() if f.available}
+    assert {"mlf_linear", "mlf_random_forest", "nf_lstm", "nf_transformer"} <= available
+
+
+def test_mlf_linear_forecasts_every_series_and_horizon():
+    pytest.importorskip("mlforecast")
+    pred = _fit_predict_family("mlf_linear", {"alpha": 0.0})
+    assert len(pred) == len(SERIES) * 4
+    assert (pred["q05"] <= pred["q50"]).all() and (pred["q50"] <= pred["q95"]).all()
+
+
+def test_mlf_linear_ridge_penalty_changes_the_forecast():
+    pytest.importorskip("mlforecast")
+    ols = _fit_predict_family("mlf_linear", {"alpha": 0.0})
+    ridge = _fit_predict_family("mlf_linear", {"alpha": 1000.0})
+    assert not np.allclose(ols["q50"].to_numpy(), ridge["q50"].to_numpy())
+
+
+def test_mlf_random_forest_is_reproducible_from_its_params():
+    pytest.importorskip("mlforecast")
+    params = {"n_estimators": 20, "max_depth": 4}
+    first = _fit_predict_family("mlf_random_forest", params)
+    second = _fit_predict_family("mlf_random_forest", params)
+    assert len(first) == len(SERIES) * 4
+    assert np.array_equal(first["q50"].to_numpy(), second["q50"].to_numpy())
+
+
+def test_nf_lstm_forecasts_every_series_and_horizon():
+    pytest.importorskip("neuralforecast")
+    pred = _fit_predict_family("nf_lstm", {"max_steps": 20, "encoder_hidden_size": 8, "encoder_n_layers": 1})
+    assert len(pred) == len(SERIES) * 4
+
+
+def test_nf_transformer_forecasts_every_series_and_horizon():
+    pytest.importorskip("neuralforecast")
+    pred = _fit_predict_family("nf_transformer", {"max_steps": 20, "hidden_size": 32, "n_head": 2})
+    assert len(pred) == len(SERIES) * 4
+
+
+def test_nf_transformer_rejects_a_head_count_outside_its_choices():
+    pytest.importorskip("neuralforecast")
+    with pytest.raises(ModelBankError):
+        resolve_family("nf_transformer")(params={"n_head": 3})

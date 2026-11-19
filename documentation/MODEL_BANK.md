@@ -116,9 +116,37 @@ refuses a history that extends past the cutoff.
 | `nn_quantile` | `legacy.py` | torch | proves an in-repo PyTorch multi-horizon model plugs in |
 | `sf_autoarima`, `sf_autoets`, `sf_autotheta` | `nixtla.py` | statsforecast | classical examples (`sf_autoarima` is slow: ~1 min per 3 series) |
 | `mlf_lightgbm` | `nixtla.py` | mlforecast, lightgbm | global boosted example |
+| `mlf_linear`, `mlf_random_forest` | `nixtla.py` | mlforecast, scikit-learn | TSci's linear regression and random forest, as global models on lag features |
 | `nf_nhits` | `nixtla.py` | neuralforecast | neural example |
+| `nf_lstm`, `nf_transformer` | `nixtla.py` | neuralforecast | TSci's LSTM and transformer, with a multi-quantile loss |
 
 Nixtla extras: `pip install -r documentation/requirements-nixtla.txt`.
+
+### Coverage of the TimeSeriesScientist model list
+
+The comparison study (2026-11) runs the models TSci offers inside our framework. The seven the advisor
+named, and the family that stands for each:
+
+| TSci model | Our family | Tunable parameters | Note |
+|---|---|---|---|
+| ARIMA | `sf_autoarima` | `season_length` | AutoARIMA searches the orders itself, so the agent has almost nothing to tune |
+| Exponential smoothing | `sf_autoets` | `season_length` | Same: the library selects the ETS form |
+| XGBoost | `xgboost_direct` | the repo's XGBoost params, plus weights, features, window | The lab model: 59 features, one model per horizon and quantile. TSci's XGBoost is 10 lags of one series, recursive |
+| LSTM | `nf_lstm` | `input_size`, `max_steps`, `learning_rate`, `encoder_hidden_size`, `encoder_n_layers` | Added 2026-11-19 |
+| Transformer | `nf_transformer` | `input_size`, `max_steps`, `learning_rate`, `hidden_size`, `n_head` | Added 2026-11-19. neuralforecast `VanillaTransformer` |
+| Linear regression | `mlf_linear` | `alpha`, `max_lag` | Added 2026-11-19. `alpha = 0` is ordinary least squares |
+| Random forest | `mlf_random_forest` | `n_estimators`, `max_depth`, `min_samples_leaf`, `max_lag` | Added 2026-11-19 |
+
+Models where agent tuning is close to trivial (the advisor's point about model complexity): ARIMA and
+exponential smoothing, because the library already searches their structure, and linear regression,
+which has one penalty and one lag length. The loop has real choices to make only for XGBoost, random
+forest, LSTM and the transformer.
+
+TSci's released code offers 21 model names. Of the other 14, `RandomWalk` is our `persistence`, `Theta` is
+`sf_autotheta` and `LightGBM` is `mlf_lightgbm`; the rest (moving average, polynomial, ridge, lasso, elastic
+net, SVR, gradient boosting, neural network, Prophet, TBATS, Croston) have no family here. Every one of our
+families is a global model over all locations with five quantiles; every TSci model is fitted to one series
+and returns a point forecast, so a shared name does not mean the same model.
 
 ## Where the pieces live
 

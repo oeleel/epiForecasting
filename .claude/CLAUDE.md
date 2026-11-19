@@ -115,7 +115,7 @@ python -m src.data_loader update
 
 ### Testing
 ```bash
-.venv/bin/python -m pytest tests/agent/ -q -W error::DeprecationWarning   # 547 tests
+.venv/bin/python -m pytest tests/agent/ -q -W error::DeprecationWarning   # 559 tests
 PYTHONPATH=. .venv/bin/python tests/agent/run_all.py                        # no-pytest fallback
 ```
 Covers: adapter actions (legacy + bank families), config, data quality, feature toggle, orchestrator, prompts, run tracker, sample weights, WIS scoring, model bank (contract/registry/bridge/baselines/runner), model selection, run report, phase segmentation, knowledge bank (schema/intake/store/render/seeds), phase schemes, peak-rectification harness (arms/deltas/reward/summary/rescore/seeds/merge/stride/pinned data), phase oversampling, forecast panels + hindcast export (incl. direction agreement), gated emphasis.
@@ -222,7 +222,7 @@ Both expose an OpenAI-compatible API (`/v1/chat/completions`). Swapping environm
 
 **Stage 1: Model bank + selection (TS-Agent Stage 1)** - COMPLETE (2026-09-02)
 - `src/model_bank/` - `ForecastModel` contract, registry (`@register` or dotted path `pkg.mod:Class`), CDC<->long data bridge, runner
-- 9 families: 2 baselines, the in-repo XGBoost + PyTorch ensembles, 5 Nixtla examples (optional deps)
+- 13 families: 2 baselines, the in-repo XGBoost + PyTorch ensembles, 9 Nixtla examples (optional deps; `mlf_linear`, `mlf_random_forest`, `nf_lstm`, `nf_transformer` added 2026-11-19 for the TSci comparison)
 - `agent/model_selection.py` + `select-model` CLI: rolling-origin warm-up on the pinned split, phase-aware WIS, incumbent by `SelectionGoal(metric, phase)`
 - `improve --model-family X`: the loop refines any family; `adjust_hyperparameter` comes from the family's `param_space()`
 - **In-house lab models are the real bank; Nixtla is example scaffolding.** See `documentation/MODEL_BANK.md` for the 30-line plug-in recipe.

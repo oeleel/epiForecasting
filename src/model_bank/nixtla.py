@@ -190,26 +190,21 @@ class StatsForecastAutoThetaModel(_StatsForecastModel):
 # mlforecast
 # ---------------------------------------------------------------------------
 
-@register
-class MLForecastLightGBMModel(ForecastModel):
-    family = "mlf_lightgbm"
-    description = "mlforecast LightGBM, global model on lag features, conformal intervals"
+# Fixed so a config reproduces its forecast; the agent tunes the listed params, not the seed.
+SKLEARN_RANDOM_STATE = 0
+CONFORMAL_WINDOWS = 4
+MAX_LAG_SPEC = ParamSpec("max_lag", "int", 4, 52, description="Longest lag feature")
 
-    @classmethod
-    def param_space(cls) -> dict[str, ParamSpec]:
-        return {
-            "n_estimators": ParamSpec("n_estimators", "int", 50, 3000),
-            "learning_rate": ParamSpec("learning_rate", "float", 0.005, 0.5),
-            "num_leaves": ParamSpec("num_leaves", "int", 4, 256),
-            "max_lag": ParamSpec("max_lag", "int", 4, 52, description="Longest lag feature"),
-        }
 
-    @classmethod
-    def default_params(cls) -> dict[str, Any]:
-        return {"n_estimators": 300, "learning_rate": 0.05, "num_leaves": 31, "max_lag": 12}
+class _MLForecastModel(ForecastModel):
+    """One global regressor on lag features (lags 1..max_lag plus 52); conformal intervals."""
+
+    model_name: str = ""
+
+    def _make_regressor(self) -> Any:
+        raise NotImplementedError
 
     def fit(self, history: pd.DataFrame) -> None:
-        import lightgbm as lgb
         from mlforecast import MLForecast
         from mlforecast.utils import PredictionIntervals
 
@@ -217,16 +212,12 @@ class MLForecastLightGBMModel(ForecastModel):
         lags = list(range(1, int(self.params["max_lag"]) + 1))
         if WEEKLY_SEASON_LENGTH not in lags:
             lags.append(WEEKLY_SEASON_LENGTH)
-        model = lgb.LGBMRegressor(
-            n_estimators=self.params["n_estimators"],
-            learning_rate=self.params["learning_rate"],
-            num_leaves=self.params["num_leaves"],
-            verbosity=-1,
+        self._mlf = MLForecast(
+            models={self.model_name: self._make_regressor()}, freq=WEEKLY_FREQ, lags=lags
         )
-        self._mlf = MLForecast(models={"LGBM": model}, freq=WEEKLY_FREQ, lags=lags)
         self._mlf.fit(
             hist,
-            prediction_intervals=PredictionIntervals(n_windows=4, h=self.horizon),
+            prediction_intervals=PredictionIntervals(n_windows=CONFORMAL_WINDOWS, h=self.horizon),
         )
         self.is_fitted = True
 
@@ -235,38 +226,123 @@ class MLForecastLightGBMModel(ForecastModel):
             raise ModelBankError(f"{self.family}: call fit() before predict()")
         levels = _interval_levels(self.quantile_levels)
         pred = self._mlf.predict(h=self.horizon, level=levels)
-        return _intervals_to_quantiles(pred, "LGBM", self.quantile_levels, self.horizon)
+        return _intervals_to_quantiles(pred, self.model_name, self.quantile_levels, self.horizon)
+
+
+@register
+class MLForecastLightGBMModel(_MLForecastModel):
+    family = "mlf_lightgbm"
+    description = "mlforecast LightGBM, global model on lag features, conformal intervals"
+    model_name = "LGBM"
+
+    @classmethod
+    def param_space(cls) -> dict[str, ParamSpec]:
+        return {
+            "n_estimators": ParamSpec("n_estimators", "int", 50, 3000),
+            "learning_rate": ParamSpec("learning_rate", "float", 0.005, 0.5),
+            "num_leaves": ParamSpec("num_leaves", "int", 4, 256),
+            "max_lag": MAX_LAG_SPEC,
+        }
+
+    @classmethod
+    def default_params(cls) -> dict[str, Any]:
+        return {"n_estimators": 300, "learning_rate": 0.05, "num_leaves": 31, "max_lag": 12}
+
+    def _make_regressor(self) -> Any:
+        import lightgbm as lgb
+
+        return lgb.LGBMRegressor(
+            n_estimators=self.params["n_estimators"],
+            learning_rate=self.params["learning_rate"],
+            num_leaves=self.params["num_leaves"],
+            verbosity=-1,
+        )
+
+
+@register
+class MLForecastLinearModel(_MLForecastModel):
+    family = "mlf_linear"
+    description = "mlforecast linear regression on lag features (ridge when alpha > 0), conformal intervals"
+    model_name = "Linear"
+
+    @classmethod
+    def param_space(cls) -> dict[str, ParamSpec]:
+        return {
+            "alpha": ParamSpec("alpha", "float", 0.0, 1000.0, description="Ridge penalty; 0 = ordinary least squares"),
+            "max_lag": MAX_LAG_SPEC,
+        }
+
+    @classmethod
+    def default_params(cls) -> dict[str, Any]:
+        return {"alpha": 0.0, "max_lag": 12}
+
+    def _make_regressor(self) -> Any:
+        from sklearn.linear_model import LinearRegression, Ridge
+
+        # Ridge(alpha=0) solves the same problem with a less stable solver, so use OLS there.
+        if self.params["alpha"] == 0:
+            return LinearRegression()
+        return Ridge(alpha=self.params["alpha"])
+
+
+@register
+class MLForecastRandomForestModel(_MLForecastModel):
+    family = "mlf_random_forest"
+    description = "mlforecast random forest, global model on lag features, conformal intervals"
+    model_name = "RandomForest"
+
+    @classmethod
+    def param_space(cls) -> dict[str, ParamSpec]:
+        return {
+            "n_estimators": ParamSpec("n_estimators", "int", 20, 1000),
+            "max_depth": ParamSpec("max_depth", "int", 2, 32),
+            "min_samples_leaf": ParamSpec("min_samples_leaf", "int", 1, 50),
+            "max_lag": MAX_LAG_SPEC,
+        }
+
+    @classmethod
+    def default_params(cls) -> dict[str, Any]:
+        return {"n_estimators": 200, "max_depth": 12, "min_samples_leaf": 2, "max_lag": 12}
+
+    def _make_regressor(self) -> Any:
+        from sklearn.ensemble import RandomForestRegressor
+
+        return RandomForestRegressor(
+            n_estimators=self.params["n_estimators"],
+            max_depth=self.params["max_depth"],
+            min_samples_leaf=self.params["min_samples_leaf"],
+            random_state=SKLEARN_RANDOM_STATE,
+        )
 
 
 # ---------------------------------------------------------------------------
 # neuralforecast
 # ---------------------------------------------------------------------------
 
-@register
-class NeuralForecastNHITSModel(ForecastModel):
-    family = "nf_nhits"
-    description = "neuralforecast NHITS, global model with multi-quantile loss"
+INPUT_SIZE_SPEC = ParamSpec("input_size", "int", 4, 104, description="Lookback weeks")
+MAX_STEPS_SPEC = ParamSpec("max_steps", "int", 20, 5000)
+NEURAL_LEARNING_RATE_SPEC = ParamSpec("learning_rate", "float", 1e-5, 1e-1)
 
-    @classmethod
-    def param_space(cls) -> dict[str, ParamSpec]:
-        return {
-            "input_size": ParamSpec("input_size", "int", 4, 104, description="Lookback weeks"),
-            "max_steps": ParamSpec("max_steps", "int", 20, 5000),
-            "learning_rate": ParamSpec("learning_rate", "float", 1e-5, 1e-1),
-        }
 
-    @classmethod
-    def default_params(cls) -> dict[str, Any]:
-        return {"input_size": 26, "max_steps": 300, "learning_rate": 1e-3}
+class _NeuralForecastModel(ForecastModel):
+    """One global neuralforecast model trained with a multi-quantile loss."""
+
+    model_name: str = ""
+
+    def _model_class(self) -> Any:
+        raise NotImplementedError
+
+    def _architecture_kwargs(self) -> dict[str, Any]:
+        """Constructor arguments beyond the shared input_size / max_steps / learning_rate."""
+        return {}
 
     def fit(self, history: pd.DataFrame) -> None:
         from neuralforecast import NeuralForecast
         from neuralforecast.losses.pytorch import MQLoss
-        from neuralforecast.models import NHITS
 
         hist = validate_history_frame(history)[[ID_COL, TIME_COL, "y"]]
         levels = _interval_levels(self.quantile_levels)
-        model = NHITS(
+        model = self._model_class()(
             h=self.horizon,
             input_size=self.params["input_size"],
             max_steps=self.params["max_steps"],
@@ -274,6 +350,7 @@ class NeuralForecastNHITSModel(ForecastModel):
             loss=MQLoss(level=levels),
             enable_progress_bar=False,
             logger=False,
+            **self._architecture_kwargs(),
         )
         self._nf = NeuralForecast(models=[model], freq=WEEKLY_FREQ)
         self._nf.fit(hist)
@@ -284,6 +361,104 @@ class NeuralForecastNHITSModel(ForecastModel):
             raise ModelBankError(f"{self.family}: call fit() before predict()")
         pred = self._nf.predict().reset_index()
         # MQLoss names the median column "<Model>-median"; alias it to the point name.
-        if "NHITS-median" in pred.columns and "NHITS" not in pred.columns:
-            pred["NHITS"] = pred["NHITS-median"]
-        return _intervals_to_quantiles(pred, "NHITS", self.quantile_levels, self.horizon)
+        median_col = f"{self.model_name}-median"
+        if median_col in pred.columns and self.model_name not in pred.columns:
+            pred[self.model_name] = pred[median_col]
+        return _intervals_to_quantiles(pred, self.model_name, self.quantile_levels, self.horizon)
+
+
+@register
+class NeuralForecastNHITSModel(_NeuralForecastModel):
+    family = "nf_nhits"
+    description = "neuralforecast NHITS, global model with multi-quantile loss"
+    model_name = "NHITS"
+
+    @classmethod
+    def param_space(cls) -> dict[str, ParamSpec]:
+        return {
+            "input_size": INPUT_SIZE_SPEC,
+            "max_steps": MAX_STEPS_SPEC,
+            "learning_rate": NEURAL_LEARNING_RATE_SPEC,
+        }
+
+    @classmethod
+    def default_params(cls) -> dict[str, Any]:
+        return {"input_size": 26, "max_steps": 300, "learning_rate": 1e-3}
+
+    def _model_class(self) -> Any:
+        from neuralforecast.models import NHITS
+
+        return NHITS
+
+
+@register
+class NeuralForecastLSTMModel(_NeuralForecastModel):
+    family = "nf_lstm"
+    description = "neuralforecast LSTM encoder, global model with multi-quantile loss"
+    model_name = "LSTM"
+
+    @classmethod
+    def param_space(cls) -> dict[str, ParamSpec]:
+        return {
+            "input_size": INPUT_SIZE_SPEC,
+            "max_steps": MAX_STEPS_SPEC,
+            "learning_rate": NEURAL_LEARNING_RATE_SPEC,
+            "encoder_hidden_size": ParamSpec("encoder_hidden_size", "int", 8, 512),
+            "encoder_n_layers": ParamSpec("encoder_n_layers", "int", 1, 4),
+        }
+
+    @classmethod
+    def default_params(cls) -> dict[str, Any]:
+        return {
+            "input_size": 26,
+            "max_steps": 300,
+            "learning_rate": 1e-3,
+            "encoder_hidden_size": 64,
+            "encoder_n_layers": 2,
+        }
+
+    def _model_class(self) -> Any:
+        from neuralforecast.models import LSTM
+
+        return LSTM
+
+    def _architecture_kwargs(self) -> dict[str, Any]:
+        return {
+            "encoder_hidden_size": self.params["encoder_hidden_size"],
+            "encoder_n_layers": self.params["encoder_n_layers"],
+        }
+
+
+@register
+class NeuralForecastTransformerModel(_NeuralForecastModel):
+    family = "nf_transformer"
+    description = "neuralforecast VanillaTransformer, global model with multi-quantile loss"
+    model_name = "VanillaTransformer"
+
+    @classmethod
+    def param_space(cls) -> dict[str, ParamSpec]:
+        return {
+            "input_size": INPUT_SIZE_SPEC,
+            "max_steps": MAX_STEPS_SPEC,
+            "learning_rate": NEURAL_LEARNING_RATE_SPEC,
+            "hidden_size": ParamSpec("hidden_size", "categorical", choices=(32, 64, 128, 256)),
+            "n_head": ParamSpec("n_head", "categorical", choices=(2, 4, 8)),
+        }
+
+    @classmethod
+    def default_params(cls) -> dict[str, Any]:
+        return {
+            "input_size": 26,
+            "max_steps": 300,
+            "learning_rate": 1e-4,
+            "hidden_size": 64,
+            "n_head": 4,
+        }
+
+    def _model_class(self) -> Any:
+        from neuralforecast.models import VanillaTransformer
+
+        return VanillaTransformer
+
+    def _architecture_kwargs(self) -> dict[str, Any]:
+        return {"hidden_size": self.params["hidden_size"], "n_head": self.params["n_head"]}
