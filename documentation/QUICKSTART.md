@@ -176,6 +176,55 @@ src/model_bank/
 scripts/demo_stage1.py   # the researcher walkthrough
 ```
 
+## Running on Rivanna (UVA HPC)
+
+Verified 2026-11-19. Jobs run under the `nssac_students` allocation on the Biocomplexity
+partitions: `bii` (CPU) and `bii-gpu` (GPU, V100 32 GB except one A100 node).
+
+```bash
+# From the laptop: UVA Anywhere VPN when off Grounds, then
+ssh <id>@login.hpc.virginia.edu
+
+# One-time setup on the login node (system Python is 3.6, so uv supplies 3.12)
+git clone https://github.com/oeleel/epiForecasting.git ~/epiForecasting && cd ~/epiForecasting
+module load miniforge && pip install --user uv && export PATH=$HOME/.local/bin:$PATH
+uv venv --python 3.12 .venv
+uv pip install --python .venv/bin/python -r documentation/requirements.txt pytest langchain-openai
+uv pip install --python .venv/bin/python -r documentation/requirements-nixtla.txt   # optional
+mkdir -p /scratch/$USER/epiForecasting/logs        # job logs; Slurm does not create it
+
+# The pinned data cache is tracked in git; check it
+sha256sum data/raw/flusight_hospital_admissions.csv   # c91d9d81...
+```
+
+`scripts/slurm/cpu.sbatch` and `scripts/slurm/gpu.sbatch` run any command from the repo
+root. Submit from `~/epiForecasting`; logs go to `/scratch/$USER/epiForecasting/logs/<name>-<jobid>.out`.
+
+```bash
+# Test suite (547 tests, about 30 s)
+sbatch -J tests scripts/slurm/cpu.sbatch .venv/bin/python -m pytest tests/agent/ -q -W error::DeprecationWarning
+
+# Experiment: keep the code in /home, send outputs to /scratch with --out
+sbatch -J smoke scripts/slurm/cpu.sbatch .venv/bin/python scripts/experiments/peak_rectification.py \
+    --cutoffs 1 --arms baseline oversample --oversample-factors 2 \
+    --pin-data-sha256 c91d9d81b8ab47ee5fe5458123167a3ce9c4171bddca682a89eb573d4b5336cb \
+    --out /scratch/$USER/epiForecasting/outputs/peak_rectification-smoke-1cutoffs
+
+# Override a default per job
+sbatch -c 16 -t 12:00:00 -J sweep scripts/slurm/cpu.sbatch <command>
+sbatch --gres=gpu:a100:1 -J nn scripts/slurm/gpu.sbatch <command>
+
+squeue -u $USER          # queue state
+```
+
+**Rivanna and the laptop do not produce identical forecasts.** On the smoke run above
+(baseline, seed 42, cutoff 2025-10-04) Rivanna is bit-identical across repeats, across 1
+and 8 threads, and with the laptop's exact package versions installed, yet every row
+differs from the Apple-silicon laptop: overall WIS 5.59 against 5.63, mean absolute
+difference 1.8 admissions per quantile. The cause is the platform (x86-64 Linux against
+arm64 macOS builds of XGBoost), not versions or threading. Never mix machines inside one
+comparison: run every arm of an experiment on the same machine.
+
 ## Troubleshooting
 
 **LLM not connecting**: Make sure `ollama serve` is running and the model is pulled.
