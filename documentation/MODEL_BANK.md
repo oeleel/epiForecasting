@@ -142,6 +142,22 @@ exponential smoothing, because the library already searches their structure, and
 which has one penalty and one lag length. The loop has real choices to make only for XGBoost, random
 forest, LSTM and the transformer.
 
+Selection on the pinned split (Rivanna job 23167385, 2026-11-19: 9 stride-4 cutoffs, 52 locations, default
+parameters, no agent). AutoARIMA is absent because its run on 9 cutoffs takes hours.
+
+| Family | WIS | Growth | Peak | Decline | Plateau | 90% coverage | Fit, s |
+|---|---|---|---|---|---|---|---|
+| `xgboost_direct` (incumbent) | 50.9 | 63.6 | 109.9 | 32.6 | 7.5 | 0.84 | 280 |
+| `nf_lstm` | 70.7 | 79.7 | 160.8 | 35.6 | 16.1 | 0.88 | 189 |
+| `sf_autoets` | 81.9 | 102.6 | 166.7 | 56.3 | 18.1 | 0.86 | 78 |
+| `persistence` | 90.4 | 131.6 | 153.8 | 79.1 | 22.2 | 0.73 | 0.1 |
+| `mlf_random_forest` | 115.0 | 92.2 | 306.1 | 55.1 | 27.1 | 0.65 | 103 |
+| `mlf_linear` | 143.9 | 104.7 | 360.8 | 83.9 | 55.3 | 0.64 | 1.2 |
+| `nf_transformer` | 168.4 | 191.5 | 387.1 | 98.3 | 25.5 | 0.13 | 1321 |
+
+`mlf_random_forest`, `mlf_linear` and `nf_transformer` do not beat `persistence` at their defaults. The
+transformer's interval covers 13% of outcomes; 300 training steps on CPU are not enough for it.
+
 First run of the loop on each family (Rivanna, 2026-11-19, cutoff 2025-11-29, `qwen3:8b`, up to 5
 iterations, WIS over 52 locations). These are in-sample numbers: the loop keeps the iteration that scores
 best on the scored weeks, and the held-out check in
