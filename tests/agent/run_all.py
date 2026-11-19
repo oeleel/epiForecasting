@@ -37,6 +37,7 @@ MODULES = [
     "tests.agent.test_forecast_panels",
     "tests.agent.test_gated_emphasis",
     "tests.agent.test_prepare_flu_series",
+    "tests.agent.test_score_comparison",
     "tests.agent.test_export_hindcast_tables",
     "tests.agent.test_oversampling",
     "tests.agent.test_phase_scheme",
