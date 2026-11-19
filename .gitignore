@@ -25,3 +25,7 @@ documentation/meeting-notes/
 
 # arXiv PDFs: links in documentation/papers/README.md
 documentation/papers/*.pdf
+
+# local copy of the Rivanna comparison outputs (results live in documentation/experiments/tsci_comparison/)
+outputs/experiments/tsci_comparison/rivanna/
+outputs/experiments/tsci_comparison/shots/
