@@ -142,6 +142,25 @@ exponential smoothing, because the library already searches their structure, and
 which has one penalty and one lag length. The loop has real choices to make only for XGBoost, random
 forest, LSTM and the transformer.
 
+First run of the loop on each family (Rivanna, 2026-11-19, cutoff 2025-11-29, `qwen3:8b`, up to 5
+iterations, WIS over 52 locations). These are in-sample numbers: the loop keeps the iteration that scores
+best on the scored weeks, and the held-out check in
+`documentation/experiments/2026-11-tsci-comparison-results.md` shows such gains need not transfer.
+
+| Family | WIS baseline | WIS best | Change | Stop reason |
+|---|---|---|---|---|
+| `xgboost_direct` | 124.4 | 100.6 | -19.2% | max iterations |
+| `nf_lstm` | 159.8 | 153.7 | -3.8% | two regressions |
+| `mlf_linear` | 206.7 | 204.3 | -1.1% | two regressions |
+| `nf_transformer` | 366.6 | 363.8 | -0.8% | no improvement twice |
+| `mlf_random_forest` | 180.8 | 180.8 | none | two regressions |
+| `sf_autoarima` | 185.9 | 185.9 | none | two regressions |
+| `sf_autoets` | 206.0 | 206.0 | none | agent chose to stop |
+
+The loop has the most to work with on `xgboost_direct`, the only family that honours every action
+(reweighting, feature toggles, window, floor). For the bank families it can only change the parameters in
+`param_space()`, and for the two auto-selected statistical models that is one number.
+
 TSci's released code offers 21 model names. Of the other 14, `RandomWalk` is our `persistence`, `Theta` is
 `sf_autotheta` and `LightGBM` is `mlf_lightgbm`; the rest (moving average, polynomial, ridge, lasso, elastic
 net, SVR, gradient boosting, neural network, Prophet, TBATS, Croston) have no family here. Every one of our
