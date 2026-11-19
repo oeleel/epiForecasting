@@ -62,8 +62,8 @@ What this says:
 - **Two of the three transfers are flat for both frameworks.** The whole difference comes from one
   transfer, 2026-01-24 to 2026-02-21, and inside it from two states (California and Florida).
 - **Our loss there has a clear cause.** At 2026-01-24 the loop chose `sample_weights.by_phase[peak] = 2.0`
-  (with a 12-week window tried along the way). Four weeks later the season is in decline, and a model
-  weighted toward the peak over-predicts: MAE over all 52 locations rises from 136.3 to 167.0 (+22.5%). The
+  as its last accepted change. Four weeks later the season is in decline, and a model
+  weighted toward the peak does worse: MAE over all 52 locations rises from 136.3 to 167.0 (+22.5%). The
   loop found a fix for the phase it was in, and that fix is wrong for the next phase.
 - **TSci's gain there is not evidence of skill.** The same kind of transfer gave +0.3% and -0.2% at the
   other two cutoffs, its 15 runs chose 15 different settings, and its run-level record is 8 better against
