@@ -14,14 +14,14 @@ sections:
     label: 60 seconds
     kind: markdown
     body: |-
-      - **Rivanna works.** The allocation runs jobs, and the LLM is served on a GPU node. Long runs no longer need the laptop.
-      - **First comparison with TimeSeriesScientist is done.** XGBoost, 5 states, 3 cutoffs, same LLM and data for both.
-      - **On the weeks it tunes for:** [[+our loop improves its model by 12.6%]], [[-TSci makes its model 6.0% worse]].
-      - **On the next cutoff:** [[-our gain does not carry over (6.9% worse)]]. A fix chosen at the peak hurts in decline.
-      - [[*The result that holds: our framework says where and why the model fails; TSci gives one pooled error and calls the peak an outlier.]]
-      - **Their model list runs in our framework.** Four families added; the loop ran on all seven.
-      - **Written:** related-work table, TSci differentiation, RepairAgent summary, restructure design note.
-      - **Needs a decision:** per-phase configs with a held-out accept step, and the scaled comparison (52 locations, 9 cutoffs, 3 seeds).
+      - **Rivanna works.** The allocation runs jobs, and the LLM is served on a GPU node. Long runs no longer need the laptop. [Rivanna setup](#rivanna)
+      - **First comparison with TimeSeriesScientist is done.** XGBoost, 5 states, 3 cutoffs, same LLM and data for both. [What was delivered](#delivered)
+      - **On the weeks it tunes for:** [[+our loop improves its model by 12.6%]], [[-TSci makes its model 6.0% worse]]. [Tuning-window tables](#panel-tuning-window)
+      - **On the next cutoff:** [[-our gain does not carry over (6.9% worse)]]. A fix chosen at the peak hurts in decline. [Held-out tables](#panel-held-out)
+      - [[*The result that holds: our framework says where and why the model fails; TSci gives one pooled error and calls the peak an outlier.]] [Diagnosis side by side](#panel-diagnosis)
+      - **Their model list runs in our framework.** Four families added; the loop ran on all seven. [Per-family results](#model-list)
+      - **Written:** related-work table, TSci differentiation, RepairAgent summary, restructure design note. [Related work](#related-work)
+      - **Needs a decision:** per-phase configs with a held-out accept step, and the scaled comparison (52 locations, 9 cutoffs, 3 seeds). [Decisions requested](#decisions)
 
   - id: glance
     heading: At a glance

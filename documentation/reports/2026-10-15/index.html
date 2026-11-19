@@ -1422,7 +1422,21 @@ window.REPORT_DATA = {"round2":[{"config_id":"baseline__seed42","base":"baseline
       });
       const initial = triggers.find(t => t.dataset.state === "active") || triggers[0];
       if (initial) activate(initial.dataset.tab, false);
+      tabs.activateTab = name => activate(name, false);
     });
+    // A link to "#panel-<tab id>" opens that tab and scrolls to its section. A hidden panel
+    // cannot be a scroll target on its own, so the browser's default jump does nothing.
+    function openTabFromHash() {
+      const id = decodeURIComponent(location.hash.slice(1));
+      if (!id.startsWith("panel-")) return;
+      const panel = document.getElementById(id);
+      const tabs = panel && panel.closest("[data-tabs]");
+      if (!tabs || !tabs.activateTab) return;
+      tabs.activateTab(panel.dataset.tab);
+      (panel.closest("section") || tabs).scrollIntoView();
+    }
+    window.addEventListener("hashchange", openTabFromHash);
+    openTabFromHash();
   }
 
   // ---- mount ------------------------------------------------------------------------
