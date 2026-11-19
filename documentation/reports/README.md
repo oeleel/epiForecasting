@@ -1,7 +1,7 @@
 # Weekly meeting reports
 
 One folder per week, one `report.yaml` per folder, one builder. Every report gets the
-same shell (shadcn/ui look, Tailwind from the Play CDN, no build step) so the weekly work is
+same shell (shadcn/ui look, Tailwind utilities precompiled into `_template/tailwind.css` and inlined, square corners) so the weekly work is
 only the content. The built `index.html` is self-contained: it opens from GitHub Pages and
 from disk (`file://`) alike. The reports target desktop viewing only (a 1200-1440px viewport);
 wide tables and side-by-side panels are fine, and no effort goes into phone layouts.

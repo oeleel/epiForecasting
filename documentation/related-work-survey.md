@@ -426,6 +426,32 @@ uses the cell. "Ours" marks PLANNED where the feature is designed but not built.
 | POPPER (2502.09858) | Partial (falsification tests) | No | No | No (validates hypotheses) | Yes (Type-I error control, e-values) | Partial (human states the hypothesis) |
 | Curie (2502.16069) | Partial (rigor modules) | Partial (experiment knowledge module) | No | No | Partial (procedural rigor) | ? |
 
+### Improvement loop and domain knowledge
+
+A second view of the closest systems, for the comparison study (added 2026-11-19). The TSci row is
+verified against its released code (`Y-Research-SBU/TimeSeriesScientist`, commit `41b3963`), not only the
+paper. The other rows rest on the abstracts and summaries above; "?" has the same meaning as in the first
+table.
+
+| System | Improvement loop | Domain knowledge | Limits | How ours addresses each |
+|---|---|---|---|---|
+| TimeSeriesScientist (2510.01538) | No. The LangGraph is a straight line: preprocess, analyze, validate, forecast, report, end. A model is tuned once by a grid over LLM-proposed ranges and never revisited after its test error is known | None. Prompts carry generic statistics (trend, seasonality, stationarity) and the raw series pasted as text | One univariate series per run, so no cross-location learning. Point forecasts only; its "confidence intervals" are percentiles across the selected models' point forecasts. Hyperparameters are chosen by a single 80/20 split with a recursive forecast over the last 20% of the window, whatever the real horizon. One aggregate MSE / MAE / MAPE | Evaluate, diagnose, act, retrain loop that reads the last result before proposing the next change. One global model over all states. Five quantiles scored with WIS. Metrics split by epidemic phase, horizon and location, with signed bias |
+| TS-Agent (2508.13915) | Yes. Staged selection, code refinement and fine-tuning with reflective feedback | Yes. Curated, read-only banks of models and refinement strategies | Finance domain, aggregate loss. The LLM edits code, which needs a frontier model | The LLM picks from validated config actions, so a local 8B model is safe. The bank is provenance-typed, citations are checked, and experiment results flow back in as experiential entries |
+| ERA respiratory (2605.16238) | Yes. Tree search over generated code | Partial. Known methods are supplied in the prompt | Writes new pipelines with frontier models; does not say which change caused which gain | Refines the lab's existing model; every iteration records one action, its rationale and its measured effect in the run report |
+| DS-Agent (2402.17453), AutoMind (2506.10974) | ? | Yes. External case bank, curated expert base | General ML tasks; no forecasting-specific or phase-aware evaluation | Same as above: phase-aware WIS and a bank written for one model class and one disease |
+| EpiEvolve (2606.05513) | Partial. Adapts the context of a frozen LLM forecaster | Yes. Episodic and strategic memory, variant regimes | The LLM is the forecaster; no trained statistical model is refined | The LLM never forecasts. It tunes a trained model whose forecasts stay reproducible from a config |
+
+**Differentiation from TimeSeriesScientist.** TSci is a linear pipeline. Its four agents run once in a fixed
+order, the Forecaster picks hyperparameters by a single grid search on a validation split, and the run ends
+with a report; nothing in the system looks at the forecast error and decides what to change next. Its
+diagnostics are generic statistics of one series, and it scores a run with one pooled error. Our framework
+is a diagnostic loop. Each iteration evaluates the current forecasts by epidemic phase, horizon and location
+with signed bias, a first agent states where and how the model fails, a second agent proposes one
+constrained action and cites the knowledge-bank entries that support it, and the model is retrained and
+re-scored on the same window. The claim we can defend is therefore not "better accuracy on a benchmark" but
+"a loop that finds and corrects a named failure, such as under-prediction at the peak, and records why each
+change was made".
+
 ## The gap this paper fills
 
 Recent agents either build forecasting pipelines from scratch with free code generation (TSci, AutoKaggle,

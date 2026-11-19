@@ -6,7 +6,7 @@
   report.yaml. The builder (scripts/reports/build_report.py) fills the
   double-brace placeholders and inlines tokens.css and widgets.js, so each output page
   is a single self-contained file that works from GitHub Pages and from disk
-  (file://). The only external loads are the Tailwind Play CDN and Inter from
+  (file://). The only external load is Inter from
   Google Fonts; tokens.css carries enough base styling that the page stays
   readable if either is unavailable.
 
@@ -42,37 +42,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-  // shadcn/ui semantic colours mapped onto the CSS variables in tokens.css.
-  tailwind.config = {
-    darkMode: "class",
-    theme: {
-      extend: {
-        fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif"] },
-        colors: {
-          border: "hsl(var(--border))",
-          input: "hsl(var(--input))",
-          ring: "hsl(var(--ring))",
-          background: "hsl(var(--background))",
-          foreground: "hsl(var(--foreground))",
-          primary: { DEFAULT: "hsl(var(--primary))", foreground: "hsl(var(--primary-foreground))" },
-          secondary: { DEFAULT: "hsl(var(--secondary))", foreground: "hsl(var(--secondary-foreground))" },
-          destructive: { DEFAULT: "hsl(var(--destructive))", foreground: "hsl(var(--destructive-foreground))" },
-          // semantic layer (tokens.css); tokens.css also ships .ink-* classes so the page works without the CDN
-          success: "hsl(var(--success))",
-          warning: "hsl(var(--warning))",
-          info: "hsl(var(--info))",
-          muted: { DEFAULT: "hsl(var(--muted))", foreground: "hsl(var(--muted-foreground))" },
-          accent: { DEFAULT: "hsl(var(--accent))", foreground: "hsl(var(--accent-foreground))" },
-          popover: { DEFAULT: "hsl(var(--popover))", foreground: "hsl(var(--popover-foreground))" },
-          card: { DEFAULT: "hsl(var(--card))", foreground: "hsl(var(--card-foreground))" }
-        },
-        borderRadius: { lg: "var(--radius)", md: "calc(var(--radius) - 2px)", sm: "calc(var(--radius) - 4px)" }
-      }
-    }
-  };
-</script>
 <style>
 {{TOKENS_CSS}}
 </style>

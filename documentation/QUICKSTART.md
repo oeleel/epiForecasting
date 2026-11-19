@@ -176,6 +176,97 @@ src/model_bank/
 scripts/demo_stage1.py   # the researcher walkthrough
 ```
 
+## Running on Rivanna (UVA HPC)
+
+Verified 2026-11-19. Jobs run under the `nssac_students` allocation on the Biocomplexity
+partitions: `bii` (CPU) and `bii-gpu` (GPU, V100 32 GB except one A100 node).
+
+```bash
+# From the laptop: UVA Anywhere VPN when off Grounds, then
+ssh <id>@login.hpc.virginia.edu
+
+# One-time setup on the login node (system Python is 3.6, so uv supplies 3.12)
+git clone https://github.com/oeleel/epiForecasting.git ~/epiForecasting && cd ~/epiForecasting
+module load miniforge && pip install --user uv && export PATH=$HOME/.local/bin:$PATH
+uv venv --python 3.12 .venv
+uv pip install --python .venv/bin/python -r documentation/requirements.txt pytest langchain-openai
+uv pip install --python .venv/bin/python -r documentation/requirements-nixtla.txt   # optional
+mkdir -p /scratch/$USER/epiForecasting/logs        # job logs; Slurm does not create it
+
+# The pinned data cache is tracked in git; check it
+sha256sum data/raw/flusight_hospital_admissions.csv   # c91d9d81...
+```
+
+`scripts/slurm/cpu.sbatch` and `scripts/slurm/gpu.sbatch` run any command from the repo
+root. Submit from `~/epiForecasting`; logs go to `/scratch/$USER/epiForecasting/logs/<name>-<jobid>.out`.
+
+```bash
+# Test suite (547 tests, about 30 s)
+sbatch -J tests scripts/slurm/cpu.sbatch .venv/bin/python -m pytest tests/agent/ -q -W error::DeprecationWarning
+
+# Experiment: keep the code in /home, send outputs to /scratch with --out
+sbatch -J smoke scripts/slurm/cpu.sbatch .venv/bin/python scripts/experiments/peak_rectification.py \
+    --cutoffs 1 --arms baseline oversample --oversample-factors 2 \
+    --pin-data-sha256 c91d9d81b8ab47ee5fe5458123167a3ce9c4171bddca682a89eb573d4b5336cb \
+    --out /scratch/$USER/epiForecasting/outputs/peak_rectification-smoke-1cutoffs
+
+# Override a default per job
+sbatch -c 16 -t 12:00:00 -J sweep scripts/slurm/cpu.sbatch <command>
+sbatch --gres=gpu:a100:1 -J nn scripts/slurm/gpu.sbatch <command>
+
+squeue -u $USER          # queue state
+```
+
+### LLM jobs on Rivanna
+
+The agent loop needs an LLM server. `scripts/slurm/llm.sbatch` starts Ollama on the job's own GPU node,
+waits until it answers, runs your command, and stops the server when the job ends. Nothing listens
+outside the node and nothing is left running. The advisor confirmed (2026-11-19) that a self-hosted model
+is acceptable on the HPC.
+
+```bash
+# One-time: unpack the Ollama release that matches the laptop (0.19.0) into ~/opt/ollama (4.7 GB)
+mkdir -p ~/opt/ollama && cd ~/opt/ollama
+curl -fsSL -o ollama.tar.zst https://github.com/ollama/ollama/releases/download/v0.19.0/ollama-linux-amd64.tar.zst
+tar --use-compress-program=unzstd -xf ollama.tar.zst && rm ollama.tar.zst
+# Keep run directories off /home
+mkdir -p /scratch/$USER/epiForecasting/agent_runs
+ln -s /scratch/$USER/epiForecasting/agent_runs ~/epiForecasting/outputs/agent_runs
+
+# An improve run (the first job downloads qwen3:8b, 5.2 GB, into ~/opt/ollama/models)
+cd ~/epiForecasting
+sbatch -J improve scripts/slurm/llm.sbatch .venv/bin/python -u -m agent improve \
+    --cutoff-date 2025-12-27 --model-family xgboost_direct --auto-apply --exclude-locations US
+```
+
+The command reads the server address from `LLM_BASE_URL`, so no `--base-url` flag is needed. Defaults:
+`qwen3:8b`, 16,384-token context, one GPU on `bii-gpu` (V100 32 GB), 8 hours. Override with
+`sbatch --export=ALL,LLM_MODEL=<name>`, `--gres=gpu:a100:1`, `-t`. A two-iteration improve run takes
+about 3 minutes.
+
+### TimeSeriesScientist comparison on Rivanna
+
+```bash
+scripts/comparison/setup_tsci.sh ~/TimeSeriesScientist        # clone at the pinned commit, patch, build its venv
+.venv/bin/python scripts/comparison/prepare_flu_series.py --locations 51 06 48 36 12 \
+    --cutoffs 2025-11-29 2025-12-27 2026-01-24 --out /scratch/$USER/epiForecasting/tsci_comparison/series
+sbatch -J tsci scripts/slurm/llm.sbatch .venv/bin/python scripts/comparison/run_tsci_batch.py \
+    --tsci-root ~/TimeSeriesScientist --series /scratch/$USER/epiForecasting/tsci_comparison/series \
+    --out /scratch/$USER/epiForecasting/tsci_comparison/runs --models XGBoost --llm-model qwen3:8b
+.venv/bin/python scripts/comparison/score_comparison.py --tsci-runs <runs> --series <series> \
+    --our-runs outputs/agent_runs/<run_id> ... --out <summary.md>
+```
+
+The batch is resumable: a (location, cutoff) with a `results.json` is skipped.
+
+**Rivanna and the laptop do not produce identical forecasts.** On the smoke run above
+(baseline, seed 42, cutoff 2025-10-04) Rivanna is bit-identical across repeats, across 1
+and 8 threads, and with the laptop's exact package versions installed, yet every row
+differs from the Apple-silicon laptop: overall WIS 5.59 against 5.63, mean absolute
+difference 1.8 admissions per quantile. The cause is the platform (x86-64 Linux against
+arm64 macOS builds of XGBoost), not versions or threading. Never mix machines inside one
+comparison: run every arm of an experiment on the same machine.
+
 ## Troubleshooting
 
 **LLM not connecting**: Make sure `ollama serve` is running and the model is pulled.

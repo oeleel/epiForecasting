@@ -35,7 +35,7 @@ What exists and what does not:
 |---|---|
 | Phase-aware evaluation (WIS, 90% coverage, signed bias by phase, horizon, location) | Done |
 | Two-agent loop with accept-or-revert, run tracker, run report | Done |
-| Model bank (9 families, plug-in contract for in-house models) and Stage 1 selection | Done |
+| Model bank (13 families, plug-in contract for in-house models) and Stage 1 selection | Done |
 | Knowledge bank (curated, derived, experiential entries; cited in every proposal) | Done |
 | Experiment harness for peak rectification (reweighting, windows, oversampling, seeds) | Done |
 | Held-out season (2024-25) and paired significance test | Done (2026-11-05) |

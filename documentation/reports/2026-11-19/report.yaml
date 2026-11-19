@@ -1,0 +1,530 @@
+# Weekly meeting report, 2026-11-19. Rendered by scripts/reports/build_report.py.
+# Section kinds and the markdown subset are documented in ../README.md.
+title: "Weekly report - 2026-11-19"
+date: "2026-11-19"
+summary: >-
+  First comparison with TimeSeriesScientist (TSci): XGBoost on the flu data, both on Rivanna, same LLM.
+
+sections:
+  - id: quick
+    heading: Quick summary
+    label: 60 seconds
+    kind: stack
+    blocks:
+      - kind: callout
+        tone: success
+        title: "Our advantage over TimeSeriesScientist"
+        body: |-
+          [[*TSci decides once, before it sees a forecast error. Ours forecasts, measures the error, then acts.]]
+
+          - **Notices a bad forecast and undoes the change.** TSci cannot.
+          - **Knows the disease.** Errors by phase, horizon, location. TSci calls the flu peak an "outlier".
+          - **Leaves an audit trail.** One named action per pass, with reason and effect.
+
+          [[!Not shown yet: better accuracy on weeks the loop did not tune on.]]
+      - kind: markdown
+        body: |-
+          - **Rivanna works**, LLM included. [Details](#rivanna)
+          - **First TSci comparison is done.** [One run, step by step](#walkthrough)
+          - **Tuning window:** [[+ours -12.6%]], [[-TSci +6.0%]]. [Tables](#panel-tuning-window)
+          - **Next cutoff:** [[-ours +6.9%]], TSci -12.0%. [Tables](#panel-held-out)
+          - **Diagnosis is the result that holds.** [Side by side](#panel-diagnosis)
+          - **Their 7 models run in our framework.** [Results](#model-list)
+          - **Written:** related work, RepairAgent, restructure note. [Related work](#related-work)
+          - **Decisions needed.** [List](#decisions)
+      - kind: stats
+        stats:
+          - value: "-12.6%"
+            label: our MAE vs our baseline, tuning window
+            tone: success
+          - value: "+6.9%"
+            label: our chosen configs vs our baseline, next cutoff
+            tone: destructive
+          - value: "6 of 15"
+            label: TSci runs where tuning beat its own default
+            tone: warning
+          - value: "15 of 15"
+            label: TSci runs that wanted to clip "outliers" on a flu curve
+            tone: warning
+
+  - id: walkthrough
+    heading: One run, step by step
+    label: example
+    kind: tabs
+    intro: >-
+      Same task for both: forecast the 4 weeks after 2025-11-29. Quotes are from the runs' own logs.
+    tabs:
+      - id: side-by-side
+        label: Side by side
+        blocks:
+          - kind: table
+            columns:
+              - Step
+              - Ours
+              - TimeSeriesScientist
+            rows:
+              - ["Input", "one model, 52 locations, 5 quantiles", "one state's series as 200 numbers in the prompt"]
+              - ["1. Look at the data", "errors by **phase, horizon, location**", "\"no clear seasonality\", \"structural break\""]
+              - ["2. Say what is wrong", "\"systematic under-prediction [...] in growth phase\"", "[[-no step: no forecast exists yet]]"]
+              - ["3. Decide a change", "**one action** from a fixed catalog, cites the knowledge bank", "a **hyperparameter grid**, cites nothing"]
+              - ["4. Try it", "retrain, re-score: WIS 124.4 to 121.0, kept", "best of 20 settings has validation MAPE 3786%"]
+              - ["5. React", "[[+back to step 1]]; 5 passes, 1 reverted", "[[-none: run ends]]"]
+              - ["Output", "`by_phase[growth] = 5.0`, WIS 124.4 to 100.6", "4 point forecasts, generic advice"]
+      - id: our-loop
+        label: Ours in detail
+        blocks:
+          - kind: table
+            intro: >-
+              Every pass through the five steps. Score: WIS over 52 locations (lower is better).
+            columns:
+              - Pass
+              - What it said was wrong
+              - Change made
+              - Knowledge cited
+              - { label: Score before, format: num }
+              - { label: Score after, format: num }
+              - { label: " ", format: badge, tones: { kept: success, reverted: destructive, "not checked": warning } }
+            rows:
+              - ["1", "`peak_underprediction`", "weight 2 on the 8 weeks before past peaks", "`peak-is-hardest-to-forecast`", 124.41, 120.96, "kept"]
+              - ["2", "`horizon4_drift`", "growth-phase weight 3.0", "`phase-growth-adiga-2026-10`", 120.96, 106.54, "kept"]
+              - ["3", "`growth_underprediction`", "growth-phase weight 4.0", "`phase-growth-adiga-2026-10`", 106.54, 101.88, "kept"]
+              - ["4", "`growth_underprediction`", "growth-phase weight 5.0", "`train-short-window-on-takeoff`", 101.88, 100.55, "kept"]
+              - ["5", "`week4_drift`", "training window 12 weeks", "`train-short-window-on-takeoff`", 100.55, 224.11, "reverted"]
+          - kind: accordion
+            items:
+              - title: "1. Look at the data"
+                body: |-
+                  **Who:** code (the phase-aware evaluator). No LLM.
+
+                  **Input:** the baseline forecast for 52 locations (208 rows) and the observed admissions.
+
+                  **Output:** WIS 124.41, bias -157.5, 90% coverage 0.81. By horizon: WIS 17.4 / 44.8 / 132.1 / 303.4 and bias -19.9 / -50.2 / -171.5 / -388.3 for weeks 1 to 4. Phase: growth.
+
+                  **Result:** a table of errors by phase, horizon and location, handed to step 2.
+              - title: "2. Say what is wrong"
+                body: |-
+                  **Who:** Agent 1 (LLM).
+
+                  **Input:** the error table from step 1.
+
+                  **Output:** "The model performs well overall (MAPE 38.7%) but shows significant degradation in longer horizons and peak phase predictions. Negative bias indicates systematic under-prediction, with extreme errors in growth phase forecasts during December 2025." Focus: `peak_underprediction`.
+
+                  **Result:** checked against a fixed schema, then handed to step 3.
+              - title: "3. Decide a change"
+                body: |-
+                  **Who:** Agent 2 (LLM).
+
+                  **Input:** the diagnosis, a catalog of 7 allowed actions, and the knowledge-bank entries retrieved for the weak phase.
+
+                  **Output:** `reweight_training_samples(dimension=approaching_peak, value=8, weight=2)`. Rationale: "The model under-predicts peak phases due to insufficient training on rapid growth dynamics, which is addressed by upweighting the weeks leading into past peaks." Cites `peak-is-hardest-to-forecast`, `train-short-window-on-takeoff`, `window-length-is-a-search-dimension`.
+
+                  **Result:** validated against the catalog and the parameter bounds, then applied to the config.
+              - title: "4. Try it"
+                body: |-
+                  **Who:** code (the training pipeline and the evaluator). No LLM.
+
+                  **Input:** the changed config.
+
+                  **Output:** the model is retrained and forecasts the same 4 weeks. WIS 120.96 (was 124.41), bias -150.4.
+
+                  **Result:** [[+kept as the new best]].
+              - title: "5. React to the result"
+                body: |-
+                  **Who:** the loop.
+
+                  **Input:** the score from step 4.
+
+                  **Output:** [[+back to step 1 with the new forecast.]] Four more passes follow (table above).
+
+                  **Result:** pass 5 raised WIS from 100.55 to 224.11 and was [[-reverted]]. The run ends after 5 passes with the config of pass 4.
+              - title: What it hands back
+                body: |-
+                  - **Recommendation:** "adopt iteration 4's config (`sample_weights.by_phase[growth] = 5.0`), wis improved 19.2%"
+                  - **Where the error is:** by horizon, WIS 14.5 / 40.0 / 97.0 / 250.7; worst locations with signed bias: Rhode Island (-77.7), Oregon (+43.3), Arkansas (+69.4), Arizona (+71.9), Nevada (-77.9)
+                  - **Uncertainty:** five quantiles per forecast; the 90% interval covers 83% of outcomes
+                  - **Full output:** `documentation/experiments/tsci_comparison/our-run-20261119-174325-2b0e.md`
+      - id: tsci-pipeline
+        label: TSci in detail
+        blocks:
+          - kind: table
+            intro: >-
+              Every pass through the five steps. Score: MAE on the 4 forecast weeks for Virginia (lower
+              is better); "before" is its XGBoost at library defaults.
+            columns:
+              - Pass
+              - What it said was wrong
+              - Change made
+              - Knowledge cited
+              - { label: Score before, format: num }
+              - { label: Score after, format: num }
+              - { label: " ", format: badge, tones: { kept: success, reverted: destructive, "not checked": warning } }
+            rows:
+              - ["1", "nothing: no forecast exists when it decides", "`learning_rate=0.01`, `max_depth=3`, `n_estimators=100`", "none", 164.3, 290.3, "not checked"]
+          - kind: accordion
+            items:
+              - title: "1. Look at the data"
+                body: |-
+                  **Who:** Curator and Planner (LLM), three calls.
+
+                  **Input:** Virginia's 200 weekly values, pasted into the prompt as a list of numbers.
+
+                  **Output:** "no clear seasonality", "non-stationary", "spikes, dips, irregular fluctuations". "The trend is non-linear with a pronounced structural break around the peak value (1315.0)." Challenges: "Structural breaks (e.g., the sharp decline after the peak at 1315.0)", "Outliers (e.g., the sudden drop to 10.0 after 1315.0)". Preprocessing decision: clip outliers.
+
+                  **Result:** the outlier detector found none, so nothing was clipped. The plot step failed (the LLM's plot plan was not valid JSON) and the run continued. [[!The series is four flu seasons and 1315 is the 2022-23 peak]]; nothing tells the LLM that.
+              - title: "2. Say what is wrong"
+                body: |-
+                  **Who:** no one.
+
+                  **Input:** none. No forecast has been made yet, so there is no error to look at.
+
+                  **Output:** none.
+
+                  **Result:** [[-this step does not exist in TSci.]]
+              - title: "3. Decide a change"
+                body: |-
+                  **Who:** Planner (LLM).
+
+                  **Input:** its own analysis text from step 1 and the list of available models (XGBoost only in this run).
+
+                  **Output:** a search grid: `learning_rate` [0.01, 0.1, 0.2], `max_depth` [3, 5, 7], `n_estimators` [100, 200, 300]. Reason: "XGBoost is well-suited for non-stationary data with structural breaks and heteroscedasticity. The learning_rate controls convergence speed for fluctuating values, max_depth balances complexity for non-linear trends [...]". Cites nothing.
+
+                  **Result:** parsed as JSON; 20 settings from the grid go to step 4. No bounds or catalog are checked.
+              - title: "4. Try it"
+                body: |-
+                  **Who:** code (the Forecaster's validation). No LLM.
+
+                  **Input:** the 20 settings.
+
+                  **Output:** each setting is fitted on the first 80% of the series and forecasts the last 20% (40 weeks) recursively. Best: `learning_rate=0.01, max_depth=3, n_estimators=100`, with validation MAE 599.1 and MAPE 3786%.
+
+                  **Result:** that setting forecasts the 4 target weeks: 91, 103, 103, 103 (truth: 167, 195, 357, 843). MAE 290.3, against 164.3 for the default settings. [[-Not compared with the default; used as is.]]
+              - title: "5. React to the result"
+                body: |-
+                  **Who:** no one.
+
+                  **Input:** the test error is computed and written to the report.
+
+                  **Output:** [[-none. There is no path back to an earlier step.]]
+
+                  **Result:** the run ends after 1 pass.
+              - title: What it hands back
+                body: |-
+                  - **Recommendation:** "Prioritize differencing, segmentation around structural breaks, and hybrid models to improve reliability."
+                  - **Where the error is:** one set of pooled numbers for the series: MSE 156,415.7, MAE 290.26, MAPE 62.83%
+                  - **Uncertainty:** 80%, 90% and 95% bounds all equal the point forecast (the intervals are the spread across selected models, and there is one model)
+                  - **Full output:** `results.json` and `run.log` under `tsci_comparison/runs/51_2025-11-29/` on Rivanna scratch
+      - id: virginia
+        label: Virginia, the 4 forecasts
+        blocks:
+          - kind: table
+            intro: >-
+              Weekly admissions in Virginia after the 2025-11-29 cutoff. Our numbers are the median, with
+              the 90% interval of the final forecast in the last column.
+            columns:
+              - Target week
+              - { label: Actual, format: num }
+              - { label: Ours baseline, format: num }
+              - { label: Ours final, format: num }
+              - { label: TSci default, format: num }
+              - { label: TSci tuned, format: num }
+              - Ours final, 90% interval
+            rows:
+              - ["2025-12-06", 167, 149, 145, 99, 91, "98 to 237"]
+              - ["2025-12-13", 195, 194, 215, 167, 103, "127 to 407"]
+              - ["2025-12-20", 357, 287, 375, 292, 103, "156 to 715"]
+              - ["2025-12-27", 843, 500, 622, 347, 103, "206 to 833"]
+          - kind: callout
+            tone: warning
+            body: >-
+              One state, one cutoff: an illustration, not the result. [[!In-sample for our loop.]]
+              TSci's tuning gave a flat 103 during growth, and nothing in TSci could notice.
+
+  - id: asked
+    heading: What was asked
+    kind: cards
+    columns: 3
+    cards:
+      - { title: Comparison study, badge: priority 1, tone: info, body: "Ours vs TSci on flu, XGBoost first. A: does each improve its model? B: what extra diagnosis do we give?" }
+      - { title: Rivanna, badge: enabler, tone: info, body: "Allocation, environment, LLM on a GPU node." }
+      - { title: Their model list, badge: follow-up, body: "Run their 7 models in our framework. Which are trivial to tune?" }
+      - { title: Related work, badge: paper, body: "Comparison table and one paragraph on the difference from TSci." }
+      - { title: Agent restructure, badge: design only, body: "A note. No implementation." }
+
+  - id: delivered
+    heading: What was delivered
+    kind: table
+    columns:
+      - Item
+      - Where
+      - Proof
+    rows:
+      - ["Rivanna access", "`nssac_students` on `bii`, `bii-gpu`", "test jobs ran on both"]
+      - ["Slurm templates", "`scripts/slurm/`", "tests pass as a job; LLM served per job"]
+      - ["TSci wrapper", "`scripts/comparison/run_tsci.py`", "15 of 15 flu runs completed"]
+      - ["Scoring", "`score_comparison.py`, `heldout_rescore.py`", "MAE on shared rows"]
+      - ["Result page", "`documentation/experiments/2026-11-tsci-comparison-results.md`", "tables, limits"]
+      - ["Four model families", "`mlf_linear`, `mlf_random_forest`, `nf_lstm`, `nf_transformer`", "566 tests pass"]
+      - ["Related work", "`related-work-survey.md`, `repairagent-paper-summary.md`", "TSci row checked against its code"]
+      - ["Restructure note", "`agent-restructure-note.md`", "one page"]
+
+  - id: comparison
+    heading: TSci against our framework
+    label: results
+    kind: tabs
+    intro: >-
+      5 states, 3 cutoffs, 4 horizons: 60 rows. MAE in weekly admissions. Baseline = each framework's
+      own untuned model.
+    tabs:
+      - id: tuning-window
+        label: Tuning window
+        blocks:
+          - kind: table
+            columns:
+              - Framework
+              - { label: Baseline MAE, format: num }
+              - { label: Final MAE, format: num }
+              - { label: "Change, %", format: delta }
+            rows:
+              - ["Ours (`agent improve`, `xgboost_direct`)", 541.7, 473.5, -12.6]
+              - ["TimeSeriesScientist (XGBoost only)", 644.4, 683.3, 6.0]
+          - kind: table
+            columns:
+              - Cutoff
+              - { label: Ours baseline, format: num }
+              - { label: Ours final, format: num }
+              - { label: "Ours, %", format: delta }
+              - { label: TSci baseline, format: num }
+              - { label: TSci final, format: num }
+              - { label: "TSci, %", format: delta }
+            rows:
+              - ["2025-11-29 (growth)", 498.2, 367.3, -26.3, 741.9, 879.2, 18.5]
+              - ["2025-12-27 (peak)", 490.2, 490.2, 0.0, 828.7, 673.6, -18.7]
+              - ["2026-01-24 (peak)", 636.8, 563.1, -11.6, 362.5, 497.2, 37.2]
+          - kind: table
+            columns:
+              - Horizon
+              - { label: Ours baseline, format: num }
+              - { label: Ours final, format: num }
+              - { label: TSci baseline, format: num }
+              - { label: TSci final, format: num }
+            rows:
+              - ["1 week", 389.7, 370.3, 195.2, 254.2]
+              - ["2 weeks", 481.7, 475.5, 447.8, 478.9]
+              - ["3 weeks", 610.9, 487.4, 851.8, 864.9]
+              - ["4 weeks", 684.5, 560.8, 1082.7, 1135.4]
+          - kind: callout
+            tone: warning
+            title: This table is in-sample for us
+            body: >-
+              Our loop picks its best iteration on these same weeks. [[!TSci's plain XGBoost is better at
+              1 week]] (195 vs 390); ours wins from 3 weeks.
+      - id: held-out
+        label: Held-out
+        blocks:
+          - kind: markdown
+            body: >-
+              The config chosen at cutoff `c` forecasts from `c + 4 weeks`. Nothing is selected on the scored weeks.
+          - kind: table
+            columns:
+              - Framework
+              - { label: Baseline MAE, format: num }
+              - { label: Chosen-config MAE, format: num }
+              - { label: "Change, %", format: delta }
+              - Runs better / worse / equal
+            rows:
+              - ["Ours", 435.5, 465.4, 6.9, "4 / 6 / 5"]
+              - ["TimeSeriesScientist", 497.2, 437.6, -12.0, "8 / 7 / 0"]
+          - kind: table
+            columns:
+              - Chosen at, scored at
+              - { label: Ours baseline, format: num }
+              - { label: Ours chosen, format: num }
+              - { label: "Ours, %", format: delta }
+              - { label: TSci baseline, format: num }
+              - { label: TSci chosen, format: num }
+              - { label: "TSci, %", format: delta }
+            rows:
+              - ["2025-11-29, 2025-12-27", 490.2, 473.0, -3.5, 828.7, 830.8, 0.3]
+              - ["2025-12-27, 2026-01-24", 636.8, 636.8, 0.0, 362.5, 361.8, -0.2]
+              - ["2026-01-24, 2026-02-21", 179.6, 286.4, 59.5, 300.5, 120.2, -60.0]
+          - kind: callout
+            tone: destructive
+            title: The in-sample gain does not transfer
+            body: >-
+              Two transfers are flat. The third decides it: a [[-peak-phase weight chosen at 2026-01-24
+              hurts in decline]] (MAE 136.3 to 167.0 over 52 locations). TSci's gain is noise: 15 runs,
+              15 different settings, 8 better vs 7 worse.
+          - kind: callout
+            tone: info
+            title: What this means for the design
+            body: >-
+              [[*A config from the loop belongs to its phase.]] Store it per phase, and confirm it on
+              a held-out cutoff before keeping it.
+      - id: diagnosis
+        label: Diagnosis (question B)
+        blocks:
+          - kind: table
+            columns:
+              - " "
+              - Ours
+              - TimeSeriesScientist
+            rows:
+              - ["Where the error is", "by phase, horizon, location, with signed bias", "one pooled MSE / MAE / MAPE"]
+              - ["Reading of the curve", "phases from the knowledge bank", "[[-peak = \"structural break\", \"outlier\"]]"]
+              - ["Why a change was made", "rationale, expected effect, cited entries", "free-text reason"]
+              - ["What the change did", "per-iteration table; regressions reverted", "not applicable: one pass"]
+              - ["Recommendation", "`sample_weights.by_phase[growth] = 5.0`", "\"apply normalization\", \"add lag features\""]
+              - ["Uncertainty", "five quantiles, coverage", "intervals equal the point forecast"]
+          - kind: callout
+            tone: success
+            title: The claim that holds
+            body: >-
+              TSci tunes once and nothing reacts to the error. [[+Our loop names a failure, acts, and
+              records why.]] It also needs to know when its fix stops applying.
+      - id: limits
+        label: Limits
+        blocks:
+          - kind: markdown
+            body: |-
+              - [[!One seed, 15 series, no significance test.]]
+              - Different models under one name: ours is global with 59 features; theirs is 10 lags of one series.
+              - Different objectives: ours WIS, theirs MSE. Scored on MAE.
+              - TSci's released code needed a two-line fix to run, and was restricted to XGBoost.
+              - `qwen3:8b` for both; the TSci paper used GPT-4o-class models.
+
+  - id: rivanna
+    heading: Rivanna
+    label: infrastructure
+    kind: cards
+    columns: 3
+    cards:
+      - { title: Access, badge: works, tone: success, body: "`nssac_students` on `bii` and `bii-gpu`. The partition error is gone." }
+      - { title: LLM on a GPU node, badge: works, tone: success, body: "`scripts/slurm/llm.sbatch` serves `qwen3:8b` per job. A TSci run takes 2 minutes, 8 on the laptop." }
+      - { title: Caveats, badge: caveat, tone: warning, body: "Rivanna and the laptop give slightly different forecasts; keep one comparison on one machine. vLLM not done." }
+
+  - id: model-list
+    heading: Their model list in our framework
+    label: follow-up
+    kind: stack
+    blocks:
+      - kind: table
+        intro: Loop on each family, cutoff 2025-11-29, WIS over 52 locations. In-sample.
+        columns:
+          - TSci model
+          - Our family
+          - { label: WIS baseline, format: num }
+          - { label: WIS best, format: num }
+          - { label: "Change, %", format: delta }
+          - Tuning
+        rows:
+          - ["XGBoost", "`xgboost_direct`", 124.4, 100.6, -19.2, "real choices: weights, features, window"]
+          - ["LSTM", "`nf_lstm` (new)", 159.8, 153.7, -3.8, "real choices"]
+          - ["Linear regression", "`mlf_linear` (new)", 206.7, 204.3, -1.1, "trivial: one penalty, one lag length"]
+          - ["Transformer", "`nf_transformer` (new)", 366.6, 363.8, -0.8, "real choices"]
+          - ["Random forest", "`mlf_random_forest` (new)", 180.8, 180.8, 0.0, "real choices"]
+          - ["ARIMA", "`sf_autoarima`", 185.9, 185.9, 0.0, "trivial: the library searches the orders"]
+          - ["Exponential smoothing", "`sf_autoets`", 206.0, 206.0, 0.0, "trivial: the library selects the form"]
+      - kind: table
+        intro: Model selection, 9 cutoffs, default parameters, no agent. WIS, lower is better.
+        columns:
+          - Family
+          - { label: WIS, format: num }
+          - { label: Growth, format: num }
+          - { label: Peak, format: num }
+          - { label: Decline, format: num }
+          - { label: Plateau, format: num }
+          - { label: 90% coverage, format: num }
+          - { label: " ", format: badge, tones: { incumbent: success, "beats persistence": info, "below persistence": destructive } }
+        rows:
+          - ["`xgboost_direct`", 50.9, 63.6, 109.9, 32.6, 7.5, 0.84, "incumbent"]
+          - ["`nf_lstm`", 70.7, 79.7, 160.8, 35.6, 16.1, 0.88, "beats persistence"]
+          - ["`sf_autoets`", 81.9, 102.6, 166.7, 56.3, 18.1, 0.86, "beats persistence"]
+          - ["`persistence`", 90.4, 131.6, 153.8, 79.1, 22.2, 0.73, "reference"]
+          - ["`mlf_random_forest`", 115.0, 92.2, 306.1, 55.1, 27.1, 0.65, "below persistence"]
+          - ["`mlf_linear`", 143.9, 104.7, 360.8, 83.9, 55.3, 0.64, "below persistence"]
+          - ["`nf_transformer`", 168.4, 191.5, 387.1, 98.3, 25.5, 0.13, "below persistence"]
+        note: Three of the four new families do not beat persistence at default parameters. AutoARIMA not included (still running).
+
+  - id: related-work
+    heading: Related work
+    label: positioning
+    kind: cards
+    columns: 3
+    cards:
+      - { title: TimeSeriesScientist, badge: no loop, tone: info, body: "Checked against its code: linear graph, generic statistics, point forecasts." }
+      - { title: Comparison table, badge: survey, body: "Loop, domain knowledge, limits, and our answer, for 5 systems. In `related-work-survey.md`." }
+      - { title: RepairAgent, badge: read in full, body: "Reuse: restrict actions by state, guard against repeats, repair near-miss output." }
+
+  - id: decisions
+    heading: Decisions requested
+    kind: accordion
+    items:
+      - title: Should a loop result be stored per phase, with a held-out accept step?
+        body: >-
+          The held-out run says a config chosen at the peak hurts in decline. The proposal: keep
+          accepted changes per phase, and confirm each one on a cutoff it was not selected on before
+          it is kept.
+      - title: Is the scaled comparison the next step?
+        body: >-
+          All 52 locations, all 9 pinned cutoffs, three seeds, held-out scoring as the primary
+          result, with the paired significance test. Rivanna makes this feasible: 15 TSci runs took
+          31 minutes on one GPU.
+      - title: TSci with its full model list?
+        body: >-
+          This week tests one model inside TSci. Its design is to pick 3 of 21 and ensemble them,
+          which is the fairer test of the framework.
+      - title: Which paper is the hypothesis-generation paper?
+        body: >-
+          The repo already holds a summary of Ziatdinov et al., "Hypothesis learning in automated
+          experiment" (package `hypoAL`). Confirm whether that is the paper meant, or name the other
+          one and its Python package.
+      - title: Is the reviewer reading of "agents with weights" the intended one?
+        body: >-
+          The restructure note reads it as parallel reviewers whose votes are weighted when a change
+          is accepted or rejected.
+
+  - id: next
+    heading: Next steps
+    kind: cards
+    columns: 3
+    cards:
+      - title: Scale the comparison
+        badge: "1"
+        tone: info
+        body: 52 locations, 9 cutoffs, 3 seeds, held-out scoring first, paired test.
+      - title: Phase-aware accept step
+        badge: "2"
+        tone: info
+        body: Per-phase storage of accepted changes and a held-out confirmation before a change is kept.
+      - title: Finish the model-list selection
+        badge: "3"
+        body: Read the `select-model` result from Rivanna and add the ranking to `MODEL_BANK.md`.
+      - title: TSci, full model list
+        badge: "4"
+        body: Its own choice of 3 of 21 models, and one of our in-house families it has not seen.
+      - title: vLLM and a larger model
+        badge: "5"
+        body: The A100 node or several V100s; the torch build needs a fix for V100 first.
+
+  - id: reproduce
+    heading: Reproduce
+    kind: code
+    code: |-
+      # On Rivanna, from ~/epiForecasting (setup: documentation/QUICKSTART.md, "Running on Rivanna")
+      scripts/comparison/setup_tsci.sh ~/TimeSeriesScientist
+      S=/scratch/$USER/epiForecasting/tsci_comparison
+      .venv/bin/python scripts/comparison/prepare_flu_series.py --locations 51 06 48 36 12 \
+          --cutoffs 2025-11-29 2025-12-27 2026-01-24 --out $S/series
+
+      # TSci, XGBoost only (job 23162203, 31 minutes)
+      sbatch -J tsci scripts/slurm/llm.sbatch .venv/bin/python scripts/comparison/run_tsci_batch.py \
+          --tsci-root ~/TimeSeriesScientist --series $S/series --out $S/runs --models XGBoost --llm-model qwen3:8b
+
+      # Ours, one improve run per cutoff (job 23162245, 12 minutes)
+      sbatch -J ours scripts/slurm/llm.sbatch .venv/bin/python -u -m agent improve \
+          --cutoff-date 2025-11-29 --model-family xgboost_direct --auto-apply --exclude-locations US
+
+      # Score, then the held-out re-score (job 23167461)
+      .venv/bin/python scripts/comparison/score_comparison.py --tsci-runs $S/runs --series $S/series \
+          --our-runs outputs/agent_runs/<run_id> ... --out $S/summary.md
+      .venv/bin/python scripts/comparison/heldout_rescore.py ours --runs-dir outputs/agent_runs --run-ids <run_id> ... --out $S/heldout

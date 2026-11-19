@@ -583,7 +583,13 @@ def _render_nav(sections: List[Dict[str, Any]]) -> str:
 def _fill_shell(template_dir: Path, values: Dict[str, str]) -> str:
     shell = _load_template(template_dir, "shell.html")
     values = dict(values)
-    values.setdefault("TOKENS_CSS", _load_template(template_dir, "tokens.css"))
+    # tailwind.css is the precompiled utility layer (see _template/tailwind.config.js). It goes
+    # after tokens.css, the order the Play CDN used to produce, so a utility such as `lg:hidden`
+    # still overrides a component recipe. Nothing is fetched from a CDN at view time.
+    values.setdefault(
+        "TOKENS_CSS",
+        _load_template(template_dir, "tokens.css") + "\n" + _load_template(template_dir, "tailwind.css"),
+    )
     values.setdefault("WIDGETS_JS", _load_template(template_dir, "widgets.js"))
     out = shell
     for key, value in values.items():
