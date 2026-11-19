@@ -70,6 +70,13 @@ export OPENAI_BASE_URL="$LLM_BASE_URL"
 export OPENAI_API_KEY=ollama
 export OMP_NUM_THREADS="$SLURM_CPUS_PER_TASK"
 
+# The GPU is for the LLM server. The command runs on CPU unless COMMAND_USES_GPU=1: the
+# torch build in .venv (2.15, CUDA 13) has no kernels for the V100s that fill bii-gpu, and
+# a neural family then dies with "no kernel image is available". Set it to 1 on the A100 node.
+if [ "${COMMAND_USES_GPU:-0}" != "1" ]; then
+    export CUDA_VISIBLE_DEVICES=""
+fi
+
 cd "$SLURM_SUBMIT_DIR"
 echo "job=$SLURM_JOB_ID node=$(hostname) gpu=$(nvidia-smi --query-gpu=name --format=csv,noheader | paste -sd,) llm=$LLM_MODEL ctx=$LLM_CONTEXT_TOKENS url=$LLM_BASE_URL commit=$(git rev-parse --short HEAD)"
 # Not exec: the EXIT trap must run to stop the server.
